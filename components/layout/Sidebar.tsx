@@ -75,7 +75,7 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
       }`}
     >
       <div className="flex h-full flex-col gap-6 overflow-y-auto scrollbar-hide">
-        <div className={`flex items-center ${isExpanded ? "justify-between px-1" : "justify-center flex-col gap-4"}`}>
+        <div className={`flex items-center transition-all duration-300 ${isExpanded ? "flex-row justify-between px-1" : "flex-col justify-center gap-4"}`}>
           <Link href="/" className="transition-transform hover:scale-105">
             <Image src="/brand/coverscrafter-logo.png" alt="CoversCrafter" width={isExpanded ? 42 : 36} height={isExpanded ? 42 : 36} />
           </Link>
@@ -106,8 +106,8 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
                 <Link
                   key={item.label}
                   href={item.href ?? "/"}
-                  className={`group relative flex items-center gap-3 rounded-2xl transition-all duration-200 ${
-                    isExpanded ? "px-4 py-3.5" : "h-14 w-14 justify-center mx-auto"
+                  className={`group relative flex items-center rounded-2xl transition-all duration-300 ${
+                    isExpanded ? "px-4 py-3.5 gap-3" : "h-14 w-14 justify-center mx-auto gap-0"
                   } ${
                     isActive
                       ? "bg-slate-800 text-white shadow-lg shadow-slate-800/20"
@@ -115,22 +115,26 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
                   }`}
                   aria-label={item.label}
                 >
-                  {Icon ? (
-                    typeof Icon === 'function' ? (
-                      <Icon active={Boolean(isActive)} />
+                  <div className="shrink-0">
+                    {Icon ? (
+                      typeof Icon === 'function' ? (
+                        <Icon active={Boolean(isActive)} />
+                      ) : (
+                        Icon
+                      )
                     ) : (
-                      Icon
-                    )
-                  ) : (
-                    <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-xl text-sm font-semibold ${
-                        isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
-                      }`}
-                    >
-                      {item.label.slice(0, 2).toUpperCase()}
-                    </span>
-                  )}
-                  {isExpanded && <span className="text-sm font-semibold">{item.label}</span>}
+                      <span
+                        className={`flex h-8 w-8 items-center justify-center rounded-xl text-sm font-semibold ${
+                          isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {item.label.slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <span className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${isExpanded ? "w-auto opacity-100" : "w-0 opacity-0"}`}>
+                    <span className="text-sm font-semibold">{item.label}</span>
+                  </span>
                 </Link>
               );
             }
@@ -140,8 +144,8 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
                 <button
                   type="button"
                   onClick={() => handleGroupToggle(item.label, Boolean(isOpen))}
-                  className={`group relative flex items-center gap-3 rounded-2xl transition-all duration-200 ${
-                    isExpanded ? "px-4 py-3.5" : "h-14 w-14 justify-center mx-auto"
+                  className={`group relative flex items-center rounded-2xl transition-all duration-300 ${
+                    isExpanded ? "px-4 py-3.5 gap-3" : "h-14 w-14 justify-center mx-auto gap-0"
                   } ${
                     isActive
                       ? "bg-slate-800 text-white shadow-lg shadow-slate-800/20"
@@ -149,31 +153,31 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
                   }`}
                   aria-label={item.label}
                 >
-                  {Icon ? (
-                    typeof Icon === 'function' ? (
-                      <Icon active={Boolean(isActive)} />
+                  <div className="shrink-0">
+                    {Icon ? (
+                      typeof Icon === 'function' ? (
+                        <Icon active={Boolean(isActive)} />
+                      ) : (
+                        Icon
+                      )
                     ) : (
-                      Icon
-                    )
-                  ) : (
-                    <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-xl text-sm font-semibold ${
-                        isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
-                      }`}
-                    >
-                      {item.label.slice(0, 2).toUpperCase()}
-                    </span>
-                  )}
-                  {isExpanded && (
-                    <>
-                      <span className="flex-1 text-sm font-semibold">{item.label}</span>
-                      <ChevronDownIcon open={Boolean(isOpen)} />
-                    </>
-                  )}
+                      <span
+                        className={`flex h-8 w-8 items-center justify-center rounded-xl text-sm font-semibold ${
+                          isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {item.label.slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className={`flex flex-1 items-center justify-between whitespace-nowrap overflow-hidden transition-all duration-300 ${isExpanded ? "w-auto opacity-100" : "w-0 opacity-0"}`}>
+                    <span className="text-sm font-semibold">{item.label}</span>
+                    <ChevronDownIcon open={Boolean(isOpen)} />
+                  </div>
                 </button>
 
-                {isOpen && (
-                  <div className={`flex flex-col gap-2 ${isExpanded ? "pl-4" : ""}`}>
+                <div className={`grid transition-all duration-300 ease-in-out ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                  <div className={`overflow-hidden flex flex-col gap-2 ${isExpanded ? "pl-4" : ""}`}>
                     {item.children?.map((child) => {
                       const childActive = pathname === child.href;
                       return (
@@ -189,32 +193,34 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
                             boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.15)'
                           } : {}}
                         >
-                          {child.label}
-                          {childActive && <span className="text-xs font-bold uppercase tracking-wide text-slate-700">●</span>}
+                          <span className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${isExpanded ? "w-auto opacity-100" : "w-0 opacity-0"}`}>
+                            {child.label}
+                          </span>
+                          {childActive && isExpanded && <span className="text-xs font-bold uppercase tracking-wide text-slate-700">●</span>}
                         </Link>
                       );
                     })}
                   </div>
-                )}
+                </div>
               </div>
             );
           })}
         </nav>
       </div>
 
-      <div className={`mt-auto flex flex-col gap-3 border-t border-slate-200 pt-6 ${isExpanded ? "px-2" : "items-center"}`}>
-        {isExpanded && <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Active User</p>}
+      <div className={`mt-auto flex flex-col gap-3 border-t border-slate-200 pt-6 transition-all duration-300 ${isExpanded ? "px-2 items-start" : "items-center"}`}>
+        <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? "h-4 opacity-100" : "h-0 opacity-0"}`}>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Active User</p>
+        </div>
         
-        <div className={`flex items-center gap-3 ${!isExpanded && "flex-col"}`}>
+        <div className={`flex items-center transition-all duration-300 ${isExpanded ? "flex-row gap-3" : "flex-col gap-0"}`}>
            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-slate-700 to-slate-800 text-sm font-bold text-white shadow-md ring-2 ring-white">
              {initials || "--"}
            </div>
-           {isExpanded && (
-             <div className="flex flex-col overflow-hidden">
+           <div className={`flex flex-col overflow-hidden whitespace-nowrap transition-all duration-300 ${isExpanded ? "w-32 opacity-100" : "w-0 opacity-0"}`}>
                <span className="truncate text-sm font-bold text-slate-700">{userName}</span>
                <span className="truncate text-xs font-medium text-slate-500">{userRole}</span>
-             </div>
-           )}
+           </div>
         </div>
       </div>
     </aside>
