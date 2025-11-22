@@ -16,7 +16,7 @@ export default function Home() {
             Logic Access
           </div>
           <Image
-            src="/brand/coverscrafter-logo.svg"
+            src="/brand/coverscrafter-logo.png"
             alt="CoversCrafter logo"
             width={260}
             height={112}
