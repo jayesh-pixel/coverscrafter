@@ -81,7 +81,7 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
           </Link>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className={`rounded-xl bg-white p-2 text-slate-400 shadow-sm ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-600 hover:ring-blue-200 ${!isExpanded ? "mt-2" : ""}`}
+            className={`flex h-11 w-11 items-center justify-center self-center rounded-xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-600 hover:ring-blue-200 ${!isExpanded ? "mt-2" : ""}`}
             aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
           >
             {isExpanded ? <SidebarCollapseIcon /> : <MenuIcon />}
@@ -170,7 +170,11 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
                       </span>
                     )}
                   </div>
-                  <div className={`flex flex-1 items-center justify-between whitespace-nowrap overflow-hidden transition-all duration-300 ${isExpanded ? "w-auto opacity-100" : "w-0 opacity-0"}`}>
+                  <div
+                    className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${
+                      isExpanded ? "flex flex-1 items-center justify-between w-auto opacity-100" : "w-0 opacity-0"
+                    }`}
+                  >
                     <span className="text-sm font-semibold">{item.label}</span>
                     <ChevronDownIcon open={Boolean(isOpen)} />
                   </div>
@@ -243,7 +247,7 @@ function ChevronLeftIcon() {
   );
 }
 
-function DashboardIcon({ active }: { active: boolean }) {
+export function DashboardIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
@@ -258,7 +262,7 @@ function DashboardIcon({ active }: { active: boolean }) {
   );
 }
 
-function DealerIcon({ active }: { active: boolean }) {
+export function DealerIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
@@ -273,7 +277,7 @@ function DealerIcon({ active }: { active: boolean }) {
   );
 }
 
-function ConsolidationIcon({ active }: { active: boolean }) {
+export function ConsolidationIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
