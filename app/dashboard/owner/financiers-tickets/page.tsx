@@ -13,6 +13,31 @@ export default function OwnerFinanciersTicketsPage() {
     { label: "Rejected", count: 1 },
   ];
 
+  const tickets = [
+    {
+      status: "Approved",
+      createdOn: "16-10-2025 (11:09:40)",
+      financierName: "SHRI BHAVESHWARI G B S S PAT SAN LTD",
+      insurerName: "United India Insurance Company",
+      pincode: "412209",
+      city: "PUNE",
+      state: "MAHARASHTRA",
+      updatedOn: "18-10-2025 (11:54:12)",
+      notes: null
+    },
+    {
+      status: "Rejected",
+      createdOn: "14-08-2025 (12:25:11)",
+      financierName: "KRUSHNAI MAHILA GBSS PAT SANSTHA MAYA.",
+      insurerName: "ANIL DATTATRAY SAPAKAL",
+      pincode: "416410",
+      city: "SANGLI",
+      state: "MAHARASHTRA",
+      updatedOn: "25-08-2025 (12:10:19)",
+      notes: "PLS SPECIFY WHICH INSURER IS IT TO BE ADDED?"
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -39,87 +64,63 @@ export default function OwnerFinanciersTicketsPage() {
         ))}
       </div>
 
-      {/* Financier Cards */}
-      <div className="space-y-3">
-        {/* Approved Card */}
-        <div className="rounded-lg border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-100 p-4 shadow-md hover:shadow-lg transition-shadow">
-          <div className="mb-3 flex items-start justify-between">
-            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800 shadow-sm">Approved</span>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-3">
-            <div>
-              <div className="text-xs font-semibold uppercase text-slate-500">Created On</div>
-              <div className="text-xs text-slate-900">16-10-2025 (11:09:40)</div>
-            </div>
-            <div className="md:col-span-2">
-              <div className="text-xs font-semibold uppercase text-slate-500">Financier Name</div>
-              <div className="text-xs text-slate-900">SHRI BHAVESHWARI G B S S PAT SAN LTD</div>
-            </div>
-            <div className="md:col-span-3">
-              <div className="text-xs font-semibold uppercase text-slate-500">Insurer Name</div>
-              <div className="text-xs text-slate-900">United India Insurance Company</div>
-            </div>
-            <div>
-              <div className="text-xs font-semibold uppercase text-slate-500">Pin code</div>
-              <div className="text-xs text-slate-900">412209</div>
-            </div>
-            <div>
-              <div className="text-xs font-semibold uppercase text-slate-500">City</div>
-              <div className="text-xs text-slate-900">PUNE</div>
-            </div>
-            <div>
-              <div className="text-xs font-semibold uppercase text-slate-500">State</div>
-              <div className="text-xs text-slate-900">MAHARASHTRA</div>
-            </div>
-            <div>
-              <div className="text-xs font-semibold uppercase text-slate-500">Updated On</div>
-              <div className="text-xs text-slate-900">18-10-2025 (11:54:12)</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Rejected Card */}
-        <div className="rounded-lg border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-100 p-4 shadow-md hover:shadow-lg transition-shadow">
-          <div className="mb-3 flex items-start justify-between">
-            <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-800 shadow-sm">Rejected</span>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-3">
-            <div>
-              <div className="text-xs font-semibold uppercase text-slate-500">Created On</div>
-              <div className="text-xs text-slate-900">14-08-2025 (12:25:11)</div>
-            </div>
-            <div className="md:col-span-2">
-              <div className="text-xs font-semibold uppercase text-slate-500">Financier Name</div>
-              <div className="text-xs text-slate-900">KRUSHNAI MAHILA GBSS PAT SANSTHA MAYA.</div>
-            </div>
-            <div className="md:col-span-3">
-              <div className="text-xs font-semibold uppercase text-slate-500">Insurer Name</div>
-              <div className="text-xs text-slate-900">ANIL DATTATRAY SAPAKAL</div>
-            </div>
-            <div>
-              <div className="text-xs font-semibold uppercase text-slate-500">Pin code</div>
-              <div className="text-xs text-slate-900">416410</div>
-            </div>
-            <div>
-              <div className="text-xs font-semibold uppercase text-slate-500">City</div>
-              <div className="text-xs text-slate-900">SANGLI</div>
-            </div>
-            <div>
-              <div className="text-xs font-semibold uppercase text-slate-500">State</div>
-              <div className="text-xs text-slate-900">MAHARASHTRA</div>
-            </div>
-            <div>
-              <div className="text-xs font-semibold uppercase text-slate-500">Updated On</div>
-              <div className="text-xs text-slate-900">25-08-2025 (12:10:19)</div>
-            </div>
-          </div>
-
-          <div className="mt-3 rounded-md bg-gradient-to-r from-red-50 to-pink-50 p-2.5 border border-red-200">
-            <div className="text-xs font-semibold text-red-900">Document Requested</div>
-            <div className="mt-1 text-xs text-red-800">PLS SPECIFY WHICH INSURER IS IT TO BE ADDED?</div>
-          </div>
+      {/* Tickets Table */}
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <tr>
+                <th className="px-4 py-3 whitespace-nowrap">Status</th>
+                <th className="px-4 py-3 whitespace-nowrap">Financier Name</th>
+                <th className="px-4 py-3 whitespace-nowrap">Insurer Name</th>
+                <th className="px-4 py-3 whitespace-nowrap">Location</th>
+                <th className="px-4 py-3 whitespace-nowrap">Dates</th>
+                <th className="px-4 py-3 whitespace-nowrap">Notes</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {tickets.map((ticket, index) => (
+                <tr key={index} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-4 py-3 align-top">
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      ticket.status === "Approved" 
+                        ? "bg-green-100 text-green-700" 
+                        : ticket.status === "Rejected"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}>
+                      {ticket.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <span className="font-medium text-slate-900">{ticket.financierName}</span>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <span className="text-slate-700">{ticket.insurerName}</span>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <div className="flex flex-col gap-1 text-xs text-slate-600">
+                      <span>{ticket.city}, {ticket.state}</span>
+                      <span>{ticket.pincode}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <div className="flex flex-col gap-1 text-xs">
+                      <span className="text-slate-700">Created: {ticket.createdOn.split(' ')[0]}</span>
+                      <span className="text-slate-500">Updated: {ticket.updatedOn.split(' ')[0]}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    {ticket.notes && (
+                      <div className="max-w-xs rounded bg-red-50 px-2 py-1 text-xs text-red-600 border border-red-100">
+                        {ticket.notes}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

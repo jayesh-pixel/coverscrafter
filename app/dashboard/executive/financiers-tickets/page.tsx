@@ -65,83 +65,72 @@ export default function FinanciersTicketsPage() {
         ))}
       </div>
 
-      {/* Tickets Cards */}
-      <div className="space-y-3">
-        {tickets.map((ticket, index) => (
-          <div key={index} className="rounded-lg border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-100 p-4 shadow-md hover:shadow-lg transition-shadow">
-            {/* Status Badge */}
-            <div className="mb-3">
-              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold shadow-sm ${
-                ticket.status === "Approved" 
-                  ? "bg-green-100 text-green-700" 
-                  : ticket.status === "Rejected"
-                  ? "bg-red-100 text-red-700"
-                  : "bg-yellow-100 text-yellow-700"
-              }`}>
-                {ticket.status}
-              </span>
-            </div>
-
-            {/* Ticket Details Grid */}
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-2">
-                <div>
-                  <span className="text-xs text-slate-500">Created On</span>
-                  <p className="text-xs text-slate-900">{ticket.createdOn}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500">Financier Name</span>
-                  <p className="text-xs text-slate-900">{ticket.financierName}</p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div>
-                  <span className="text-xs text-slate-500">Insurer Name</span>
-                  <p className="text-xs text-slate-900">{ticket.insurerName}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500">Pin code</span>
-                  <p className="text-xs text-slate-900">{ticket.pincode}</p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div>
-                  <span className="text-xs text-slate-500">City</span>
-                  <p className="text-xs text-slate-900">{ticket.city}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500">State</span>
-                  <p className="text-xs text-slate-900">{ticket.state}</p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div>
-                  <span className="text-xs text-slate-500">Updated On</span>
-                  <p className="text-xs text-slate-900">{ticket.updatedOn}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Notes for Rejected */}
-            {ticket.notes && (
-              <div className="mt-3 rounded-md bg-gradient-to-r from-red-50 to-pink-50 p-2.5 border border-red-200">
-                <p className="text-xs font-semibold text-red-700">Document Requested</p>
-                <p className="mt-1 text-xs text-red-600">{ticket.notes}</p>
-              </div>
-            )}
-
-            {/* Action Button */}
-            <div className="mt-3 flex justify-end">
-              <button className="rounded-lg border border-blue-600 bg-white px-4 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50">
-                View Details
-              </button>
-            </div>
-          </div>
-        ))}
+      {/* Tickets Table */}
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <tr>
+                <th className="px-4 py-3 whitespace-nowrap">Status</th>
+                <th className="px-4 py-3 whitespace-nowrap">Financier Name</th>
+                <th className="px-4 py-3 whitespace-nowrap">Insurer Name</th>
+                <th className="px-4 py-3 whitespace-nowrap">Location</th>
+                <th className="px-4 py-3 whitespace-nowrap">Dates</th>
+                <th className="px-4 py-3 whitespace-nowrap">Notes</th>
+                <th className="px-4 py-3 whitespace-nowrap text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {tickets.map((ticket, index) => (
+                <tr key={index} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-4 py-3 align-top">
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      ticket.status === "Approved" 
+                        ? "bg-green-100 text-green-700" 
+                        : ticket.status === "Rejected"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}>
+                      {ticket.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <span className="font-medium text-slate-900">{ticket.financierName}</span>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <span className="text-slate-700">{ticket.insurerName}</span>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <div className="flex flex-col gap-1 text-xs text-slate-600">
+                      <span>{ticket.city}, {ticket.state}</span>
+                      <span>{ticket.pincode}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <div className="flex flex-col gap-1 text-xs">
+                      <span className="text-slate-700">Created: {ticket.createdOn.split(' ')[0]}</span>
+                      <span className="text-slate-500">Updated: {ticket.updatedOn.split(' ')[0]}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    {ticket.notes && (
+                      <div className="max-w-xs rounded bg-red-50 px-2 py-1 text-xs text-red-600 border border-red-100">
+                        {ticket.notes}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 align-top text-right">
+                    <button className="text-blue-600 hover:text-blue-800 font-medium text-xs">
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+
 
       {/* No More Message */}
       <div className="py-8 text-center">

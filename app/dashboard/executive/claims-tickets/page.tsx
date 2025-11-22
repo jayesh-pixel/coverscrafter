@@ -103,95 +103,79 @@ export default function ClaimsTicketsPage() {
         ))}
       </div>
 
-      {/* Claims Cards */}
-      <div className="space-y-3">
-        {claims.map((claim, index) => (
-          <div key={index} className="rounded-lg border border-slate-300  from-slate-50 to-slate-100 p-4 shadow-md hover:shadow-lg transition-shadow">
-            {/* Status Badge */}
-            <div className="mb-3">
-              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold shadow-sm ${
-                claim.status === "Work in Progress" 
-                  ? "bg-yellow-100 text-yellow-700" 
-                  : claim.status === "Under Settlement"
-                  ? "bg-blue-100 text-blue-700"
-                  : "bg-green-100 text-green-700"
-              }`}>
-                {claim.status}
-              </span>
-            </div>
-
-            {/* Claim Details Grid */}
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-2">
-                <div>
-                  <span className="text-xs text-slate-500">Created On</span>
-                  <p className="text-xs text-slate-900">{claim.createdOn}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500">Policy Number</span>
-                  <p className="text-xs text-blue-600">{claim.policyNumber}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500">Make</span>
-                  <p className="text-xs text-slate-900">{claim.make}</p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div>
-                  <span className="text-xs text-slate-500">Claim Payment Type</span>
-                  <p className="text-xs text-slate-900">{claim.claimPaymentType}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500">Chassis Number</span>
-                  <p className="text-xs text-slate-900">{claim.chassisNumber}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500">Model</span>
-                  <p className="text-xs text-slate-900">{claim.model}</p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div>
-                  <span className="text-xs text-slate-500">Claims Type</span>
-                  <p className="text-xs text-slate-900">{claim.claimsType}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500">Updated On</span>
-                  <p className="text-xs text-slate-900">{claim.updatedOn}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500">Date of Loss</span>
-                  <p className="text-xs text-slate-900">{claim.dateOfLoss}</p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div>
-                  <span className="text-xs text-slate-500">Customer Name</span>
-                  <p className="text-xs text-slate-900">{claim.customerName}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500">Claim Number</span>
-                  <p className="text-xs text-slate-900">{claim.claimNumber}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500">Vehicle Number</span>
-                  <p className="text-xs text-slate-900">{claim.vehicleNumber}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Button */}
-            <div className="mt-3 flex justify-end">
-              <button className="rounded-lg border border-blue-600 bg-white px-4 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50">
-                View Details
-              </button>
-            </div>
-          </div>
-        ))}
+      {/* Claims Table */}
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <tr>
+                <th className="px-4 py-3 whitespace-nowrap">Status</th>
+                <th className="px-4 py-3 whitespace-nowrap">Policy / Claim No</th>
+                <th className="px-4 py-3 whitespace-nowrap">Customer / Vehicle</th>
+                <th className="px-4 py-3 whitespace-nowrap">Make / Model</th>
+                <th className="px-4 py-3 whitespace-nowrap">Dates</th>
+                <th className="px-4 py-3 whitespace-nowrap">Type</th>
+                <th className="px-4 py-3 whitespace-nowrap text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {claims.map((claim, index) => (
+                <tr key={index} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-4 py-3 align-top">
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      claim.status === "Work in Progress" 
+                        ? "bg-yellow-100 text-yellow-700" 
+                        : claim.status === "Under Settlement"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-green-100 text-green-700"
+                    }`}>
+                      {claim.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium text-blue-600">{claim.policyNumber}</span>
+                      <span className="text-xs text-slate-500">{claim.claimNumber}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium text-slate-900">{claim.customerName}</span>
+                      <span className="text-xs text-slate-500">{claim.vehicleNumber}</span>
+                      <span className="text-xs text-slate-400">Chassis: {claim.chassisNumber}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-slate-900">{claim.make}</span>
+                      <span className="text-xs text-slate-500">{claim.model}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <div className="flex flex-col gap-1 text-xs">
+                      <span className="text-slate-700">Created: {claim.createdOn.split(' ')[0]}</span>
+                      <span className="text-slate-500">Updated: {claim.updatedOn.split(' ')[0]}</span>
+                      <span className="text-slate-500">Loss: {claim.dateOfLoss}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-slate-900">{claim.claimsType}</span>
+                      <span className="text-xs text-slate-500">{claim.claimPaymentType}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 align-top text-right">
+                    <button className="text-blue-600 hover:text-blue-800 font-medium text-xs">
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+
     </div>
   );
 }
