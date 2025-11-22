@@ -30,6 +30,16 @@ const defaultNavItems: NavItem[] = [
       { label: "Dealer List", href: "/dashboard/admin/dealers/list" },
     ],
   },
+  {
+    label: "Consolidation",
+    href: "/dashboard/admin/consolidation",
+    icon: ConsolidationIcon,
+    children: [
+      { label: "Create Consolidation", href: "/dashboard/admin/consolidation" },
+      { label: "Consolidation List", href: "/dashboard/admin/consolidation/list" },
+      { label: "Business Entry", href: "/dashboard/admin/consolidation/business" },
+    ],
+  },
 ];
 
 export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh Pandey", userRole = "Admin", userInitials }: SidebarProps) {
@@ -287,6 +297,45 @@ function DealerIcon({ active }: { active: boolean }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         opacity={active ? 1 : 0.8}
+      />
+    </svg>
+  );
+}
+
+function ConsolidationIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M5 7H19C20.1046 7 21 7.89543 21 9V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V9C3 7.89543 3.89543 7 5 7Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={active ? 1 : 0.85}
+      />
+      <path
+        d="M9 12H15"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={active ? 1 : 0.7}
+      />
+      <path
+        d="M9 16H13"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={active ? 1 : 0.7}
+      />
+      <path
+        d="M9 3H15C16.1046 3 17 3.89543 17 5V7H7V5C7 3.89543 7.89543 3 9 3Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={active ? 1 : 0.85}
       />
     </svg>
   );
