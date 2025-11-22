@@ -2,12 +2,11 @@
 
 import BusinessEntryManager from "@/components/business/BusinessEntryManager";
 
-export default function BusinessEntryPage() {
+export default function AssociateBusinessPage() {
   return (
     <BusinessEntryManager 
-      title="Business Entry" 
-      description="Capture policy level business for consolidation." 
+      title="My Business" 
+      description="Track your policies and commissions" 
     />
   );
 }
-

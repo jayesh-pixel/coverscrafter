@@ -70,39 +70,23 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
 
   return (
     <aside
-      className={`sticky top-0 hidden h-screen flex-col border-r border-slate-300/50 bg-linear-to-br from-slate-100 via-slate-50 to-slate-100 py-8 text-slate-700 shadow-xl transition-all duration-300 lg:flex ${
-        isExpanded ? "w-64 px-6" : "w-24 px-3"
+      className={`sticky top-0 hidden h-screen flex-col border-r border-slate-200 bg-slate-50/80 backdrop-blur-md py-6 text-slate-700 transition-all duration-300 ease-in-out lg:flex ${
+        isExpanded ? "w-72 px-5" : "w-[90px] px-3"
       }`}
-      style={{
-        backgroundImage: 'linear-gradient(135deg, #e2e8f0 0%, #f8fafc 25%, #ffffff 50%, #f8fafc 75%, #e2e8f0 100%)',
-        boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(148,163,184,0.2), 4px 0 12px rgba(0,0,0,0.08)'
-      }}
     >
-      <div className="flex h-full flex-col gap-8 overflow-y-auto scrollbar-hide">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="rounded-2xl bg-white p-2 shadow-sm">
-            <Image src="/brand/coverscrafter-logo.png" alt="CoversCrafter" width={48} height={48} />
+      <div className="flex h-full flex-col gap-6 overflow-y-auto scrollbar-hide">
+        <div className={`flex items-center ${isExpanded ? "justify-between px-1" : "justify-center flex-col gap-4"}`}>
+          <Link href="/" className="transition-transform hover:scale-105">
+            <Image src="/brand/coverscrafter-logo.png" alt="CoversCrafter" width={isExpanded ? 42 : 36} height={isExpanded ? 42 : 36} />
           </Link>
-          {isExpanded && (
-            <button
-              onClick={() => setIsExpanded(false)}
-              className="rounded-xl bg-white p-2 text-slate-500 shadow-sm transition hover:bg-blue-50 hover:text-blue-600"
-              aria-label="Collapse sidebar"
-            >
-              <ChevronLeftIcon />
-            </button>
-          )}
-        </div>
-
-        {!isExpanded && (
           <button
-            onClick={() => setIsExpanded(true)}
-            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm transition hover:bg-blue-50 hover:text-blue-600"
-            aria-label="Expand sidebar"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={`rounded-xl bg-white p-2 text-slate-400 shadow-sm ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-600 hover:ring-blue-200 ${!isExpanded ? "mt-2" : ""}`}
+            aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
           >
-            <ChevronRightIcon />
+            {isExpanded ? <SidebarCollapseIcon /> : <MenuIcon />}
           </button>
-        )}
+        </div>
 
         <nav className="flex flex-col gap-3">
           {navItems.map((item) => {
@@ -122,16 +106,13 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
                 <Link
                   key={item.label}
                   href={item.href ?? "/"}
-                  className={`flex items-center gap-3 rounded-xl transition ${
-                    isExpanded ? "px-4 py-3" : "h-12 w-12 justify-center"
+                  className={`group relative flex items-center gap-3 rounded-2xl transition-all duration-200 ${
+                    isExpanded ? "px-4 py-3.5" : "h-14 w-14 justify-center mx-auto"
                   } ${
                     isActive
-                      ? "bg-linear-to-br from-slate-700 via-slate-600 to-slate-700 text-white shadow-lg"
-                      : "bg-white/60 text-slate-600 shadow-sm hover:bg-slate-200/80 hover:text-slate-800"
+                      ? "bg-slate-800 text-white shadow-lg shadow-slate-800/20"
+                      : "bg-white/50 text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-md hover:shadow-slate-200/50"
                   }`}
-                  style={isActive ? {
-                    boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3), inset 0 -1px 1px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2)'
-                  } : {}}
                   aria-label={item.label}
                 >
                   {Icon ? (
@@ -159,16 +140,13 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
                 <button
                   type="button"
                   onClick={() => handleGroupToggle(item.label, Boolean(isOpen))}
-                  className={`flex items-center gap-3 rounded-xl transition ${
-                    isExpanded ? "px-4 py-3" : "h-12 w-12 justify-center"
+                  className={`group relative flex items-center gap-3 rounded-2xl transition-all duration-200 ${
+                    isExpanded ? "px-4 py-3.5" : "h-14 w-14 justify-center mx-auto"
                   } ${
                     isActive
-                      ? "bg-linear-to-br from-slate-700 via-slate-600 to-slate-700 text-white shadow-lg"
-                      : "bg-white/60 text-slate-600 shadow-sm hover:bg-slate-200/80 hover:text-slate-800"
+                      ? "bg-slate-800 text-white shadow-lg shadow-slate-800/20"
+                      : "bg-white/50 text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-md hover:shadow-slate-200/50"
                   }`}
-                  style={isActive ? {
-                    boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3), inset 0 -1px 1px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2)'
-                  } : {}}
                   aria-label={item.label}
                 >
                   {Icon ? (
@@ -224,33 +202,20 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
         </nav>
       </div>
 
-      <div className={`mt-auto flex flex-col gap-2 border-t border-slate-200 pt-6 ${isExpanded ? "items-start" : "items-center text-center"}`}>
-        {isExpanded ? (
-          <>
-            <p className="text-xs uppercase tracking-wider text-slate-500">Active User</p>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-slate-600 to-slate-700 text-sm font-semibold text-white shadow-md"
-                style={{boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3), inset 0 -1px 1px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)'}}
-              >
-                {initials || "--"}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-slate-800">{userName}</span>
-                <span className="text-xs text-slate-500">{userRole}</span>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="text-xs text-slate-500">Active User</p>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-slate-600 to-slate-700 text-sm font-semibold text-white shadow-md"
-              style={{boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3), inset 0 -1px 1px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)'}}
-            >
-              {initials || "--"}
-            </div>
-            <span className="text-[11px] text-slate-500">{userName}</span>
-          </>
-        )}
+      <div className={`mt-auto flex flex-col gap-3 border-t border-slate-200 pt-6 ${isExpanded ? "px-2" : "items-center"}`}>
+        {isExpanded && <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Active User</p>}
+        
+        <div className={`flex items-center gap-3 ${!isExpanded && "flex-col"}`}>
+           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-slate-700 to-slate-800 text-sm font-bold text-white shadow-md ring-2 ring-white">
+             {initials || "--"}
+           </div>
+           {isExpanded && (
+             <div className="flex flex-col overflow-hidden">
+               <span className="truncate text-sm font-bold text-slate-700">{userName}</span>
+               <span className="truncate text-xs font-medium text-slate-500">{userRole}</span>
+             </div>
+           )}
+        </div>
       </div>
     </aside>
   );
@@ -352,6 +317,26 @@ function ChevronDownIcon({ open }: { open: boolean }) {
       className={`transition-transform ${open ? "rotate-180" : ""}`}
     >
       <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4 6H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 18H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SidebarCollapseIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M9 3V21" stroke="currentColor" strokeWidth="2" />
+      <path d="M15 9L12 12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

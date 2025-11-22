@@ -2,12 +2,11 @@
 
 import BusinessEntryManager from "@/components/business/BusinessEntryManager";
 
-export default function BusinessEntryPage() {
+export default function RMBusinessPage() {
   return (
     <BusinessEntryManager 
-      title="Business Entry" 
-      description="Capture policy level business for consolidation." 
+      title="Team Business" 
+      description="Track business entries from your associates" 
     />
   );
 }
-
