@@ -90,7 +90,7 @@ export default function Home() {
             </div>
 
             <Link
-              href="/dashboard"
+              href="/dashboard/admin"
               className="inline-flex w-full items-center justify-center rounded-2xl bg-linear-to-br from-blue-600 to-orange-500 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:from-blue-500 hover:to-orange-400"
             >
               Continue to Dashboard
