@@ -106,7 +106,7 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
                 <Link
                   key={item.label}
                   href={item.href ?? "/"}
-                  className={`group relative flex items-center rounded-2xl transition-all duration-300 ${
+                  className={`group relative flex items-center rounded-2xl transition-all duration-300 hover:scale-105 hover:z-10 ${
                     isExpanded ? "px-4 py-3.5 gap-3" : "h-14 w-14 justify-center mx-auto gap-0"
                   } ${
                     isActive
@@ -144,7 +144,7 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
                 <button
                   type="button"
                   onClick={() => handleGroupToggle(item.label, Boolean(isOpen))}
-                  className={`group relative flex items-center rounded-2xl transition-all duration-300 ${
+                  className={`group relative flex items-center rounded-2xl transition-all duration-300 hover:scale-105 hover:z-10 ${
                     isExpanded ? "px-4 py-3.5 gap-3" : "h-14 w-14 justify-center mx-auto gap-0"
                   } ${
                     isActive

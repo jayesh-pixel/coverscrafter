@@ -32,12 +32,12 @@ export default function CreateInsurancePage() {
       <h1 className="text-2xl font-bold text-slate-900">Create & Renew Insurance</h1>
 
       {/* Step 1: Policy Quote */}
-      <div className={`overflow-hidden rounded-xl border-2 transition ${
+      <div className={`overflow-hidden rounded-xl transition-all duration-300 ${
         completedSteps.includes(1) 
-          ? "border-green-500 bg-green-50" 
+          ? "bg-green-50/80 backdrop-blur-sm border border-green-200 shadow-sm" 
           : openStep === 1
-          ? "border-blue-600 bg-white"
-          : "border-slate-300 bg-white"
+          ? "bg-white/80 backdrop-blur-md shadow-xl ring-1 ring-black/5"
+          : "bg-white/60 backdrop-blur-sm border border-slate-200 shadow-sm"
       }`}>
         <button
           onClick={() => toggleStep(1)}
@@ -195,14 +195,14 @@ export default function CreateInsurancePage() {
       </div>
 
       {/* Step 2: KYC Verification */}
-      <div className={`overflow-hidden rounded-xl border-2 transition ${
+      <div className={`overflow-hidden rounded-xl transition-all duration-300 ${
         !isStepAccessible(2)
-          ? "border-slate-200 bg-slate-50 opacity-50"
+          ? "bg-slate-50/50 border border-slate-200 opacity-60"
           : completedSteps.includes(2) 
-          ? "border-green-500 bg-green-50" 
+          ? "bg-green-50/80 backdrop-blur-sm border border-green-200 shadow-sm" 
           : openStep === 2
-          ? "border-blue-600 bg-white"
-          : "border-slate-300 bg-white"
+          ? "bg-white/80 backdrop-blur-md shadow-xl ring-1 ring-black/5"
+          : "bg-white/60 backdrop-blur-sm border border-slate-200 shadow-sm"
       }`}>
         <button
           onClick={() => toggleStep(2)}
@@ -281,14 +281,14 @@ export default function CreateInsurancePage() {
       </div>
 
       {/* Step 3: Detail Form */}
-      <div className={`overflow-hidden rounded-xl border-2 transition ${
+      <div className={`overflow-hidden rounded-xl transition-all duration-300 ${
         !isStepAccessible(3)
-          ? "border-slate-200 bg-slate-50 opacity-50"
+          ? "bg-slate-50/50 border border-slate-200 opacity-60"
           : completedSteps.includes(3) 
-          ? "border-green-500 bg-green-50" 
+          ? "bg-green-50/80 backdrop-blur-sm border border-green-200 shadow-sm" 
           : openStep === 3
-          ? "border-blue-600 bg-white"
-          : "border-slate-300 bg-white"
+          ? "bg-white/80 backdrop-blur-md shadow-xl ring-1 ring-black/5"
+          : "bg-white/60 backdrop-blur-sm border border-slate-200 shadow-sm"
       }`}>
         <button
           onClick={() => toggleStep(3)}
