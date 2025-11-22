@@ -64,7 +64,7 @@ export default function OwnerTicketsPage() {
       {/* Ticket Cards */}
       <div className="space-y-3">
         {/* Ticket 1 - Approved */}
-        <div className="rounded-lg border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-100 p-4 shadow-md hover:shadow-lg transition-shadow">
+        <div className="rounded-lg border border-slate-300  from-slate-50 to-slate-100 p-4 shadow-md hover:shadow-lg transition-shadow">
           <div className="mb-3 flex items-start justify-between">
             <div>
               <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Customer Name</div>
@@ -112,7 +112,7 @@ export default function OwnerTicketsPage() {
             </div>
           </div>
 
-          <div className="mt-3 rounded-md bg-gradient-to-r from-blue-50 to-indigo-50 p-2.5 border border-blue-200">
+          <div className="mt-3 rounded-md from-blue-50 to-indigo-50 p-2.5 border border-blue-200">
             <div className="text-xs font-semibold text-slate-600">Insurer</div>
             <div className="text-sm font-semibold text-slate-900">United India Insurance Company</div>
             <div className="mt-1 text-xs text-slate-700"><span className="font-semibold">endorsement Reason:</span> Personal Details</div>
@@ -124,7 +124,7 @@ export default function OwnerTicketsPage() {
         </div>
 
         {/* Ticket 2 - Insurer Intimated */}
-        <div className="rounded-lg border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-100 p-4 shadow-md hover:shadow-lg transition-shadow">
+        <div className="rounded-lg border border-slate-300  from-slate-50 to-slate-100 p-4 shadow-md hover:shadow-lg transition-shadow">
           <div className="mb-3 flex items-start justify-between">
             <div>
               <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Customer Name</div>
@@ -172,7 +172,7 @@ export default function OwnerTicketsPage() {
             </div>
           </div>
 
-          <div className="mt-3 rounded-md bg-gradient-to-r from-blue-50 to-indigo-50 p-2.5 border border-blue-200">
+          <div className="mt-3 rounded-md  from-blue-50 to-indigo-50 p-2.5 border border-blue-200">
             <div className="text-xs font-semibold text-slate-600">Insurer</div>
             <div className="text-sm font-semibold text-slate-900">United India Insurance Company</div>
             <div className="mt-1 text-xs text-slate-700"><span className="font-semibold">cancellation Reason:</span> Vehicle Delivery cancels / Damage in Vehicle</div>

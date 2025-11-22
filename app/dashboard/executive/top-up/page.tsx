@@ -113,12 +113,12 @@ export default function TopUpPage() {
       </div>
 
       {/* Recent Transactions */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="mx-auto w-full max-w-6xl rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-6 py-4">
           <h2 className="text-lg font-semibold text-slate-900">Recent Transactions</h2>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+        <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+          <table className="min-w-[900px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50">
               <tr>
                 <th className="px-4 py-3 font-semibold text-slate-700">Transaction ID</th>

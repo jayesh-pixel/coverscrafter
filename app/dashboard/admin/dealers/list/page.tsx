@@ -75,7 +75,7 @@ export default function DealersListPage() {
         </div>
       </header>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="mx-auto w-full max-w-6xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="relative w-full max-w-sm">
             <input
@@ -92,8 +92,8 @@ export default function DealersListPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+        <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+          <table className="min-w-[1100px] divide-y divide-slate-200 text-left text-sm">
             <thead className="bg-slate-50">
               <tr>
                 <th className="px-4 py-3 font-semibold text-slate-600">Dealer</th>

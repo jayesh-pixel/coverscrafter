@@ -117,7 +117,7 @@ export default function InsuranceHistoryPage() {
       </div>
 
       {/* Filters */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mx-auto w-full max-w-6xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-700">Insurance Number</label>
@@ -174,54 +174,54 @@ export default function InsuranceHistoryPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+      <div className="mx-auto w-full max-w-6xl rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+          <table className="min-w-[1400px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50">
               <tr>
-                <th className="px-4 py-3 font-semibold text-slate-700">UID</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Insurance No.</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Date</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Time</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Insurer</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Risk Start Date</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Risk End Date</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Policy Holder Name</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Engine Number</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Chassis Number</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Vehicle Make - Model - Variant</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Body Type</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Policy Type</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">New Vehicle</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Amount</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Status</th>
-                <th className="px-4 py-3 font-semibold text-slate-700">Action</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">UID</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Insurance No.</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Date</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Time</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Insurer</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Risk Start Date</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Risk End Date</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Policy Holder Name</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Engine Number</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Chassis Number</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Vehicle Make - Model - Variant</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Body Type</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Policy Type</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">New Vehicle</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Amount</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Status</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {policies.map((policy) => (
                 <tr key={policy.uid} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 text-slate-600">{policy.uid}</td>
-                  <td className="px-4 py-3 font-medium text-blue-600">{policy.insuranceNo}</td>
-                  <td className="px-4 py-3 text-slate-600">{policy.date}</td>
-                  <td className="px-4 py-3 text-slate-600">{policy.time}</td>
-                  <td className="px-4 py-3 text-slate-600">{policy.insurer}</td>
-                  <td className="px-4 py-3 text-slate-600">{policy.riskStart}</td>
-                  <td className="px-4 py-3 text-slate-600">{policy.riskEnd}</td>
-                  <td className="px-4 py-3 font-medium text-slate-800">{policy.policyHolder}</td>
-                  <td className="px-4 py-3 text-slate-600">{policy.engineNo}</td>
-                  <td className="px-4 py-3 text-slate-600">{policy.chassisNo}</td>
-                  <td className="px-4 py-3 text-slate-600">{policy.vehicle}</td>
-                  <td className="px-4 py-3 text-slate-600">{policy.bodyType}</td>
-                  <td className="px-4 py-3 text-slate-600">{policy.policyType}</td>
-                  <td className="px-4 py-3 text-slate-600">{policy.newVehicle}</td>
-                  <td className="px-4 py-3 font-semibold text-slate-800">{policy.amount}</td>
-                  <td className="px-4 py-3">
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{policy.uid}</td>
+                  <td className="whitespace-nowrap px-4 py-3 font-medium text-blue-600">{policy.insuranceNo}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{policy.date}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{policy.time}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{policy.insurer}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{policy.riskStart}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{policy.riskEnd}</td>
+                  <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-800">{policy.policyHolder}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{policy.engineNo}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{policy.chassisNo}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{policy.vehicle}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{policy.bodyType}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{policy.policyType}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{policy.newVehicle}</td>
+                  <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-800">{policy.amount}</td>
+                  <td className="whitespace-nowrap px-4 py-3">
                     <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
                       {policy.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="whitespace-nowrap px-4 py-3">
                     <button className="text-blue-600 hover:text-blue-700">View</button>
                   </td>
                 </tr>

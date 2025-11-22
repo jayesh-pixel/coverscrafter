@@ -9,7 +9,7 @@ const ownerNavItems: NavItem[] = [
   { label: "Tickets", href: "/dashboard/owner/tickets", icon: ({ active }: { active: boolean }) => <MdConfirmationNumber className={`h-5 w-5 ${active ? "text-white" : "text-slate-600"}`} /> },
   { label: "Financiers Tickets", href: "/dashboard/owner/financiers-tickets", icon: ({ active }: { active: boolean }) => <MdAccountBalance className={`h-5 w-5 ${active ? "text-white" : "text-slate-600"}`} /> },
   { label: "Price List", href: "/dashboard/owner/price-list", icon: ({ active }: { active: boolean }) => <MdAttachMoney className={`h-5 w-5 ${active ? "text-white" : "text-slate-600"}`} /> },
-  { label: "Wallet Transaction", href: "/dashboard/owner/wallet-transactions", icon: ({ active }: { active: boolean }) => <MdWallet className={`h-5 w-5 ${active ? "text-white" : "text-slate-600"}`} /> },
+  { label: "Wallet Transaction", href: "/dashboard/owner/wallet-transaction", icon: ({ active }: { active: boolean }) => <MdWallet className={`h-5 w-5 ${active ? "text-white" : "text-slate-600"}`} /> },
   { label: "Top-Up", href: "/dashboard/owner/top-up", icon: ({ active }: { active: boolean }) => <MdAccountBalanceWallet className={`h-5 w-5 ${active ? "text-white" : "text-slate-600"}`} /> },
   { label: "Invoice", href: "/dashboard/owner/invoices", icon: ({ active }: { active: boolean }) => <MdReceipt className={`h-5 w-5 ${active ? "text-white" : "text-slate-600"}`} /> },
   { label: "Business Report", href: "/dashboard/owner/business-report", icon: ({ active }: { active: boolean }) => <MdAssessment className={`h-5 w-5 ${active ? "text-white" : "text-slate-600"}`} /> },

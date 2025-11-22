@@ -106,7 +106,7 @@ export default function ClaimsTicketsPage() {
       {/* Claims Cards */}
       <div className="space-y-3">
         {claims.map((claim, index) => (
-          <div key={index} className="rounded-lg border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-100 p-4 shadow-md hover:shadow-lg transition-shadow">
+          <div key={index} className="rounded-lg border border-slate-300  from-slate-50 to-slate-100 p-4 shadow-md hover:shadow-lg transition-shadow">
             {/* Status Badge */}
             <div className="mb-3">
               <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold shadow-sm ${

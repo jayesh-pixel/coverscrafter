@@ -15,8 +15,8 @@ export default function ExecutiveDashboardPage() {
 
       {/* Policies Expiring Soon Table */}
       <PlaceholderPanel title="Policies Expiring Soon" description="Upcoming policy renewals and expirations.">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+        <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+          <table className="min-w-[900px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50">
               <tr>
                 <th className="px-4 py-3 font-semibold text-slate-700">Previous Policy Id</th>
