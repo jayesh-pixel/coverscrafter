@@ -40,85 +40,85 @@ export default function OwnerFinanciersTicketsPage() {
       </div>
 
       {/* Financier Cards */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Approved Card */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-start justify-between">
-            <span className="rounded-full bg-green-100 px-4 py-1 text-sm font-semibold text-green-800">Approved</span>
+        <div className="rounded-lg border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-100 p-4 shadow-md hover:shadow-lg transition-shadow">
+          <div className="mb-3 flex items-start justify-between">
+            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800 shadow-sm">Approved</span>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-3">
             <div>
               <div className="text-xs font-semibold uppercase text-slate-500">Created On</div>
-              <div className="text-sm font-medium text-slate-900">16-10-2025 (11:09:40)</div>
+              <div className="text-xs text-slate-900">16-10-2025 (11:09:40)</div>
             </div>
             <div className="md:col-span-2">
               <div className="text-xs font-semibold uppercase text-slate-500">Financier Name</div>
-              <div className="text-sm font-medium text-slate-900">SHRI BHAVESHWARI G B S S PAT SAN LTD</div>
+              <div className="text-xs text-slate-900">SHRI BHAVESHWARI G B S S PAT SAN LTD</div>
             </div>
             <div className="md:col-span-3">
               <div className="text-xs font-semibold uppercase text-slate-500">Insurer Name</div>
-              <div className="text-sm font-medium text-slate-900">United India Insurance Company</div>
+              <div className="text-xs text-slate-900">United India Insurance Company</div>
             </div>
             <div>
               <div className="text-xs font-semibold uppercase text-slate-500">Pin code</div>
-              <div className="text-sm font-medium text-slate-900">412209</div>
+              <div className="text-xs text-slate-900">412209</div>
             </div>
             <div>
               <div className="text-xs font-semibold uppercase text-slate-500">City</div>
-              <div className="text-sm font-medium text-slate-900">PUNE</div>
+              <div className="text-xs text-slate-900">PUNE</div>
             </div>
             <div>
               <div className="text-xs font-semibold uppercase text-slate-500">State</div>
-              <div className="text-sm font-medium text-slate-900">MAHARASHTRA</div>
+              <div className="text-xs text-slate-900">MAHARASHTRA</div>
             </div>
             <div>
               <div className="text-xs font-semibold uppercase text-slate-500">Updated On</div>
-              <div className="text-sm font-medium text-slate-900">18-10-2025 (11:54:12)</div>
+              <div className="text-xs text-slate-900">18-10-2025 (11:54:12)</div>
             </div>
           </div>
         </div>
 
         {/* Rejected Card */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-start justify-between">
-            <span className="rounded-full bg-red-100 px-4 py-1 text-sm font-semibold text-red-800">Rejected</span>
+        <div className="rounded-lg border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-100 p-4 shadow-md hover:shadow-lg transition-shadow">
+          <div className="mb-3 flex items-start justify-between">
+            <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-800 shadow-sm">Rejected</span>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-3">
             <div>
               <div className="text-xs font-semibold uppercase text-slate-500">Created On</div>
-              <div className="text-sm font-medium text-slate-900">14-08-2025 (12:25:11)</div>
+              <div className="text-xs text-slate-900">14-08-2025 (12:25:11)</div>
             </div>
             <div className="md:col-span-2">
               <div className="text-xs font-semibold uppercase text-slate-500">Financier Name</div>
-              <div className="text-sm font-medium text-slate-900">KRUSHNAI MAHILA GBSS PAT SANSTHA MAYA.</div>
+              <div className="text-xs text-slate-900">KRUSHNAI MAHILA GBSS PAT SANSTHA MAYA.</div>
             </div>
             <div className="md:col-span-3">
               <div className="text-xs font-semibold uppercase text-slate-500">Insurer Name</div>
-              <div className="text-sm font-medium text-slate-900">ANIL DATTATRAY SAPAKAL</div>
+              <div className="text-xs text-slate-900">ANIL DATTATRAY SAPAKAL</div>
             </div>
             <div>
               <div className="text-xs font-semibold uppercase text-slate-500">Pin code</div>
-              <div className="text-sm font-medium text-slate-900">416410</div>
+              <div className="text-xs text-slate-900">416410</div>
             </div>
             <div>
               <div className="text-xs font-semibold uppercase text-slate-500">City</div>
-              <div className="text-sm font-medium text-slate-900">SANGLI</div>
+              <div className="text-xs text-slate-900">SANGLI</div>
             </div>
             <div>
               <div className="text-xs font-semibold uppercase text-slate-500">State</div>
-              <div className="text-sm font-medium text-slate-900">MAHARASHTRA</div>
+              <div className="text-xs text-slate-900">MAHARASHTRA</div>
             </div>
             <div>
               <div className="text-xs font-semibold uppercase text-slate-500">Updated On</div>
-              <div className="text-sm font-medium text-slate-900">25-08-2025 (12:10:19)</div>
+              <div className="text-xs text-slate-900">25-08-2025 (12:10:19)</div>
             </div>
           </div>
 
-          <div className="mt-4 rounded-lg bg-red-50 p-3">
-            <div className="text-sm font-semibold text-red-900">Document Requested</div>
-            <div className="mt-1 text-sm text-red-800">PLS SPECIFY WHICH INSURER IS IT TO BE ADDED?</div>
+          <div className="mt-3 rounded-md bg-gradient-to-r from-red-50 to-pink-50 p-2.5 border border-red-200">
+            <div className="text-xs font-semibold text-red-900">Document Requested</div>
+            <div className="mt-1 text-xs text-red-800">PLS SPECIFY WHICH INSURER IS IT TO BE ADDED?</div>
           </div>
         </div>
       </div>

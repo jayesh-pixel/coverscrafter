@@ -1,4 +1,4 @@
-import { PlaceholderPanel } from "@/components/ui/dashboard-"use client";
+"use client";
 
 import { useState } from "react";
 
@@ -165,21 +165,6 @@ export default function OwnerInsuranceHistoryPage() {
           </table>
         </div>
       </div>
-    </div>
-  );
-}";
-
-export default function OwnerInsuranceHistoryPage() {
-  return (
-    <div className="space-y-6">
-      <PlaceholderPanel
-        title="Insurance History"
-        description="Audit historical policy issuance, endorsements, and cancellations across master and sub dealers."
-      />
-      <PlaceholderPanel
-        title="Recent Activity"
-        description="Latest 30 days of policy movements grouped by insurer and branch to highlight trends."
-      />
     </div>
   );
 }

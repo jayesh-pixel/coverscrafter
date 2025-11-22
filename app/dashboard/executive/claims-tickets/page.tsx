@@ -104,12 +104,12 @@ export default function ClaimsTicketsPage() {
       </div>
 
       {/* Claims Cards */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {claims.map((claim, index) => (
-          <div key={index} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div key={index} className="rounded-lg border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-100 p-4 shadow-md hover:shadow-lg transition-shadow">
             {/* Status Badge */}
-            <div className="mb-4">
-              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+            <div className="mb-3">
+              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold shadow-sm ${
                 claim.status === "Work in Progress" 
                   ? "bg-yellow-100 text-yellow-700" 
                   : claim.status === "Under Settlement"
@@ -121,71 +121,71 @@ export default function ClaimsTicketsPage() {
             </div>
 
             {/* Claim Details Grid */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-3">
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-2">
                 <div>
                   <span className="text-xs text-slate-500">Created On</span>
-                  <p className="text-sm font-medium text-slate-900">{claim.createdOn}</p>
+                  <p className="text-xs text-slate-900">{claim.createdOn}</p>
                 </div>
                 <div>
                   <span className="text-xs text-slate-500">Policy Number</span>
-                  <p className="text-sm font-medium text-blue-600">{claim.policyNumber}</p>
+                  <p className="text-xs text-blue-600">{claim.policyNumber}</p>
                 </div>
                 <div>
                   <span className="text-xs text-slate-500">Make</span>
-                  <p className="text-sm font-medium text-slate-900">{claim.make}</p>
+                  <p className="text-xs text-slate-900">{claim.make}</p>
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div>
                   <span className="text-xs text-slate-500">Claim Payment Type</span>
-                  <p className="text-sm font-medium text-slate-900">{claim.claimPaymentType}</p>
+                  <p className="text-xs text-slate-900">{claim.claimPaymentType}</p>
                 </div>
                 <div>
                   <span className="text-xs text-slate-500">Chassis Number</span>
-                  <p className="text-sm font-medium text-slate-900">{claim.chassisNumber}</p>
+                  <p className="text-xs text-slate-900">{claim.chassisNumber}</p>
                 </div>
                 <div>
                   <span className="text-xs text-slate-500">Model</span>
-                  <p className="text-sm font-medium text-slate-900">{claim.model}</p>
+                  <p className="text-xs text-slate-900">{claim.model}</p>
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div>
                   <span className="text-xs text-slate-500">Claims Type</span>
-                  <p className="text-sm font-medium text-slate-900">{claim.claimsType}</p>
+                  <p className="text-xs text-slate-900">{claim.claimsType}</p>
                 </div>
                 <div>
                   <span className="text-xs text-slate-500">Updated On</span>
-                  <p className="text-sm font-medium text-slate-900">{claim.updatedOn}</p>
+                  <p className="text-xs text-slate-900">{claim.updatedOn}</p>
                 </div>
                 <div>
                   <span className="text-xs text-slate-500">Date of Loss</span>
-                  <p className="text-sm font-medium text-slate-900">{claim.dateOfLoss}</p>
+                  <p className="text-xs text-slate-900">{claim.dateOfLoss}</p>
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div>
                   <span className="text-xs text-slate-500">Customer Name</span>
-                  <p className="text-sm font-medium text-slate-900">{claim.customerName}</p>
+                  <p className="text-xs text-slate-900">{claim.customerName}</p>
                 </div>
                 <div>
                   <span className="text-xs text-slate-500">Claim Number</span>
-                  <p className="text-sm font-medium text-slate-900">{claim.claimNumber}</p>
+                  <p className="text-xs text-slate-900">{claim.claimNumber}</p>
                 </div>
                 <div>
                   <span className="text-xs text-slate-500">Vehicle Number</span>
-                  <p className="text-sm font-medium text-slate-900">{claim.vehicleNumber}</p>
+                  <p className="text-xs text-slate-900">{claim.vehicleNumber}</p>
                 </div>
               </div>
             </div>
 
             {/* Action Button */}
-            <div className="mt-4 flex justify-end">
-              <button className="rounded-lg border border-blue-600 bg-white px-6 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50">
+            <div className="mt-3 flex justify-end">
+              <button className="rounded-lg border border-blue-600 bg-white px-4 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50">
                 View Details
               </button>
             </div>
