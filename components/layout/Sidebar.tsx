@@ -38,6 +38,7 @@ const defaultNavItems: NavItem[] = [
       { label: "Create Consolidation", href: "/dashboard/admin/consolidation" },
       { label: "Consolidation List", href: "/dashboard/admin/consolidation/list" },
       { label: "Business Entry", href: "/dashboard/admin/consolidation/business" },
+      { label: "Broker Registry", href: "/dashboard/admin/consolidation/brokers" },
     ],
   },
 ];
