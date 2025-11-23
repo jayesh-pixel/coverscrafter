@@ -1,9 +1,11 @@
 /**
  * Broker Name API Client
- * Direct API calls to backend without proxy
+ * Uses Next.js API proxy routes
  */
 
-const API_BASE_URL = "https://instapolicy.coverscrafter.com";
+import { apiRequest } from "./client";
+
+const API_BASE_URL = "/api";
 
 export interface BrokerNamePayload {
   brokername: string;
@@ -24,40 +26,23 @@ export async function createBrokerName(
   payload: BrokerNamePayload,
   authToken: string
 ): Promise<BrokerName> {
-  const response = await fetch(`${API_BASE_URL}/v1/brokername`, {
+  return apiRequest<BrokerName, BrokerNamePayload>({
+    path: `${API_BASE_URL}/brokername`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${authToken}`,
-    },
-    body: JSON.stringify(payload),
+    authToken,
+    body: payload,
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || `Failed to create broker name: ${response.statusText}`);
-  }
-
-  return response.json();
 }
 
 /**
  * Get all broker names
  */
 export async function getBrokerNames(authToken: string): Promise<BrokerName[]> {
-  const response = await fetch(`${API_BASE_URL}/v1/brokername`, {
+  return apiRequest<BrokerName[]>({
+    path: `${API_BASE_URL}/brokername`,
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${authToken}`,
-    },
+    authToken,
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || `Failed to fetch broker names: ${response.statusText}`);
-  }
-
-  return response.json();
 }
 
 /**
@@ -67,19 +52,11 @@ export async function getBrokerName(
   id: string,
   authToken: string
 ): Promise<BrokerName> {
-  const response = await fetch(`${API_BASE_URL}/v1/brokername/${id}`, {
+  return apiRequest<BrokerName>({
+    path: `${API_BASE_URL}/brokername/${id}`,
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${authToken}`,
-    },
+    authToken,
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || `Failed to fetch broker name: ${response.statusText}`);
-  }
-
-  return response.json();
 }
 
 /**
@@ -90,21 +67,12 @@ export async function updateBrokerName(
   payload: BrokerNamePayload,
   authToken: string
 ): Promise<BrokerName> {
-  const response = await fetch(`${API_BASE_URL}/v1/brokername/${id}`, {
+  return apiRequest<BrokerName, BrokerNamePayload>({
+    path: `${API_BASE_URL}/brokername/${id}`,
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${authToken}`,
-    },
-    body: JSON.stringify(payload),
+    authToken,
+    body: payload,
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || `Failed to update broker name: ${response.statusText}`);
-  }
-
-  return response.json();
 }
 
 /**
@@ -114,17 +82,9 @@ export async function deleteBrokerName(
   id: string,
   authToken: string
 ): Promise<{ message: string }> {
-  const response = await fetch(`${API_BASE_URL}/v1/brokername/${id}`, {
+  return apiRequest<{ message: string }>({
+    path: `${API_BASE_URL}/brokername/${id}`,
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${authToken}`,
-    },
+    authToken,
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || `Failed to delete broker name: ${response.statusText}`);
-  }
-
-  return response.json();
 }

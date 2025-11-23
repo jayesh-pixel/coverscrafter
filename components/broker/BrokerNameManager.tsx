@@ -30,9 +30,13 @@ export default function BrokerNameManager({
 
   const fetchBrokerNames = async () => {
     const session = getAuthSession();
-    if (!session?.token) return;
+    if (!session?.token) {
+      setErrorMessage("Please sign in to view broker names.");
+      return;
+    }
 
     setIsLoading(true);
+    setErrorMessage(null);
     try {
       const names = await getBrokerNames(session.token);
       setBrokerNames(names.filter((b) => !b.isDeleted));
