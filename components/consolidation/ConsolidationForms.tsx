@@ -136,7 +136,13 @@ const initialAssociateFormState: AssociateFormState = {
   password: "",
 };
 
-export function RMForm() {
+export function RMForm({
+  title = "Create RM",
+  description = "Capture all employment information before assigning dealer consolidations.",
+}: {
+  title?: string;
+  description?: string;
+}) {
   const [rmForm, setRmForm] = useState<RmFormState>(initialRmFormState);
   const [isResigned, setIsResigned] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -207,8 +213,8 @@ export function RMForm() {
 
   return (
     <FormSection
-      title="Create RM"
-      description="Capture all employment information before assigning dealer consolidations."
+      title={title}
+      description={description}
     >
       <div className="col-span-full space-y-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -413,8 +419,12 @@ export function RMForm() {
 
 export function AssociateForm({
   contextLabel = "Associate Form Submission",
+  title = "Create Associate (POS Entry)",
+  description = "Capture POS partner identity, documentation, and settlement preferences.",
 }: {
   contextLabel?: string;
+  title?: string;
+  description?: string;
 }) {
   const [showPrimaryDetails, setShowPrimaryDetails] = useState(true);
   const [showBankDetails, setShowBankDetails] = useState(true);
@@ -501,8 +511,8 @@ export function AssociateForm({
 
   return (
     <FormSection
-      title="Create Associate (POS Entry)"
-      description="Capture POS partner identity, documentation, and settlement preferences."
+      title={title}
+      description={description}
     >
       <div className="col-span-full space-y-4">
         <div className="flex items-center gap-2">

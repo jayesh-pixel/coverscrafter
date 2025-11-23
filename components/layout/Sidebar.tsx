@@ -50,17 +50,28 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [currentUserName, setCurrentUserName] = useState(userName);
+  const [currentUserRole, setCurrentUserRole] = useState(userRole);
 
   const initials = useMemo(() => {
     if (userInitials?.trim()) return userInitials.trim().slice(0, 3).toUpperCase();
-    return userName
+    return currentUserName
       .split(" ")
       .filter(Boolean)
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase() ?? "")
       .join("")
       .slice(0, 3);
-  }, [userInitials, userName]);
+  }, [userInitials, currentUserName]);
+
+  useEffect(() => {
+    const session = getAuthSession();
+    if (session?.user) {
+      const user = session.user as any;
+      if (user.name) setCurrentUserName(user.name);
+      if (user.role) setCurrentUserRole(user.role.charAt(0).toUpperCase() + user.role.slice(1));
+    }
+  }, []);
 
   const handleLogout = () => {
     clearAuthSession();
@@ -250,8 +261,8 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
              {initials || "--"}
            </div>
            <div className={`flex flex-col overflow-hidden whitespace-nowrap transition-all duration-300 ${isExpanded ? "w-32 opacity-100" : "w-0 opacity-0"}`}>
-               <span className="truncate text-sm font-bold text-slate-700">{userName}</span>
-               <span className="truncate text-xs font-medium text-slate-500">{userRole}</span>
+               <span className="truncate text-sm font-bold text-slate-700">{currentUserName}</span>
+               <span className="truncate text-xs font-medium text-slate-500">{currentUserRole}</span>
            </div>
         </div>
 

@@ -1,21 +1,41 @@
 "use client";
 
-import { useState } from "react";
-
-const associates = [
-  { id: 1, name: "Rahul Kumar", code: "POS-2024-001", status: "Active", mtdPremium: "₹1.2L", policies: 12 },
-  { id: 2, name: "Priya Singh", code: "POS-2024-005", status: "Active", mtdPremium: "₹85K", policies: 8 },
-  { id: 3, name: "Amit Sharma", code: "POS-2024-012", status: "Inactive", mtdPremium: "₹0", policies: 0 },
-  { id: 4, name: "Sneha Gupta", code: "POS-2024-015", status: "Active", mtdPremium: "₹2.1L", policies: 18 },
-];
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { getAssociateUsers, type AssociateUser } from "@/lib/api/users";
+import { getAuthSession } from "@/lib/utils/storage";
 
 export default function RMAssociatesPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [associates, setAssociates] = useState<AssociateUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAssociates = async () => {
+      const session = getAuthSession();
+      if (!session?.token || !session?.user) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch associates created by the logged-in user (RM)
+        const data = await getAssociateUsers(session.token, (session.user as any)._id);
+        setAssociates(data);
+      } catch (error) {
+        console.error("Failed to fetch associates:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAssociates();
+  }, []);
 
   const filteredAssociates = associates.filter(
     (assoc) =>
       assoc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      assoc.code.toLowerCase().includes(searchTerm.toLowerCase())
+      (assoc.posCode || assoc.associateCode).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -25,9 +45,12 @@ export default function RMAssociatesPage() {
           <h1 className="text-2xl font-bold text-slate-900">My Associates</h1>
           <p className="text-sm text-slate-500">Manage and track your POS partners</p>
         </div>
-        <button className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">
+        <Link 
+          href="/dashboard/rm/associates/create"
+          className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+        >
           Add New Associate
-        </button>
+        </Link>
       </div>
 
       <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -53,34 +76,41 @@ export default function RMAssociatesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredAssociates.map((assoc) => (
-                <tr key={assoc.id} className="hover:bg-slate-50">
-                  <td className="px-6 py-4 font-medium text-slate-900">{assoc.name}</td>
-                  <td className="px-6 py-4 text-slate-500">{assoc.code}</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        assoc.status === "Active"
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {assoc.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-slate-600">{assoc.mtdPremium}</td>
-                  <td className="px-6 py-4 text-slate-600">{assoc.policies}</td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-blue-600 hover:text-blue-700 font-medium text-xs">View Details</button>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                    Loading associates...
                   </td>
                 </tr>
-              ))}
-              {filteredAssociates.length === 0 && (
+              ) : filteredAssociates.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
                     No associates found matching your search.
                   </td>
                 </tr>
+              ) : (
+                filteredAssociates.map((assoc) => (
+                  <tr key={assoc._id} className="hover:bg-slate-50">
+                    <td className="px-6 py-4 font-medium text-slate-900">{assoc.name}</td>
+                    <td className="px-6 py-4 text-slate-500">{assoc.posCode || assoc.associateCode}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          assoc.status === "active"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {assoc.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">₹0</td>
+                    <td className="px-6 py-4 text-slate-600">0</td>
+                    <td className="px-6 py-4 text-right">
+                      <button className="text-blue-600 hover:text-blue-700 font-medium text-xs">View Details</button>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
-    const queryString = id ? `?id=${encodeURIComponent(id)}` : "";
+    const queryString = id ? `?userId=${encodeURIComponent(id)}` : "";
 
     const response = await fetch(`${API_BASE_URL}/v1/users/associate${queryString}`, {
       method: "GET",
