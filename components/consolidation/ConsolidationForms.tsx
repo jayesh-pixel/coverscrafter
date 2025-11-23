@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { FormSection, SelectField, TextField } from "@/components/ui/forms";
+import { registerAssociate, registerRM } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/config";
+import { getAuthSession } from "@/lib/utils/storage";
 
 const workingOffices = [
   "--None--",
@@ -53,6 +56,40 @@ const accountTypes = ["Savings", "Current", "Cash Credit"];
 
 const bankNames = ["HDFC Bank", "ICICI Bank", "State Bank of India", "Axis Bank", "Kotak Mahindra Bank"];
 
+type RmFormState = {
+  empCode: string;
+  joiningDate: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  dateOfBirth: string;
+  contactNumber: string;
+  emailId: string;
+  workingOffice: string;
+  department: string;
+  reportingOffice: string;
+  reportingManager: string;
+  resignationDate: string;
+  password: string;
+};
+
+const initialRmFormState: RmFormState = {
+  empCode: "",
+  joiningDate: "",
+  firstName: "",
+  middleName: "",
+  lastName: "",
+  dateOfBirth: "",
+  contactNumber: "",
+  emailId: "",
+  workingOffice: "",
+  department: "",
+  reportingOffice: "",
+  reportingManager: "",
+  resignationDate: "",
+  password: "",
+};
+
 type AssociateFormState = {
   brokerCode: string;
   brokerName: string;
@@ -73,6 +110,7 @@ type AssociateFormState = {
   branchName: string;
   branchAddress: string;
   posCode: string;
+  password: string;
 };
 
 const initialAssociateFormState: AssociateFormState = {
@@ -95,10 +133,77 @@ const initialAssociateFormState: AssociateFormState = {
   branchName: "",
   branchAddress: "",
   posCode: "",
+  password: "",
 };
 
 export function RMForm() {
+  const [rmForm, setRmForm] = useState<RmFormState>(initialRmFormState);
   const [isResigned, setIsResigned] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const updateRmForm = (field: keyof RmFormState, value: string) => {
+    setRmForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleResignedToggle = (checked: boolean) => {
+    setIsResigned(checked);
+    if (!checked) {
+      updateRmForm("resignationDate", "");
+    }
+  };
+
+  const handleSubmit = async () => {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const session = getAuthSession();
+    if (!session?.token) {
+      setErrorMessage("You must be signed in to register an RM.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await registerRM(
+        {
+          EmpCode: rmForm.empCode,
+          JoiningDate: rmForm.joiningDate,
+          FirstName: rmForm.firstName,
+          MiddleName: rmForm.middleName || undefined,
+          LastName: rmForm.lastName,
+          Dob: rmForm.dateOfBirth,
+          ContactNo: rmForm.contactNumber,
+          EmailID: rmForm.emailId,
+          WorkingOffice: rmForm.workingOffice,
+          Department: rmForm.department,
+          ReportingOffice: rmForm.reportingOffice,
+          ReportingManager: rmForm.reportingManager || undefined,
+          Resigned: isResigned,
+          ResignationDate: isResigned ? rmForm.resignationDate || undefined : undefined,
+          Password: rmForm.password,
+        },
+        session.token,
+      );
+
+      setSuccessMessage("RM registered successfully.");
+      setRmForm(initialRmFormState);
+      setIsResigned(false);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message || "Unable to register RM. Please verify the details.");
+      } else {
+        setErrorMessage("Something went wrong while registering the RM. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <FormSection
@@ -108,19 +213,95 @@ export function RMForm() {
       <div className="col-span-full space-y-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="grid gap-4 md:grid-cols-2">
-            <TextField id="empCode" label="EmpCode" placeholder="EmpCode" required />
-            <TextField id="joiningDate" label="Joining Date" type="date" required />
+            <TextField
+              id="empCode"
+              label="EmpCode"
+              placeholder="EmpCode"
+              required
+              value={rmForm.empCode}
+              onChange={(event) => updateRmForm("empCode", event.target.value)}
+              disabled={isSubmitting}
+            />
+            <TextField
+              id="joiningDate"
+              label="Joining Date"
+              type="date"
+              required
+              value={rmForm.joiningDate}
+              onChange={(event) => updateRmForm("joiningDate", event.target.value)}
+              disabled={isSubmitting}
+            />
           </div>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <TextField id="firstName" label="First Name" placeholder="First Name" required />
-            <TextField id="middleName" label="Middle Name" placeholder="Middle Name" />
-            <TextField id="lastName" label="Last Name" placeholder="Last Name" required />
-            <TextField id="dateOfBirth" label="Date of Birth" type="date" required />
-            <TextField id="contactNumber" label="Contact No" placeholder="Contact Number" required />
-            <TextField id="emailId" label="Email ID" type="email" placeholder="email id" required />
+            <TextField
+              id="firstName"
+              label="First Name"
+              placeholder="First Name"
+              required
+              value={rmForm.firstName}
+              onChange={(event) => updateRmForm("firstName", event.target.value)}
+              disabled={isSubmitting}
+            />
+            <TextField
+              id="middleName"
+              label="Middle Name"
+              placeholder="Middle Name"
+              value={rmForm.middleName}
+              onChange={(event) => updateRmForm("middleName", event.target.value)}
+              disabled={isSubmitting}
+            />
+            <TextField
+              id="lastName"
+              label="Last Name"
+              placeholder="Last Name"
+              required
+              value={rmForm.lastName}
+              onChange={(event) => updateRmForm("lastName", event.target.value)}
+              disabled={isSubmitting}
+            />
+            <TextField
+              id="dateOfBirth"
+              label="Date of Birth"
+              type="date"
+              required
+              value={rmForm.dateOfBirth}
+              onChange={(event) => updateRmForm("dateOfBirth", event.target.value)}
+              disabled={isSubmitting}
+            />
+            <TextField
+              id="contactNumber"
+              label="Contact No"
+              placeholder="Contact Number"
+              required
+              value={rmForm.contactNumber}
+              onChange={(event) => updateRmForm("contactNumber", event.target.value)}
+              disabled={isSubmitting}
+            />
+            <TextField
+              id="emailId"
+              label="Email ID"
+              type="email"
+              placeholder="email id"
+              required
+              value={rmForm.emailId}
+              onChange={(event) => updateRmForm("emailId", event.target.value)}
+              disabled={isSubmitting}
+              autoComplete="email"
+            />
+            <TextField
+              id="rmPassword"
+              label="Password"
+              type="password"
+              placeholder="Temporary password"
+              required
+              value={rmForm.password}
+              onChange={(event) => updateRmForm("password", event.target.value)}
+              disabled={isSubmitting}
+              autoComplete="new-password"
+            />
           </div>
         </div>
 
@@ -131,9 +312,12 @@ export function RMForm() {
               label="Working Office"
               placeholder="--None--"
               required
+              value={rmForm.workingOffice}
+              onChange={(event) => updateRmForm("workingOffice", event.target.value)}
+              disabled={isSubmitting}
               options={workingOffices.map((office) => ({
                 label: office,
-                value: office.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "none",
+                value: office,
               }))}
             />
             <SelectField
@@ -141,9 +325,12 @@ export function RMForm() {
               label="Department"
               placeholder="--None--"
               required
+              value={rmForm.department}
+              onChange={(event) => updateRmForm("department", event.target.value)}
+              disabled={isSubmitting}
               options={departments.map((dept) => ({
                 label: dept,
-                value: dept.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "none",
+                value: dept,
               }))}
             />
             <SelectField
@@ -151,12 +338,23 @@ export function RMForm() {
               label="Reporting Office"
               placeholder="--None--"
               required
+              value={rmForm.reportingOffice}
+              onChange={(event) => updateRmForm("reportingOffice", event.target.value)}
+              disabled={isSubmitting}
               options={reportingOffices.map((office) => ({
                 label: office,
-                value: office.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "none",
+                value: office,
               }))}
             />
-            <SelectField id="reportingManager" label="Reporting Manager" placeholder="--None--" disabled options={[]} />
+            <SelectField
+              id="reportingManager"
+              label="Reporting Manager"
+              placeholder="--None--"
+              value={rmForm.reportingManager}
+              onChange={(event) => updateRmForm("reportingManager", event.target.value)}
+              disabled
+              options={[]}
+            />
           </div>
         </div>
 
@@ -166,18 +364,47 @@ export function RMForm() {
               <input
                 type="checkbox"
                 checked={isResigned}
-                onChange={(event) => setIsResigned(event.target.checked)}
+                onChange={(event) => handleResignedToggle(event.target.checked)}
                 className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
+                disabled={isSubmitting}
               />
               Resigned
             </label>
-            <TextField id="resignationDate" label="Resignation Date" type="date" disabled={!isResigned} required={isResigned} />
+            <TextField
+              id="resignationDate"
+              label="Resignation Date"
+              type="date"
+              disabled={!isResigned || isSubmitting}
+              required={isResigned}
+              value={rmForm.resignationDate}
+              onChange={(event) => updateRmForm("resignationDate", event.target.value)}
+            />
           </div>
         </div>
 
+        {(errorMessage || successMessage) && (
+          <div className="space-y-2">
+            {errorMessage && (
+              <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+                {errorMessage}
+              </p>
+            )}
+            {successMessage && (
+              <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                {successMessage}
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="flex justify-end">
-          <button className="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700">
-            Save RM Details
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isSubmitting ? "Saving RM..." : "Save RM Details"}
           </button>
         </div>
       </div>
@@ -195,6 +422,9 @@ export function AssociateForm({
   const [isDefaultBank, setIsDefaultBank] = useState(true);
   const [posStatus, setposStatus] = useState<"yes" | "no" | "">("");
   const [associateForm, setAssociateForm] = useState<AssociateFormState>(initialAssociateFormState);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const updateAssociateForm = (field: keyof AssociateFormState, value: string) => {
     setAssociateForm((prev) => ({
@@ -213,15 +443,61 @@ export function AssociateForm({
     }
   };
 
-  const handleAssociateSubmit = () => {
-    const payload = {
-      ...associateForm,
-      posStatus,
-      isDefaultBank,
-      posCode: posStatus === "yes" ? associateForm.posCode : "",
-    };
+  const handleAssociateSubmit = async () => {
+    setErrorMessage(null);
+    setSuccessMessage(null);
 
-    console.log(contextLabel, JSON.stringify(payload, null, 2));
+    const session = getAuthSession();
+    if (!session?.token) {
+      setErrorMessage("You must be signed in to register an associate.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await registerAssociate(
+        {
+          AssociateCode: associateForm.brokerCode,
+          AssociateName: associateForm.brokerName,
+          AssociatePanNo: associateForm.brokerPan,
+          AssociateAadharNo: associateForm.aadhaarNumber,
+          ContactPerson: associateForm.contactPerson,
+          ContactNo: associateForm.contactNumber,
+          AssociateEmailId: associateForm.contactEmail,
+          AssociateStateName: associateForm.brokerState,
+          AssociateAddress: associateForm.brokerAddress,
+          BPANNo: associateForm.beneficiaryPan,
+          BPANName: associateForm.beneficiaryName,
+          AccountNo: associateForm.accountNumber,
+          AccountType: associateForm.accountType,
+          Default: isDefaultBank,
+          IFSC: associateForm.ifscCode,
+          BankName: associateForm.bankName,
+          StateName: associateForm.bankState,
+          BranchName: associateForm.branchName,
+          BankAddress: associateForm.branchAddress,
+          isPos: posStatus === "yes",
+          PosCode: posStatus === "yes" ? associateForm.posCode || undefined : undefined,
+          Password: associateForm.password,
+        },
+        session.token,
+      );
+
+      console.log(contextLabel, "Associate registered successfully");
+      setSuccessMessage("Associate registered successfully.");
+      setAssociateForm(initialAssociateFormState);
+      setposStatus("");
+      setIsDefaultBank(true);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message || "Unable to register associate. Please check the details.");
+      } else {
+        setErrorMessage("Something went wrong while registering the associate. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -235,6 +511,7 @@ export function AssociateForm({
             type="button"
             onClick={() => setShowPrimaryDetails((prev) => !prev)}
             className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-sm font-bold text-slate-600 transition hover:border-blue-400 hover:text-blue-600"
+            disabled={isSubmitting}
           >
             {showPrimaryDetails ? "−" : "+"}
           </button>
@@ -251,6 +528,7 @@ export function AssociateForm({
                 required
                 value={associateForm.brokerCode}
                 onChange={(event) => updateAssociateForm("brokerCode", event.target.value)}
+                disabled={isSubmitting}
               />
               <TextField
                 id="brokerName"
@@ -259,6 +537,7 @@ export function AssociateForm({
                 required
                 value={associateForm.brokerName}
                 onChange={(event) => updateAssociateForm("brokerName", event.target.value)}
+                disabled={isSubmitting}
               />
               <TextField
                 id="brokerPan"
@@ -267,6 +546,7 @@ export function AssociateForm({
                 required
                 value={associateForm.brokerPan}
                 onChange={(event) => updateAssociateForm("brokerPan", event.target.value)}
+                disabled={isSubmitting}
               />
               <TextField
                 id="aadhaarNumber"
@@ -275,6 +555,7 @@ export function AssociateForm({
                 required
                 value={associateForm.aadhaarNumber}
                 onChange={(event) => updateAssociateForm("aadhaarNumber", event.target.value)}
+                disabled={isSubmitting}
               />
               <TextField
                 id="contactPerson"
@@ -283,6 +564,7 @@ export function AssociateForm({
                 required
                 value={associateForm.contactPerson}
                 onChange={(event) => updateAssociateForm("contactPerson", event.target.value)}
+                disabled={isSubmitting}
               />
               <TextField
                 id="contactNumber"
@@ -291,6 +573,7 @@ export function AssociateForm({
                 required
                 value={associateForm.contactNumber}
                 onChange={(event) => updateAssociateForm("contactNumber", event.target.value)}
+                disabled={isSubmitting}
               />
               <TextField
                 id="contactEmail"
@@ -300,6 +583,8 @@ export function AssociateForm({
                 required
                 value={associateForm.contactEmail}
                 onChange={(event) => updateAssociateForm("contactEmail", event.target.value)}
+                autoComplete="email"
+                disabled={isSubmitting}
               />
               <SelectField
                 id="posStatus"
@@ -312,15 +597,17 @@ export function AssociateForm({
                   { label: "Yes", value: "yes" },
                   { label: "No", value: "no" },
                 ]}
+                disabled={isSubmitting}
               />
               {posStatus === "yes" && (
                 <TextField
                   id="posCode"
                   label="pos Code"
                   placeholder="pos Code"
-                  required={posStatus === "yes"}
+                  required
                   value={associateForm.posCode}
                   onChange={(event) => updateAssociateForm("posCode", event.target.value)}
+                  disabled={isSubmitting}
                 />
               )}
               <SelectField
@@ -333,6 +620,18 @@ export function AssociateForm({
                   label: state,
                   value: state,
                 }))}
+                disabled={isSubmitting}
+              />
+              <TextField
+                id="associatePassword"
+                label="Password"
+                type="password"
+                placeholder="Temporary password"
+                required
+                value={associateForm.password}
+                onChange={(event) => updateAssociateForm("password", event.target.value)}
+                autoComplete="new-password"
+                disabled={isSubmitting}
               />
               <label className="col-span-full flex flex-col gap-1 text-xs font-semibold text-slate-700">
                 <span>Broker Communication Address</span>
@@ -342,6 +641,7 @@ export function AssociateForm({
                   className="min-h-[100px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:shadow-md focus:ring-2 focus:ring-blue-100"
                   value={associateForm.brokerAddress}
                   onChange={(event) => updateAssociateForm("brokerAddress", event.target.value)}
+                  disabled={isSubmitting}
                 />
               </label>
             </div>
@@ -353,6 +653,7 @@ export function AssociateForm({
             type="button"
             onClick={() => setShowBankDetails((prev) => !prev)}
             className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-sm font-bold text-slate-600 transition hover:border-blue-400 hover:text-blue-600"
+            disabled={isSubmitting}
           >
             {showBankDetails ? "−" : "+"}
           </button>
@@ -369,6 +670,7 @@ export function AssociateForm({
                 required
                 value={associateForm.beneficiaryPan}
                 onChange={(event) => updateAssociateForm("beneficiaryPan", event.target.value)}
+                disabled={isSubmitting}
               />
               <TextField
                 id="beneficiaryName"
@@ -377,6 +679,7 @@ export function AssociateForm({
                 required
                 value={associateForm.beneficiaryName}
                 onChange={(event) => updateAssociateForm("beneficiaryName", event.target.value)}
+                disabled={isSubmitting}
               />
               <TextField
                 id="accountNumber"
@@ -385,6 +688,7 @@ export function AssociateForm({
                 required
                 value={associateForm.accountNumber}
                 onChange={(event) => updateAssociateForm("accountNumber", event.target.value)}
+                disabled={isSubmitting}
               />
               <SelectField
                 id="accountType"
@@ -396,6 +700,7 @@ export function AssociateForm({
                   label: type,
                   value: type,
                 }))}
+                disabled={isSubmitting}
               />
               <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <input
@@ -403,6 +708,7 @@ export function AssociateForm({
                   checked={isDefaultBank}
                   onChange={(event) => setIsDefaultBank(event.target.checked)}
                   className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
+                  disabled={isSubmitting}
                 />
                 Select as Default
               </label>
@@ -413,6 +719,7 @@ export function AssociateForm({
                 required
                 value={associateForm.ifscCode}
                 onChange={(event) => updateAssociateForm("ifscCode", event.target.value)}
+                disabled={isSubmitting}
               />
               <SelectField
                 id="bankName"
@@ -424,6 +731,7 @@ export function AssociateForm({
                   label: bank,
                   value: bank,
                 }))}
+                disabled={isSubmitting}
               />
               <SelectField
                 id="bankState"
@@ -435,6 +743,7 @@ export function AssociateForm({
                   label: state,
                   value: state,
                 }))}
+                disabled={isSubmitting}
               />
               <TextField
                 id="branchName"
@@ -443,6 +752,7 @@ export function AssociateForm({
                 required
                 value={associateForm.branchName}
                 onChange={(event) => updateAssociateForm("branchName", event.target.value)}
+                disabled={isSubmitting}
               />
               <label className="col-span-full flex flex-col gap-1 text-xs font-semibold text-slate-700">
                 <span>Bank Branch Address</span>
@@ -452,15 +762,24 @@ export function AssociateForm({
                   className="min-h-[100px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:shadow-md focus:ring-2 focus:ring-blue-100"
                   value={associateForm.branchAddress}
                   onChange={(event) => updateAssociateForm("branchAddress", event.target.value)}
+                  disabled={isSubmitting}
                 />
               </label>
             </div>
 
             <div className="flex justify-center gap-3">
-              <button className="rounded-full border border-slate-200 px-5 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-400 hover:text-blue-600">
+              <button
+                type="button"
+                className="rounded-full border border-slate-200 px-5 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isSubmitting}
+              >
                 Add Bank
               </button>
-              <button className="rounded-full border border-slate-200 px-5 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-400 hover:text-blue-600">
+              <button
+                type="button"
+                className="rounded-full border border-slate-200 px-5 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isSubmitting}
+              >
                 Show Banking details
               </button>
             </div>
@@ -471,13 +790,29 @@ export function AssociateForm({
           </div>
         )}
 
+        {(errorMessage || successMessage) && (
+          <div className="space-y-2">
+            {errorMessage && (
+              <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+                {errorMessage}
+              </p>
+            )}
+            {successMessage && (
+              <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                {successMessage}
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="flex justify-end">
           <button
             type="button"
             onClick={handleAssociateSubmit}
-            className="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700"
+            disabled={isSubmitting}
+            className="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Save POS Details
+            {isSubmitting ? "Saving POS..." : "Save POS Details"}
           </button>
         </div>
       </div>

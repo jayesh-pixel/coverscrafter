@@ -1,7 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { FileUploadField, SelectField, TextField } from "@/components/ui/forms";
+import { createBusinessEntry, getBusinessEntries, type BusinessEntry } from "@/lib/api/businessentry";
+import { ApiError } from "@/lib/api/config";
+import { getAuthSession } from "@/lib/utils/storage";
 
 const insuranceCompanies = [
   "Acko General Insurance",
@@ -158,38 +161,7 @@ const brokerAllocations = [
   },
 ];
 
-const defaultBusinessEntries = [
-  {
-    policyNumber: "POL-2025-0001",
-    clientName: "Aravind Motors Pvt Ltd",
-    registrationNumber: "MH12AB1234",
-    reportingMonth: "October",
-    reportingFy: "FY 2025-26",
-    broker: "Metro Wheels",
-    paymentMode: "Online",
-    grossPremium: "₹85,000",
-  },
-  {
-    policyNumber: "POL-2025-0007",
-    clientName: "Shree Ganesh Logistics",
-    registrationNumber: "DL01CD9876",
-    reportingMonth: "September",
-    reportingFy: "FY 2025-26",
-    broker: "Prime Mobility",
-    paymentMode: "Cheque",
-    grossPremium: "₹1,25,000",
-  },
-  {
-    policyNumber: "POL-2025-0012",
-    clientName: "Vishal Enterprises",
-    registrationNumber: "KA05EF5643",
-    reportingMonth: "August",
-    reportingFy: "FY 2025-26",
-    broker: "Navnit Motors",
-    paymentMode: "Online",
-    grossPremium: "₹62,500",
-  },
-];
+
 
 interface BusinessEntryManagerProps {
     title?: string;
@@ -204,42 +176,75 @@ export default function BusinessEntryManager({
 }: BusinessEntryManagerProps) {
   const [paymentMode, setPaymentMode] = useState<"online" | "cheque">("online");
   const [showForm, setShowForm] = useState(initialShowForm);
-  const [businessEntries] = useState(defaultBusinessEntries);
+  const [businessEntries, setBusinessEntries] = useState<BusinessEntry[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleBusinessSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const fetchEntries = async () => {
+    const session = getAuthSession();
+    if (!session?.token) return;
+
+    setIsLoading(true);
+    try {
+      const entries = await getBusinessEntries(session.token);
+      setBusinessEntries(entries);
+    } catch (error) {
+      console.error("Failed to fetch business entries", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEntries();
+  }, []);
+
+  const handleBusinessSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const session = getAuthSession();
+    if (!session?.token) {
+      setErrorMessage("You must be signed in to create a business entry.");
+      return;
+    }
+
     const formData = new FormData(event.currentTarget);
-    const payload: Record<string, unknown> = {};
+    const payload: Record<string, string | number> = {};
 
     formData.forEach((value, key) => {
-      if (value instanceof File) {
-        if (!value.size) {
-          return;
-        }
-        const fileMeta = {
-          name: value.name,
-          size: value.size,
-          type: value.type,
-        };
-        const existing = payload[key];
-        payload[key] = existing
-          ? Array.isArray(existing)
-            ? [...existing, fileMeta]
-            : [existing, fileMeta]
-          : fileMeta;
-      } else {
-        const existing = payload[key];
-        payload[key] = existing
-          ? Array.isArray(existing)
-            ? [...existing, value]
-            : [existing, value]
-          : value;
+      if (!(value instanceof File)) {
+        payload[key] = value as string;
       }
     });
 
     payload.paymentMode = paymentMode;
+    payload.odPremium = Number(payload.odPremium) || 0;
+    payload.tpPremium = Number(payload.tpPremium) || 0;
+    payload.netPremium = Number(payload.netPremium) || 0;
+    payload.grossPremium = Number(payload.grossPremium) || 0;
 
-    console.log("Business Entry Submission", JSON.stringify(payload, null, 2));
+    setIsSubmitting(true);
+
+    try {
+      await createBusinessEntry(payload as any, session.token);
+      setSuccessMessage("Business entry created successfully.");
+      event.currentTarget.reset();
+      setPaymentMode("online");
+      fetchEntries();
+      setTimeout(() => setShowForm(false), 1500);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message || "Unable to create business entry. Please verify the details.");
+      } else {
+        setErrorMessage("Something went wrong while creating the business entry. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -468,12 +473,28 @@ export default function BusinessEntryManager({
                 <FileUploadField id="supportingFile" name="supportingFile" label="File" hint="Upload supporting document (max 10 MB)." />
               </div>
 
+              {(errorMessage || successMessage) && (
+                <div className="space-y-2">
+                  {errorMessage && (
+                    <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+                      {errorMessage}
+                    </p>
+                  )}
+                  {successMessage && (
+                    <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                      {successMessage}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700"
+                  disabled={isSubmitting}
+                  className="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  Save Business
+                  {isSubmitting ? "Saving..." : "Save Business"}
                 </button>
               </div>
             </div>
@@ -502,39 +523,49 @@ export default function BusinessEntryManager({
           </div>
         </div>
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-          <table className="min-w-[1100px] divide-y divide-slate-200 text-left text-sm">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-4 py-3 font-semibold text-slate-600">Policy Number</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Client Name</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Registration</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Reporting FY</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Reporting Month</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Broker</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Payment Mode</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Gross Premium</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {businessEntries.map((entry) => (
-                <tr key={entry.policyNumber} className="transition hover:bg-blue-50/40">
-                  <td className="px-4 py-4">
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-slate-900">{entry.policyNumber}</span>
-                      <span className="text-xs uppercase tracking-wide text-slate-400">{entry.registrationNumber}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 text-slate-600">{entry.clientName}</td>
-                  <td className="px-4 py-4 text-slate-600">{entry.registrationNumber}</td>
-                  <td className="px-4 py-4 text-slate-600">{entry.reportingFy}</td>
-                  <td className="px-4 py-4 text-slate-600">{entry.reportingMonth}</td>
-                  <td className="px-4 py-4 text-slate-600">{entry.broker}</td>
-                  <td className="px-4 py-4 text-slate-600">{entry.paymentMode}</td>
-                  <td className="px-4 py-4 text-slate-600">{entry.grossPremium}</td>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-sm text-slate-500">Loading business entries...</p>
+            </div>
+          ) : businessEntries.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-sm text-slate-500">No business entries found. Create your first entry above.</p>
+            </div>
+          ) : (
+            <table className="min-w-[1100px] divide-y divide-slate-200 text-left text-sm">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Policy Number</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Client Name</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Registration</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Reporting FY</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Reporting Month</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Broker</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Payment Mode</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Gross Premium</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {businessEntries.map((entry) => (
+                  <tr key={entry._id} className="transition hover:bg-blue-50/40">
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-slate-900">{entry.policyNumber}</span>
+                        <span className="text-xs uppercase tracking-wide text-slate-400">{entry.registrationNumber}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-slate-600">{entry.clientName}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.registrationNumber}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.reportingFy}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.reportingMonth}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.broker}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.paymentMode}</td>
+                    <td className="px-4 py-4 text-slate-600">₹{entry.grossPremium.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </section>
     </div>

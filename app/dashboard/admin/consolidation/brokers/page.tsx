@@ -1,5 +1,5 @@
-import BrokerRegistry from "@/components/consolidation/BrokerRegistry";
+import BrokerNameManager from "@/components/broker/BrokerNameManager";
 
 export default function AdminConsolidationBrokersPage() {
-  return <BrokerRegistry title="Admin Broker Directory" description="Central list of brokers shared with consolidation forms." />;
+  return <BrokerNameManager title="Admin Broker Directory" description="Central list of brokers shared with consolidation forms." />;
 }

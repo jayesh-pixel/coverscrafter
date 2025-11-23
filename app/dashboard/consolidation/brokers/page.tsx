@@ -1,5 +1,5 @@
-import BrokerRegistry from "@/components/consolidation/BrokerRegistry";
+import BrokerNameManager from "@/components/broker/BrokerNameManager";
 
 export default function ConsolidationBrokersPage() {
-  return <BrokerRegistry />;
+  return <BrokerNameManager />;
 }
