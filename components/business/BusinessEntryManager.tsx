@@ -3,12 +3,160 @@
 import { useState } from "react";
 import { FileUploadField, SelectField, TextField } from "@/components/ui/forms";
 
-const lineOfBusinessOptions = ["--None--", "Motor", "Health", "Commercial", "Life"];
-const productOptions = ["--None--", "Comprehensive", "Third Party", "Package", "Endorsement"];
-const channelOptions = ["--None--", "Dealer", "Broker", "Direct", "Online"];
-const reportingFyOptions = ["--None--", "FY 2024-25", "FY 2025-26", "FY 2026-27"];
-const reportingMonthOptions = ["--None--", "April", "May", "June", "July", "August", "September", "October", "November", "December", "January", "February", "March"];
-const brokers = ["--None--", "Navnit Motors", "Metro Wheels", "Prime Mobility", "Skyline Riders"];
+const insuranceCompanies = [
+  "Acko General Insurance",
+  "Aditya Birla Health Insurance Co. Ltd.",
+  "Aditya Birla Sun Life Insurance Co. Ltd.",
+  "Aegis Covenant Private Limited",
+  "Agriculture Insurance Co. of India Ltd.",
+  "Apollo Munich Health Insurance Co. Ltd.",
+  "Bajaj Allianz General Insurance Co. Ltd.",
+  "Bajaj Allianz Life Insurance Company Limited",
+  "Bharti Axa General Insurance Co. Ltd.",
+  "Bharti AXA Life Insurance Co.Ltd",
+  "CARE HEALTH INSURANCE LIMITED",
+  "Cholamandalam MS General Insurance Co. Ltd.",
+  "DHFL General Insurance Limited",
+  "Director of Agriculture, Gandhinagar",
+  "Edelweiss General Insurance Company Limited",
+  "EDELWEISS TOKIO LIFE INSURANCE COMPANY LIMITED",
+  "Export Credit Guarantee Corporation of India Ltd.",
+  "Future Generali India Insurance Co. Ltd.",
+  "Go Digit General Insurance Limited",
+  "HDFC ERGO General Insurance Co. Ltd.",
+  "HDFC Life Insurance Company Limited",
+  "ICICI Lombard General Insurance Co. Ltd.",
+  "ICICI Prudential Life Insurance Co. Ltd.",
+  "IFFCO Tokio General Insurance Co. Ltd.",
+  "INDIAFIRST LIFE INSURANCE COMPANY LTD",
+  "Kotak Mahindra General Insurance Co. Ltd.",
+  "Kotak Mahindra Life Insurance Co.Ltd",
+  "L & T General Insurance Co. Ltd.",
+  "LIBERTY GENERAL INSURANCE LIMITED",
+  "Life Insurance Corporation of India",
+  "Magma HDI General Insurance Co. Ltd.",
+  "ManipalCigna Health Insurance Company Limited",
+  "Max Bupa Health Insurance Company Ltd.",
+  "Max New York Life Insurance Co.",
+  "National Insurance Co. Ltd.",
+  "PNB METLIFE INDIA INSURANCE COMPANY LTD",
+  "Raheja QBE General Insurance Co. Ltd.",
+  "Reliance General Insurance Co. Ltd.",
+  "Royal Sundaram General Insurance Co. Limited.",
+  "SBI General Insurance Co. Ltd",
+  "Shriram General Insurance Co. Ltd.",
+  "Star Health and Allied Insurance Co. Ltd.",
+  "Tata AIG General Insurance Co. Ltd.",
+  "The New India Assurance Co. Ltd.",
+  "The Oriental Insurance Co. Ltd.",
+  "United India Insurance Co. Ltd.",
+  "Universal Sompo General Insurance Co. Ltd.",
+  "ZURICH KOTAK GENERAL INSURANCE COMPANY (INDIA) LIMITED",
+];
+
+const stateOptions = [
+  "ANDHRA PRADESH",
+  "ANDAMAN & NICOBAR",
+  "ARUNACHAL PRADESH",
+  "ASSAM",
+  "BIHAR",
+  "CHANDIGARH",
+  "DAMAN AND DIU",
+  "DADRA AND NAGAR HAVELI",
+  "GOA",
+  "GUJARAT",
+  "HARYANA",
+  "HIMACHAL PRADESH",
+  "JHARKHAND",
+  "JAMMU AND KASHMIR",
+  "KARNATAKA",
+  "KERALA",
+  "LAKSHDWEEP",
+  "MAHARASHTRA",
+  "MANIPUR",
+  "MEGHALAYA",
+  "MIZORAM",
+  "MADHYA PRADESH",
+  "NAGALAND",
+  "DELHI",
+  "ORISSA",
+  "PONDICHERRY",
+  "PUNJAB",
+  "RAJASTHAN",
+  "SIKKIM",
+  "TAMIL NADU",
+  "TRIPURA",
+  "TELANGANA",
+  "UTTAR PRADESH",
+  "CHHATTISGARH",
+  "WEST BENGAL",
+  "UTTARAKHAND",
+];
+
+const lineOfBusinessOptions = [
+  "Aviation Insurance",
+  "ENGINEERING Insurance",
+  "FIRE Insurance",
+  "HEALTH & PA Insurance",
+  "LIABILITY Insurance",
+  "Life Insurance",
+  "MARINE & HULL Insurance",
+  "Miscellaneous Insurance",
+  "MOTOR Insurance",
+];
+
+const productOptions = [
+  "AVIATION - HULL ALL RISKS POLICY SCHEDULE",
+  "Aviation Loss of Licence Insurance Policy",
+  "Aviation Personal Accident Insurance policy",
+];
+
+const subProductOptions = ["Retail Business", "Corporate Business"];
+
+const regionOptions = [
+  "DELHI",
+  "GURGAON OFFICE",
+  "MUMBAI",
+  "UTTAR PRADESH",
+  "WEST BENGAL",
+  "MPCG - 2",
+  "RAJASTHAN",
+  "MPCG",
+  "GUJARAT",
+  "CORPORATE OFFICE",
+  "DELHI - 2",
+  "ROM",
+  "ANDRA PRADESH",
+  "BIHAR",
+  "NAVI MUMBAI",
+];
+
+const relationshipManagers = [
+  "TEMP MUMBAI - Temp Mumbai",
+  "IPB0004 - KAJAL GAWADE",
+  "IPB0005 - JAYA BALLA",
+  "IPB0012 - Sanjay Mishra",
+  "REF01 - DHEERAJ GUPTA",
+  "REF02 - ALL INDIA JEWELLERS FEDRATION",
+  "TEMP004 - Rishabh Saxena",
+];
+
+const brokerList = ["DIRECT - DIRECT"];
+
+const reportingFyOptions = ["2025-26"];
+const reportingMonthOptions = ["November"];
+
+const brokerAllocations = [
+  {
+    id: "",
+    code: "DIRECT",
+    associate: "DIRECT",
+    od: "0",
+    tp: "0",
+    net: "0",
+    extraAmt: "0",
+  },
+];
 
 const defaultBusinessEntries = [
   {
@@ -77,110 +225,217 @@ export default function BusinessEntryManager({
         </header>
 
         {showForm && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <SelectField
-              id="lineOfBusiness"
-              label="Line of Business"
-              required
-              options={lineOfBusinessOptions.map((option) => ({
-                label: option,
-                value: option.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "none",
-              }))}
-            />
-            <TextField id="policyNumber" label="Policy Number" placeholder="Enter policy number" required />
-            <TextField id="clientName" label="Client Name" placeholder="Enter client name" required />
-            <TextField id="contactNumber" label="Contact Number" type="tel" placeholder="Enter contact number" required />
-            <TextField id="emailId" label="Email ID" type="email" placeholder="Enter email" required />
-            <SelectField
-              id="product"
-              label="Product"
-              required
-              options={productOptions.map((option) => ({
-                label: option,
-                value: option.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "none",
-              }))}
-            />
-            <SelectField
-              id="channel"
-              label="Channel"
-              required
-              options={channelOptions.map((option) => ({
-                label: option,
-                value: option.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "none",
-              }))}
-            />
-            <SelectField
-              id="subChannel"
-              label="Sub Channel"
-              required
-              options={channelOptions.map((option) => ({
-                label: option,
-                value: option.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "none",
-              }))}
-            />
-            <TextField id="registrationNumber" label="Registration Number" placeholder="Enter vehicle registration" required />
-            <TextField id="policyIssueDate" label="Policy Issue Date" type="date" required />
-            <TextField id="policyStartDate" label="Policy Start Date" type="date" required />
-            <TextField id="policyEndDate" label="Policy End Date" type="date" required />
-            <TextField id="policyTpEndDate" label="Policy TP End Date" type="date" required />
-            <TextField id="grossPremium" label="Gross Premium" type="number" placeholder="0" required />
-            <TextField id="netPremium" label="Net Premium" type="number" placeholder="0" required />
-            <TextField id="commissionAmount" label="Commission" type="number" placeholder="0" required />
-            <TextField id="gstAmount" label="GST" type="number" placeholder="0" required />
-            <SelectField
-              id="reportingFy"
-              label="Reporting FY"
-              required
-              options={reportingFyOptions.map((option) => ({
-                label: option,
-                value: option.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "none",
-              }))}
-            />
-            <SelectField
-              id="reportingMonth"
-              label="Reporting Month"
-              required
-              options={reportingMonthOptions.map((option) => ({
-                label: option,
-                value: option.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "none",
-              }))}
-            />
-            <SelectField
-              id="broker"
-              label="Select Broker"
-              required
-              options={brokers.map((option) => ({
-                label: option,
-                value: option.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "none",
-              }))}
-            />
-            <div className="col-span-full flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-700 shadow-sm">
-              <span>Payment Mode:</span>
-              {[
-                { label: "Online", value: "online" as const },
-                { label: "Cheque", value: "cheque" as const },
-              ].map((mode) => (
-                <button
-                  key={mode.value}
-                  type="button"
-                  onClick={() => setPaymentMode(mode.value)}
-                  className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                    paymentMode === mode.value
-                      ? "border-blue-500 bg-blue-600 text-white shadow-sm"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-600"
-                  }`}
-                >
-                  {mode.label}
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+              <div className="grid gap-4 md:grid-cols-2">
+                <SelectField
+                  id="insuranceCompany"
+                  label="Insurance Company"
+                  required
+                  placeholder="--None--"
+                  options={insuranceCompanies.map((option) => ({
+                    label: option,
+                    value: option,
+                  }))}
+                />
+                <TextField id="policyNumber" label="Policy Number" placeholder="Policy Number" required />
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <TextField id="clientName" label="Client Name" placeholder="Client Name" required />
+                <TextField id="contactNumber" label="Contact Number" type="tel" placeholder="Contact Number" required />
+                <TextField id="emailId" label="Email ID" type="email" placeholder="email id" required />
+                <SelectField
+                  id="state"
+                  label="State"
+                  required
+                  placeholder="--None--"
+                  options={stateOptions.map((option) => ({
+                    label: option,
+                    value: option,
+                  }))}
+                />
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <SelectField
+                  id="lineOfBusiness"
+                  label="Line of Business"
+                  required
+                  placeholder="--None--"
+                  options={lineOfBusinessOptions.map((option) => ({
+                    label: option,
+                    value: option,
+                  }))}
+                />
+                <SelectField
+                  id="product"
+                  label="Product"
+                  required
+                  placeholder="--None--"
+                  options={productOptions.map((option) => ({
+                    label: option,
+                    value: option,
+                  }))}
+                />
+                <SelectField
+                  id="subProduct"
+                  label="Sub Product"
+                  required
+                  placeholder="--None--"
+                  options={subProductOptions.map((option) => ({
+                    label: option,
+                    value: option,
+                  }))}
+                />
+                <TextField id="registrationNumber" label="Registration Number" placeholder="Registration Number" required />
+                <TextField id="policyIssueDate" label="Policy Issue Date" type="date" required />
+                <TextField id="policyStartDate" label="Policy Start Date" type="date" required />
+                <TextField id="policyEndDate" label="Policy End Date" type="date" required />
+                <TextField id="policyTpEndDate" label="Policy TP End Date" type="date" required />
+                <TextField id="odPremium" label="OD Premium" type="number" placeholder="0" required />
+                <TextField id="tpPremium" label="TP Premium" type="number" placeholder="0" required />
+                <TextField id="netPremium" label="Net Premium" type="number" placeholder="0" required />
+                <TextField id="grossPremium" label="Gross Premium" type="number" placeholder="0" required />
+              </div>
+            </div>
+
+            <div className="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <SelectField
+                  id="broker"
+                  label="Select Broker"
+                  required
+                  placeholder="--None--"
+                  options={brokerList.map((option) => ({
+                    label: option,
+                    value: option,
+                  }))}
+                />
+                <SelectField
+                  id="reportingFy"
+                  label="Reporting FY"
+                  required
+                  placeholder="--None--"
+                  options={reportingFyOptions.map((option) => ({
+                    label: option,
+                    value: option,
+                  }))}
+                />
+                <SelectField
+                  id="reportingMonth"
+                  label="Reporting Month"
+                  required
+                  placeholder="--None--"
+                  options={reportingMonthOptions.map((option) => ({
+                    label: option,
+                    value: option,
+                  }))}
+                />
+                <SelectField
+                  id="region"
+                  label="Region"
+                  required
+                  placeholder="--None--"
+                  options={regionOptions.map((option) => ({
+                    label: option,
+                    value: option,
+                  }))}
+                />
+                <SelectField
+                  id="relationshipManager"
+                  label="Relationship Manager"
+                  required
+                  placeholder="--None--"
+                  options={relationshipManagers.map((option) => ({
+                    label: option,
+                    value: option,
+                  }))}
+                />
+              </div>
+
+              <div className="overflow-x-auto rounded-2xl border border-red-200">
+                <table className="min-w-full text-center text-xs md:text-sm">
+                  <thead className="bg-red-600 text-[12px] font-semibold uppercase tracking-wide text-white">
+                    <tr>
+                      <th className="px-4 py-3">ID</th>
+                      <th className="px-4 py-3">Code</th>
+                      <th className="px-4 py-3">Associate</th>
+                      <th className="px-4 py-3">OD</th>
+                      <th className="px-4 py-3">TP</th>
+                      <th className="px-4 py-3">Net</th>
+                      <th className="px-4 py-3">ExtraAmt</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {brokerAllocations.map((allocation, index) => (
+                      <tr key={`${allocation.code}-${index}`} className="text-slate-700">
+                        <td className="px-4 py-3">{allocation.id}</td>
+                        <td className="px-4 py-3">{allocation.code}</td>
+                        <td className="px-4 py-3">{allocation.associate}</td>
+                        <td className="px-4 py-3">{allocation.od}</td>
+                        <td className="px-4 py-3">{allocation.tp}</td>
+                        <td className="px-4 py-3">{allocation.net}</td>
+                        <td className="px-4 py-3">{allocation.extraAmt}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-700">Payment Mode</p>
+                  <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-600">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="paymentMode"
+                        value="online"
+                        checked={paymentMode === "online"}
+                        onChange={() => setPaymentMode("online")}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      Online
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="paymentMode"
+                        value="cheque"
+                        checked={paymentMode === "cheque"}
+                        onChange={() => setPaymentMode("cheque")}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      Cheque
+                    </label>
+                  </div>
+                </div>
+                <div className="grid w-full max-w-sm gap-4 md:grid-cols-2">
+                  {paymentMode === "cheque" && (
+                    <>
+                      <TextField id="chequeNumber" label="Cheque Number" placeholder="Enter cheque number" required />
+                      <TextField id="chequeDate" label="Cheque Date" type="date" required />
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <FileUploadField id="supportingFile" name="supportingFile" label="File" hint="Upload supporting document (max 10 MB)." />
+              </div>
+
+              <div className="flex justify-end">
+                <button className="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700">
+                  Save Business
                 </button>
-              ))}
-            </div>
-            <div className="col-span-full">
-              <FileUploadField id="supportingFile" name="supportingFile" label="Supporting Document" />
-            </div>
-            <div className="col-span-full flex justify-end">
-              <button className="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700">
-                Save Business
-              </button>
+              </div>
             </div>
           </div>
         )}

@@ -11,6 +11,7 @@ type TextFieldProps = BaseFieldProps & ComponentProps<"input">;
 
 type SelectFieldProps = BaseFieldProps & {
   options: Array<{ label: string; value: string }>;
+  placeholder?: string;
 } & ComponentProps<"select">;
 
 export function TextField({ label, required, hint, error, className = "", ...props }: TextFieldProps) {
@@ -32,7 +33,7 @@ export function TextField({ label, required, hint, error, className = "", ...pro
   );
 }
 
-export function SelectField({ label, required, hint, error, options, className = "", ...props }: SelectFieldProps) {
+export function SelectField({ label, required, hint, error, options, placeholder = "Choose", className = "", ...props }: SelectFieldProps) {
   return (
     <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
       <span>
@@ -46,7 +47,7 @@ export function SelectField({ label, required, hint, error, options, className =
           }`}
           {...props}
         >
-          <option value="">Choose</option>
+          <option value="">{placeholder}</option>
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
