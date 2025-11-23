@@ -5,8 +5,6 @@
 
 import { apiRequest } from "./client";
 
-const API_BASE_URL = "/api";
-
 export interface BrokerNamePayload {
   brokername: string;
 }
@@ -27,7 +25,7 @@ export async function createBrokerName(
   authToken: string
 ): Promise<BrokerName> {
   return apiRequest<BrokerName, BrokerNamePayload>({
-    path: `${API_BASE_URL}/brokername`,
+    path: "/v1/brokername",
     method: "POST",
     authToken,
     body: payload,
@@ -39,7 +37,7 @@ export async function createBrokerName(
  */
 export async function getBrokerNames(authToken: string): Promise<BrokerName[]> {
   return apiRequest<BrokerName[]>({
-    path: `${API_BASE_URL}/brokername`,
+    path: "/v1/brokername",
     method: "GET",
     authToken,
   });
@@ -53,7 +51,7 @@ export async function getBrokerName(
   authToken: string
 ): Promise<BrokerName> {
   return apiRequest<BrokerName>({
-    path: `${API_BASE_URL}/brokername/${id}`,
+    path: `/v1/brokername/${id}`,
     method: "GET",
     authToken,
   });
@@ -68,7 +66,7 @@ export async function updateBrokerName(
   authToken: string
 ): Promise<BrokerName> {
   return apiRequest<BrokerName, BrokerNamePayload>({
-    path: `${API_BASE_URL}/brokername/${id}`,
+    path: `/v1/brokername/${id}`,
     method: "PUT",
     authToken,
     body: payload,
@@ -83,7 +81,7 @@ export async function deleteBrokerName(
   authToken: string
 ): Promise<{ message: string }> {
   return apiRequest<{ message: string }>({
-    path: `${API_BASE_URL}/brokername/${id}`,
+    path: `/v1/brokername/${id}`,
     method: "DELETE",
     authToken,
   });

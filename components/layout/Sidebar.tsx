@@ -32,14 +32,14 @@ const defaultNavItems: NavItem[] = [
     ],
   },
   {
-    label: "Consolidation",
-    href: "/dashboard/admin/consolidation",
+    label: "rm/associate",
+    href: "/dashboard/admin/rm-management",
     icon: ConsolidationIcon,
     children: [
-      { label: "Create Consolidation", href: "/dashboard/admin/consolidation" },
-      { label: "Consolidation List", href: "/dashboard/admin/consolidation/list" },
-      { label: "Business Entry", href: "/dashboard/admin/consolidation/business" },
-      { label: "Broker Registry", href: "/dashboard/admin/consolidation/brokers" },
+      { label: "Create rm/associate", href: "/dashboard/admin/rm-management" },
+      { label: "rm/associate List", href: "/dashboard/admin/rm-management/list" },
+      { label: "Business Entry", href: "/dashboard/admin/rm-management/business" },
+      { label: "Broker Registry", href: "/dashboard/admin/rm-management/brokers" },
     ],
   },
 ];
