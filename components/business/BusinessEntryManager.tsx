@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { FileUploadField, SelectField, TextField } from "@/components/ui/forms";
 import { createBusinessEntry, getBusinessEntries, type BusinessEntry } from "@/lib/api/businessentry";
 import { getBrokerNames, type BrokerName } from "@/lib/api/brokername";
+import { uploadDocument, type UploadResponse } from "@/lib/api/uploads";
 import { ApiError } from "@/lib/api/config";
 import { getAuthSession } from "@/lib/utils/storage";
 
@@ -146,6 +147,7 @@ const brokerAllocations = [
   },
 ];
 
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 
 interface BusinessEntryManagerProps {
@@ -168,6 +170,10 @@ export default function BusinessEntryManager({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [brokerOptions, setBrokerOptions] = useState<BrokerName[]>([]);
   const [isLoadingBrokers, setIsLoadingBrokers] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<UploadResponse | null>(null);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   const fetchEntries = async () => {
     const session = getAuthSession();
@@ -205,6 +211,85 @@ export default function BusinessEntryManager({
     fetchBrokerOptions();
   }, []);
 
+  const extractUploadMeta = (upload: UploadResponse | null): { id?: string; name?: string; url?: string } => {
+    if (!upload) {
+      return {};
+    }
+
+    const nestedData = upload.data && typeof upload.data === "object" ? (upload.data as Record<string, unknown>) : undefined;
+
+    const id =
+      (upload.id as string | undefined) ??
+      (upload.fileId as string | undefined) ??
+      (nestedData?.id as string | undefined) ??
+      (nestedData?.fileId as string | undefined);
+
+    const name =
+      (upload.fileName as string | undefined) ??
+      (upload.name as string | undefined) ??
+      (upload.originalName as string | undefined) ??
+      (nestedData?.fileName as string | undefined) ??
+      (nestedData?.name as string | undefined) ??
+      (nestedData?.originalName as string | undefined);
+
+    const url =
+      (upload.downloadUrl as string | undefined) ??
+      (upload.url as string | undefined) ??
+      (nestedData?.downloadUrl as string | undefined) ??
+      (nestedData?.url as string | undefined);
+
+    return { id, name, url };
+  };
+
+  const uploadMeta = extractUploadMeta(uploadedFile);
+
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    setUploadError(null);
+    setUploadedFile(null);
+
+    if (!file) {
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      setUploadError("File exceeds the 10 MB limit.");
+      event.target.value = "";
+      return;
+    }
+
+    const session = getAuthSession();
+    if (!session?.token) {
+      setUploadError("You must be signed in to upload documents.");
+      event.target.value = "";
+      return;
+    }
+
+    setIsUploadingFile(true);
+
+    try {
+      const response = await uploadDocument(file, session.token);
+      setUploadedFile(response);
+    } catch (error) {
+      console.error("Failed to upload file", error);
+      if (error instanceof ApiError) {
+        setUploadError(error.message || "Unable to upload document. Please try again.");
+      } else {
+        setUploadError("Something went wrong while uploading. Please try again.");
+      }
+      event.target.value = "";
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
+
+  const handleRemoveUploadedFile = () => {
+    setUploadedFile(null);
+    setUploadError(null);
+    setFileInputKey((previous) => previous + 1);
+  };
+
   const handleBusinessSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
@@ -213,6 +298,11 @@ export default function BusinessEntryManager({
     const session = getAuthSession();
     if (!session?.token) {
       setErrorMessage("You must be signed in to create a business entry.");
+      return;
+    }
+
+    if (isUploadingFile) {
+      setErrorMessage("Please wait for the document upload to complete before saving.");
       return;
     }
 
@@ -231,6 +321,18 @@ export default function BusinessEntryManager({
     payload.netPremium = Number(payload.netPremium) || 0;
     payload.grossPremium = Number(payload.grossPremium) || 0;
 
+    if (uploadMeta.id) {
+      payload.supportingFileId = uploadMeta.id;
+    }
+
+    if (uploadMeta.name) {
+      payload.supportingFileName = uploadMeta.name;
+    }
+
+    if (uploadMeta.url) {
+      payload.supportingFileUrl = uploadMeta.url;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -238,6 +340,9 @@ export default function BusinessEntryManager({
       setSuccessMessage("Business entry created successfully.");
       event.currentTarget.reset();
       setPaymentMode("online");
+      setUploadedFile(null);
+      setUploadError(null);
+      setFileInputKey((previous) => previous + 1);
       fetchEntries();
       setTimeout(() => setShowForm(false), 1500);
     } catch (error) {
@@ -495,7 +600,41 @@ export default function BusinessEntryManager({
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <FileUploadField id="supportingFile" name="supportingFile" label="File" hint="Upload supporting document (max 10 MB)." />
+                <FileUploadField
+                  key={fileInputKey}
+                  id="supportingFile"
+                  name="supportingFile"
+                  label="File"
+                  hint="Upload supporting document (max 10 MB)."
+                  onChange={handleFileChange}
+                  disabled={isUploadingFile}
+                  error={uploadError || undefined}
+                />
+                <div className="col-span-full space-y-2 text-xs text-slate-600">
+                  {isUploadingFile && <p className="rounded-xl bg-slate-100 px-3 py-2 text-slate-500">Uploading document...</p>}
+                  {uploadedFile && !isUploadingFile && !uploadError && (
+                    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700">
+                      <span className="font-semibold">{uploadMeta.name ?? "Document uploaded"}</span>
+                      {uploadMeta.url && (
+                        <a
+                          href={uploadMeta.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-semibold text-blue-600 hover:underline"
+                        >
+                          View
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleRemoveUploadedFile}
+                        className="text-xs font-semibold text-rose-600 transition hover:text-rose-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {(errorMessage || successMessage) && (
@@ -516,10 +655,10 @@ export default function BusinessEntryManager({
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isUploadingFile}
                   className="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {isSubmitting ? "Saving..." : "Save Business"}
+                  {isSubmitting ? "Saving..." : isUploadingFile ? "Uploading..." : "Save Business"}
                 </button>
               </div>
             </div>

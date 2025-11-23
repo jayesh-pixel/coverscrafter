@@ -28,7 +28,9 @@ export interface BusinessEntryPayload {
   paymentMode: "online" | "cheque";
   chequeNumber?: string;
   chequeDate?: string;
-  supportingFile?: File;
+  supportingFileId?: string;
+  supportingFileName?: string;
+  supportingFileUrl?: string;
 }
 
 export interface BusinessEntry {
@@ -60,6 +62,9 @@ export interface BusinessEntry {
   paymentMode: string;
   chequeNumber?: string;
   chequeDate?: string;
+  supportingFileId?: string;
+  supportingFileName?: string;
+  supportingFileUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
