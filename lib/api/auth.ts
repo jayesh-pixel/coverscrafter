@@ -37,7 +37,7 @@ export interface RegisterRmPayload {
   Dob: string;
   ContactNo: string;
   EmailID: string;
-  WorkingOffice: string;
+  State: string;
   Department: string;
   ReportingOffice: string;
   ReportingManager?: string;

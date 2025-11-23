@@ -65,7 +65,7 @@ type RmFormState = {
   dateOfBirth: string;
   contactNumber: string;
   emailId: string;
-  workingOffice: string;
+  state: string;
   department: string;
   reportingOffice: string;
   reportingManager: string;
@@ -82,7 +82,7 @@ const initialRmFormState: RmFormState = {
   dateOfBirth: "",
   contactNumber: "",
   emailId: "",
-  workingOffice: "",
+  state: "",
   department: "",
   reportingOffice: "",
   reportingManager: "",
@@ -180,7 +180,7 @@ export function RMForm() {
           Dob: rmForm.dateOfBirth,
           ContactNo: rmForm.contactNumber,
           EmailID: rmForm.emailId,
-          WorkingOffice: rmForm.workingOffice,
+          State: rmForm.state,
           Department: rmForm.department,
           ReportingOffice: rmForm.reportingOffice,
           ReportingManager: rmForm.reportingManager || undefined,
@@ -308,16 +308,16 @@ export function RMForm() {
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <SelectField
-              id="workingOffice"
-              label="Working Office"
+              id="state"
+              label="State"
               placeholder="--None--"
               required
-              value={rmForm.workingOffice}
-              onChange={(event) => updateRmForm("workingOffice", event.target.value)}
+              value={rmForm.state}
+              onChange={(event) => updateRmForm("state", event.target.value)}
               disabled={isSubmitting}
-              options={workingOffices.map((office) => ({
-                label: office,
-                value: office,
+              options={indianStates.map((state) => ({
+                label: state,
+                value: state,
               }))}
             />
             <SelectField
@@ -346,14 +346,13 @@ export function RMForm() {
                 value: office,
               }))}
             />
-            <SelectField
+            <TextField
               id="reportingManager"
               label="Reporting Manager"
-              placeholder="--None--"
+              placeholder="Reporting Manager"
               value={rmForm.reportingManager}
               onChange={(event) => updateRmForm("reportingManager", event.target.value)}
-              disabled
-              options={[]}
+              disabled={isSubmitting}
             />
           </div>
         </div>

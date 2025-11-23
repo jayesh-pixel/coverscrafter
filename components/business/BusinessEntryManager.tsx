@@ -7,6 +7,7 @@ import { getBrokerNames, type BrokerName } from "@/lib/api/brokername";
 import { uploadDocument, type UploadResponse } from "@/lib/api/uploads";
 import { ApiError } from "@/lib/api/config";
 import { getAuthSession } from "@/lib/utils/storage";
+import { getRMUsers, getAssociateUsers, type RMUser, type AssociateUser } from "@/lib/api/users";
 
 const insuranceCompanies = [
   "Acko General Insurance",
@@ -120,32 +121,8 @@ const subProductOptions = ["Retail Business", "Corporate Business"];
 
 const regionOptions = [...stateOptions];
 
-const relationshipManagers = [
-  "TEMP MUMBAI - Temp Mumbai",
-  "IPB0004 - KAJAL GAWADE",
-  "IPB0005 - JAYA BALLA",
-  "IPB0012 - Sanjay Mishra",
-  "REF01 - DHEERAJ GUPTA",
-  "REF02 - ALL INDIA JEWELLERS FEDRATION",
-  "TEMP004 - Rishabh Saxena",
-];
-
-const brokerList = ["DIRECT - DIRECT"];
-
 const reportingFyOptions = ["2025-26"];
 const reportingMonthOptions = ["November"];
-
-const brokerAllocations = [
-  {
-    id: "",
-    code: "DIRECT",
-    associate: "DIRECT",
-    od: "0",
-    tp: "0",
-    net: "0",
-    extraAmt: "0",
-  },
-];
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
@@ -161,7 +138,7 @@ export default function BusinessEntryManager({
     description = "Capture policy level business for consolidation.",
     initialShowForm = false
 }: BusinessEntryManagerProps) {
-  const [paymentMode, setPaymentMode] = useState<"online" | "cheque">("online");
+  const [paymentMode, setPaymentMode] = useState<"online" | "cheque" | "cash">("online");
   const [showForm, setShowForm] = useState(initialShowForm);
   const [businessEntries, setBusinessEntries] = useState<BusinessEntry[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -174,6 +151,9 @@ export default function BusinessEntryManager({
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [rmOptions, setRmOptions] = useState<RMUser[]>([]);
+  const [associateOptions, setAssociateOptions] = useState<AssociateUser[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
 
   const fetchEntries = async () => {
     const session = getAuthSession();
@@ -206,9 +186,29 @@ export default function BusinessEntryManager({
     }
   };
 
+  const fetchUsers = async () => {
+    const session = getAuthSession();
+    if (!session?.token) return;
+
+    setIsLoadingUsers(true);
+    try {
+      const [rms, associates] = await Promise.all([
+        getRMUsers(session.token),
+        getAssociateUsers(session.token),
+      ]);
+      setRmOptions(rms);
+      setAssociateOptions(associates);
+    } catch (error) {
+      console.error("Failed to fetch users", error);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
   useEffect(() => {
     fetchEntries();
     fetchBrokerOptions();
+    fetchUsers();
   }, []);
 
   const extractUploadMeta = (upload: UploadResponse | null): { id?: string; name?: string; url?: string } => {
@@ -316,21 +316,23 @@ export default function BusinessEntryManager({
     });
 
     payload.paymentMode = paymentMode;
-    payload.odPremium = Number(payload.odPremium) || 0;
-    payload.tpPremium = Number(payload.tpPremium) || 0;
-    payload.netPremium = Number(payload.netPremium) || 0;
-    payload.grossPremium = Number(payload.grossPremium) || 0;
-
-    if (uploadMeta.id) {
-      payload.supportingFileId = uploadMeta.id;
-    }
-
-    if (uploadMeta.name) {
-      payload.supportingFileName = uploadMeta.name;
-    }
+    payload.odPremium = (payload.odPremium as string) || "0";
+    payload.tpPremium = (payload.tpPremium as string) || "0";
+    payload.netPremium = (payload.netPremium as string) || "0";
+    payload.grossPremium = (payload.grossPremium as string) || "0";
+    payload.odPremiumPayin = (payload.odPremiumPayin as string) || "0";
+    payload.tpPremiumPayin = (payload.tpPremiumPayin as string) || "0";
+    payload.netPremiumPayin = (payload.netPremiumPayin as string) || "0";
+    payload.extraAmountPayin = (payload.extraAmountPayin as string) || "0";
+    payload.odPremiumPayout = (payload.odPremiumPayout as string) || "0";
+    payload.tpPremiumPayout = (payload.tpPremiumPayout as string) || "0";
+    payload.netPremiumPayout = (payload.netPremiumPayout as string) || "0";
+    payload.extraAmountPayout = (payload.extraAmountPayout as string) || "0";
 
     if (uploadMeta.url) {
-      payload.supportingFileUrl = uploadMeta.url;
+      payload.policyFile = uploadMeta.url;
+    } else {
+      payload.policyFile = "";
     }
 
     setIsSubmitting(true);
@@ -379,7 +381,7 @@ export default function BusinessEntryManager({
             <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <SelectField
-                  id="brokerName"
+                  id="brokerid"
                   label="Broker Name"
                   required
                   placeholder={
@@ -391,7 +393,7 @@ export default function BusinessEntryManager({
                   }
                   options={brokerOptions.map((broker) => ({
                     label: broker.brokername,
-                    value: broker.brokername,
+                    value: broker._id,
                   }))}
                   disabled={isLoadingBrokers || brokerOptions.length === 0}
                   hint={
@@ -479,13 +481,13 @@ export default function BusinessEntryManager({
             <div className="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <SelectField
-                  id="broker"
-                  label="Select Broker"
+                  id="associateId"
+                  label="Associate"
                   required
-                  placeholder="--None--"
-                  options={brokerList.map((option) => ({
-                    label: option,
-                    value: option,
+                  placeholder={isLoadingUsers ? "Loading..." : "--Select Associate--"}
+                  options={associateOptions.map((assoc) => ({
+                    label: `${assoc.name} (${assoc.associateCode})`,
+                    value: assoc._id,
                   }))}
                 />
                 <SelectField
@@ -509,54 +511,36 @@ export default function BusinessEntryManager({
                   }))}
                 />
                 <SelectField
-                  id="region"
-                  label="Region"
+                  id="rmState"
+                  label="RM State"
                   required
                   placeholder="--None--"
-                  options={regionOptions.map((option) => ({
+                  options={stateOptions.map((option) => ({
                     label: option,
                     value: option,
                   }))}
                 />
                 <SelectField
-                  id="relationshipManager"
+                  id="rmId"
                   label="Relationship Manager"
                   required
-                  placeholder="--None--"
-                  options={relationshipManagers.map((option) => ({
-                    label: option,
-                    value: option,
+                  placeholder={isLoadingUsers ? "Loading..." : "--Select RM--"}
+                  options={rmOptions.map((rm) => ({
+                    label: `${rm.firstName} ${rm.lastName} (${rm.empCode})`,
+                    value: rm._id,
                   }))}
                 />
               </div>
 
-              <div className="overflow-x-auto rounded-2xl border border-red-200">
-                <table className="min-w-full text-center text-xs md:text-sm">
-                  <thead className="bg-red-600 text-[12px] font-semibold uppercase tracking-wide text-white">
-                    <tr>
-                      <th className="px-4 py-3">ID</th>
-                      <th className="px-4 py-3">Code</th>
-                      <th className="px-4 py-3">Associate</th>
-                      <th className="px-4 py-3">OD</th>
-                      <th className="px-4 py-3">TP</th>
-                      <th className="px-4 py-3">Net</th>
-                      <th className="px-4 py-3">ExtraAmt</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white">
-                    {brokerAllocations.map((allocation, index) => (
-                      <tr key={`${allocation.code}-${index}`} className="text-slate-700">
-                        <td className="px-4 py-3">{allocation.id}</td>
-                        <td className="px-4 py-3">{allocation.code}</td>
-                        <td className="px-4 py-3">{allocation.associate}</td>
-                        <td className="px-4 py-3">{allocation.od}</td>
-                        <td className="px-4 py-3">{allocation.tp}</td>
-                        <td className="px-4 py-3">{allocation.net}</td>
-                        <td className="px-4 py-3">{allocation.extraAmt}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <TextField id="odPremiumPayin" label="OD Premium Payin" type="number" placeholder="0" required />
+                <TextField id="tpPremiumPayin" label="TP Premium Payin" type="number" placeholder="0" required />
+                <TextField id="netPremiumPayin" label="Net Premium Payin" type="number" placeholder="0" required />
+                <TextField id="extraAmountPayin" label="Extra Amount Payin" type="number" placeholder="0" required />
+                <TextField id="odPremiumPayout" label="OD Premium Payout" type="number" placeholder="0" required />
+                <TextField id="tpPremiumPayout" label="TP Premium Payout" type="number" placeholder="0" required />
+                <TextField id="netPremiumPayout" label="Net Premium Payout" type="number" placeholder="0" required />
+                <TextField id="extraAmountPayout" label="Extra Amount Payout" type="number" placeholder="0" required />
               </div>
             </div>
 
@@ -586,6 +570,17 @@ export default function BusinessEntryManager({
                         className="h-4 w-4 text-blue-600"
                       />
                       Cheque
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="paymentMode"
+                        value="cash"
+                        checked={paymentMode === "cash"}
+                        onChange={() => setPaymentMode("cash")}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      Cash
                     </label>
                   </div>
                 </div>
@@ -722,9 +717,9 @@ export default function BusinessEntryManager({
                     <td className="px-4 py-4 text-slate-600">{entry.registrationNumber}</td>
                     <td className="px-4 py-4 text-slate-600">{entry.reportingFy}</td>
                     <td className="px-4 py-4 text-slate-600">{entry.reportingMonth}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.broker}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.brokerid}</td>
                     <td className="px-4 py-4 text-slate-600">{entry.paymentMode}</td>
-                    <td className="px-4 py-4 text-slate-600">₹{entry.grossPremium.toLocaleString()}</td>
+                    <td className="px-4 py-4 text-slate-600">₹{Number(entry.grossPremium).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>

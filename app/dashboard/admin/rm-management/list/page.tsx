@@ -70,27 +70,27 @@ export default function ConsolidationListPage() {
       const mappedRMs: RelationshipManagerRecord[] = rmUsers.map((rm) => {
         // Filter associates that belong to this RM (you may need to adjust based on your data structure)
         const rmAssociates = associateUsers
-          .filter((assoc) => !assoc.IsDeleted)
+          .filter((assoc) => assoc.status !== "deleted")
           .map((assoc) => ({
-            name: `${assoc.FirstName} ${assoc.MiddleName || ""} ${assoc.LastName}`.trim(),
-            code: assoc.AssociateCode,
-            brokerCode: assoc.BrokerCode,
+            name: assoc.name,
+            code: assoc.posCode || "N/A",
+            brokerCode: assoc.associateCode,
             status: (assoc.status === "active" ? "Active" : assoc.status === "inactive" ? "Inactive" : "Pending") as AssociateRecord["status"],
-            contact: assoc.ContactNo,
-            email: assoc.EmailID,
+            contact: assoc.contactNo,
+            email: assoc.email,
           }));
 
         return {
           _id: rm._id,
-          name: `${rm.FirstName} ${rm.MiddleName || ""} ${rm.LastName}`.trim(),
-          empCode: rm.EmpCode,
-          office: rm.WorkingOffice,
-          department: rm.Department,
-          reportingManager: rm.ReportingManager || "N/A",
-          status: rm.Resigned ? "Resigned" : (rm.status === "active" ? "Active" : "Onboarding") as RelationshipManagerRecord["status"],
-          contact: rm.ContactNo,
-          email: rm.EmailID,
-          joiningDate: new Date(rm.JoiningDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+          name: `${rm.firstName} ${rm.middleName || ""} ${rm.lastName}`.trim(),
+          empCode: rm.empCode,
+          office: rm.state,
+          department: rm.department,
+          reportingManager: rm.reportingManager || "N/A",
+          status: rm.resigned ? "Resigned" : (rm.status === "active" ? "Active" : "Onboarding") as RelationshipManagerRecord["status"],
+          contact: rm.contactNo,
+          email: rm.email,
+          joiningDate: new Date(rm.joiningDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
           associates: rmAssociates,
         };
       });

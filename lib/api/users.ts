@@ -20,39 +20,42 @@ export interface UserProfile {
 }
 
 export interface RMUser extends UserProfile {
-  EmpCode: string;
-  JoiningDate: string;
-  FirstName: string;
-  MiddleName?: string;
-  LastName: string;
-  Dob: string;
-  ContactNo: string;
-  EmailID: string;
-  WorkingOffice: string;
-  Department: string;
-  ReportingOffice: string;
-  ReportingManager?: string;
-  Resigned: boolean;
-  ResignationDate?: string;
+  empCode: string;
+  joiningDate: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  dob: string;
+  contactNo: string;
+  state: string;
+  department: string;
+  reportingOffice: string;
+  reportingManager?: string;
+  resigned: boolean;
+  resignationDate?: string;
 }
 
 export interface AssociateUser extends UserProfile {
-  AssociateCode: string;
-  FirstName: string;
-  MiddleName?: string;
-  LastName: string;
-  Dob: string;
-  ContactNo: string;
-  EmailID: string;
-  PanNo: string;
-  AadharNo: string;
-  BankName: string;
-  BankAccountNo: string;
-  BankIFSC: string;
-  BankBranch: string;
-  SettlementDueDate: string;
-  BrokerCode: string;
-  IsDeleted: boolean;
+  associateCode: string;
+  associatePanNo: string;
+  associateAadharNo: string;
+  contactPerson: string;
+  contactNo: string;
+  associateStateName: string;
+  associateAddress: string;
+  bpanNo: string;
+  bpanName: string;
+  accountNo: string;
+  accountType: string;
+  default: boolean;
+  ifsc: string;
+  bankName: string;
+  stateName: string;
+  branchName: string;
+  bankAddress: string;
+  isPos: boolean;
+  posCode?: string;
+  createdBy?: string;
 }
 
 /**

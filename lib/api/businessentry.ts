@@ -1,7 +1,7 @@
 import { apiRequest } from "./client";
 
 export interface BusinessEntryPayload {
-  brokerName: string;
+  brokerid: string;
   insuranceCompany: string;
   policyNumber: string;
   clientName: string;
@@ -16,26 +16,32 @@ export interface BusinessEntryPayload {
   policyStartDate: string;
   policyEndDate: string;
   policyTpEndDate: string;
-  odPremium: number;
-  tpPremium: number;
-  netPremium: number;
-  grossPremium: number;
-  broker: string;
+  odPremium: string;
+  tpPremium: string;
+  netPremium: string;
+  grossPremium: string;
+  odPremiumPayin: string;
+  tpPremiumPayin: string;
+  netPremiumPayin: string;
+  extraAmountPayin: string;
+  odPremiumPayout: string;
+  tpPremiumPayout: string;
+  netPremiumPayout: string;
+  extraAmountPayout: string;
+  associateId: string;
   reportingFy: string;
   reportingMonth: string;
-  region: string;
-  relationshipManager: string;
-  paymentMode: "online" | "cheque";
+  rmState: string;
+  rmId: string;
+  paymentMode: string;
   chequeNumber?: string;
   chequeDate?: string;
-  supportingFileId?: string;
-  supportingFileName?: string;
-  supportingFileUrl?: string;
+  policyFile: string;
 }
 
 export interface BusinessEntry {
   _id: string;
-  brokerName: string;
+  brokerid: string;
   insuranceCompany: string;
   policyNumber: string;
   clientName: string;
@@ -50,21 +56,27 @@ export interface BusinessEntry {
   policyStartDate: string;
   policyEndDate: string;
   policyTpEndDate: string;
-  odPremium: number;
-  tpPremium: number;
-  netPremium: number;
-  grossPremium: number;
-  broker: string;
+  odPremium: string;
+  tpPremium: string;
+  netPremium: string;
+  grossPremium: string;
+  odPremiumPayin: string;
+  tpPremiumPayin: string;
+  netPremiumPayin: string;
+  extraAmountPayin: string;
+  odPremiumPayout: string;
+  tpPremiumPayout: string;
+  netPremiumPayout: string;
+  extraAmountPayout: string;
+  associateId: string;
   reportingFy: string;
   reportingMonth: string;
-  region: string;
-  relationshipManager: string;
+  rmState: string;
+  rmId: string;
   paymentMode: string;
   chequeNumber?: string;
   chequeDate?: string;
-  supportingFileId?: string;
-  supportingFileName?: string;
-  supportingFileUrl?: string;
+  policyFile: string;
   createdAt: string;
   updatedAt: string;
 }

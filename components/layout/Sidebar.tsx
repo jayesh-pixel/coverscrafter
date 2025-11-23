@@ -3,8 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ComponentType, ReactNode, useMemo, useState } from "react";
-import { clearAuthSession } from "@/lib/utils/storage";
+import { ComponentType, ReactNode, useEffect, useMemo, useState } from "react";
+import { clearAuthSession, getAuthSession } from "@/lib/utils/storage";
 
 export type NavItem = {
   label: string;
