@@ -9,6 +9,7 @@ import {
   deleteBrokerName,
   type BrokerName,
 } from "@/lib/api/brokername";
+import { ApiError } from "@/lib/api/config";
 import { getAuthSession } from "@/lib/utils/storage";
 
 interface BrokerNameManagerProps {
@@ -76,10 +77,29 @@ export default function BrokerNameManager({
     try {
       await createBrokerName({ brokername }, session.token);
       setSuccessMessage("Broker name created successfully.");
-      event.currentTarget.reset();
-      fetchBrokerNames();
+      
+      // Reset form
+      const form = event.currentTarget;
+      if (form) {
+        form.reset();
+      }
+      
+      // Refresh the list
+      await fetchBrokerNames();
+      
+      // Reload page after short delay to show success message
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to create broker name");
+      if (error instanceof ApiError) {
+        // Check if error response has specific error message
+        const errorData = error.data as any;
+        const errorMsg = errorData?.error || error.message || "Failed to create broker name";
+        setErrorMessage(errorMsg);
+      } else {
+        setErrorMessage(error instanceof Error ? error.message : "Failed to create broker name");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -111,7 +131,13 @@ export default function BrokerNameManager({
       setEditingId(null);
       fetchBrokerNames();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to update broker name");
+      if (error instanceof ApiError) {
+        const errorData = error.data as any;
+        const errorMsg = errorData?.error || error.message || "Failed to update broker name";
+        setErrorMessage(errorMsg);
+      } else {
+        setErrorMessage(error instanceof Error ? error.message : "Failed to update broker name");
+      }
     }
   };
 
@@ -132,7 +158,13 @@ export default function BrokerNameManager({
       setSuccessMessage("Broker name deleted successfully.");
       fetchBrokerNames();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to delete broker name");
+      if (error instanceof ApiError) {
+        const errorData = error.data as any;
+        const errorMsg = errorData?.error || error.message || "Failed to delete broker name";
+        setErrorMessage(errorMsg);
+      } else {
+        setErrorMessage(error instanceof Error ? error.message : "Failed to delete broker name");
+      }
     }
   };
 

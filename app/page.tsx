@@ -7,6 +7,7 @@ import { login } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/config";
 import { saveAuthSession } from "@/lib/utils/storage";
 import { resolveDashboardRoute } from "@/lib/utils/routing";
+import { getIdTokenFromCustomToken } from "@/lib/firebase/auth";
 
 const highlights = [
   "Single sign-on ready",
@@ -28,8 +29,16 @@ export default function Home() {
     setIsSubmitting(true);
 
     try {
+      // Step 1: Login to backend API to get custom token
       const response = await login({ email, password });
-      saveAuthSession(response.token, response.user, rememberMe);
+      
+      // Step 2: Sign in with Firebase using custom token and get ID token
+      const idToken = await getIdTokenFromCustomToken(response.token);
+      
+      // Step 3: Save the Firebase ID token (this is the real access token for APIs)
+      saveAuthSession(idToken, response.user, rememberMe);
+      
+      // Step 4: Redirect to appropriate dashboard
       router.replace(resolveDashboardRoute(response.user?.role ?? response.role));
     } catch (error) {
       if (error instanceof ApiError) {

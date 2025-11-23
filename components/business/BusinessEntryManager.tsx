@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { FileUploadField, SelectField, TextField } from "@/components/ui/forms";
 import { createBusinessEntry, getBusinessEntries, type BusinessEntry } from "@/lib/api/businessentry";
+import { getBrokerNames, type BrokerName } from "@/lib/api/brokername";
 import { ApiError } from "@/lib/api/config";
 import { getAuthSession } from "@/lib/utils/storage";
 
@@ -116,23 +117,7 @@ const productOptions = [
 
 const subProductOptions = ["Retail Business", "Corporate Business"];
 
-const regionOptions = [
-  "DELHI",
-  "GURGAON OFFICE",
-  "MUMBAI",
-  "UTTAR PRADESH",
-  "WEST BENGAL",
-  "MPCG - 2",
-  "RAJASTHAN",
-  "MPCG",
-  "GUJARAT",
-  "CORPORATE OFFICE",
-  "DELHI - 2",
-  "ROM",
-  "ANDRA PRADESH",
-  "BIHAR",
-  "NAVI MUMBAI",
-];
+const regionOptions = [...stateOptions];
 
 const relationshipManagers = [
   "TEMP MUMBAI - Temp Mumbai",
@@ -181,6 +166,8 @@ export default function BusinessEntryManager({
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [brokerOptions, setBrokerOptions] = useState<BrokerName[]>([]);
+  const [isLoadingBrokers, setIsLoadingBrokers] = useState(false);
 
   const fetchEntries = async () => {
     const session = getAuthSession();
@@ -197,8 +184,25 @@ export default function BusinessEntryManager({
     }
   };
 
+  const fetchBrokerOptions = async () => {
+    const session = getAuthSession();
+    if (!session?.token) return;
+
+    setIsLoadingBrokers(true);
+    try {
+      const brokers = await getBrokerNames(session.token);
+      setBrokerOptions(brokers.filter((broker) => !broker.isDeleted));
+    } catch (error) {
+      console.error("Failed to fetch broker names", error);
+      setBrokerOptions([]);
+    } finally {
+      setIsLoadingBrokers(false);
+    }
+  };
+
   useEffect(() => {
     fetchEntries();
+    fetchBrokerOptions();
   }, []);
 
   const handleBusinessSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -269,7 +273,28 @@ export default function BusinessEntryManager({
           <form className="space-y-6" onSubmit={handleBusinessSubmit}>
             <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <TextField id="brokerName" label="Broker Name" placeholder="Broker Name" required />
+                <SelectField
+                  id="brokerName"
+                  label="Broker Name"
+                  required
+                  placeholder={
+                    isLoadingBrokers
+                      ? "Loading brokers..."
+                      : brokerOptions.length === 0
+                      ? "No brokers found"
+                      : "--Select Broker--"
+                  }
+                  options={brokerOptions.map((broker) => ({
+                    label: broker.brokername,
+                    value: broker.brokername,
+                  }))}
+                  disabled={isLoadingBrokers || brokerOptions.length === 0}
+                  hint={
+                    !isLoadingBrokers && brokerOptions.length === 0
+                      ? "Add brokers in the Broker Directory before creating entries."
+                      : undefined
+                  }
+                />
                 <SelectField
                   id="insuranceCompany"
                   label="Insurance Company"

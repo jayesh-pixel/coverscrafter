@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ComponentType, ReactNode, useMemo, useState } from "react";
+import { clearAuthSession } from "@/lib/utils/storage";
 
 export type NavItem = {
   label: string;
@@ -45,7 +46,9 @@ const defaultNavItems: NavItem[] = [
 
 export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh Pandey", userRole = "Admin", userInitials }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   const initials = useMemo(() => {
@@ -59,6 +62,11 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
       .slice(0, 3);
   }, [userInitials, userName]);
 
+  const handleLogout = () => {
+    clearAuthSession();
+    router.replace("/");
+  };
+
   const handleGroupToggle = (label: string, nextState: boolean) => {
     if (!isExpanded) {
       setIsExpanded(true);
@@ -70,11 +78,30 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
   };
 
   return (
-    <aside
-      className={`sticky top-0 hidden h-screen flex-col border-r border-slate-200 bg-slate-50/80 backdrop-blur-md py-6 text-slate-700 transition-all duration-300 ease-in-out lg:flex ${
-        isExpanded ? "w-72 px-5" : "w-[90px] px-3"
-      }`}
-    >
+    <>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsMobileOpen(!isMobileOpen)}
+        className="fixed top-4 left-4 z-50 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 text-white shadow-lg lg:hidden"
+        aria-label="Toggle menu"
+      >
+        {isMobileOpen ? <CloseIcon /> : <MenuIcon />}
+      </button>
+
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div
+          onClick={() => setIsMobileOpen(false)}
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed lg:sticky top-0 z-40 h-screen flex-col border-r border-slate-200 bg-slate-50/80 backdrop-blur-md py-6 text-slate-700 transition-all duration-300 ease-in-out ${
+          isMobileOpen ? "flex" : "hidden lg:flex"
+        } ${isExpanded ? "w-72 px-5" : "w-[90px] px-3"}`}
+      >
       <div className="flex h-full flex-col gap-6 overflow-y-auto scrollbar-hide">
         <div className={`flex items-center transition-all duration-300 ${isExpanded ? "flex-row justify-between px-1" : "flex-col justify-center gap-4"}`}>
           <Link href="/" className="transition-transform hover:scale-105">
@@ -227,8 +254,24 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
                <span className="truncate text-xs font-medium text-slate-500">{userRole}</span>
            </div>
         </div>
+
+        <button
+          onClick={handleLogout}
+          className={`group relative flex items-center rounded-2xl transition-all duration-300 hover:scale-105 hover:z-10 ${
+            isExpanded ? "px-4 py-3.5 gap-3 w-full" : "h-14 w-14 justify-center mx-auto gap-0"
+          } bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white hover:shadow-md hover:shadow-rose-200/50`}
+          aria-label="Logout"
+        >
+          <div className="shrink-0">
+            <LogoutIcon />
+          </div>
+          <span className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${isExpanded ? "w-auto opacity-100" : "w-0 opacity-0"}`}>
+            <span className="text-sm font-semibold">Logout</span>
+          </span>
+        </button>
       </div>
     </aside>
+    </>
   );
 }
 
@@ -348,6 +391,43 @@ function SidebarCollapseIcon() {
       <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
       <path d="M9 3V21" stroke="currentColor" strokeWidth="2" />
       <path d="M15 9L12 12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function LogoutIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16 17L21 12L16 7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M21 12H9"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
