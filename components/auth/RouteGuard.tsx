@@ -7,7 +7,8 @@ import { resolveDashboardRoute } from "@/lib/utils/routing";
 
 // Map dashboard paths to allowed roles
 const PATH_ROLE_MAP: Record<string, string[]> = {
-  "/dashboard/admin": ["admin", "superadmin", "rmadmin"],
+  "/dashboard/admin": ["admin", "superadmin"],
+  "/dashboard/rm-management": ["rmadmin"],
   "/dashboard/rm": ["rm", "relationship-manager"],
   "/dashboard/associate": ["associate", "pos"],
   "/dashboard/executive": ["executive"],
