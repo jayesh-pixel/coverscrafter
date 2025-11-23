@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { FileUploadField, SelectField, TextField } from "@/components/ui/forms";
 
 const insuranceCompanies = [
@@ -206,6 +206,42 @@ export default function BusinessEntryManager({
   const [showForm, setShowForm] = useState(initialShowForm);
   const [businessEntries] = useState(defaultBusinessEntries);
 
+  const handleBusinessSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const payload: Record<string, unknown> = {};
+
+    formData.forEach((value, key) => {
+      if (value instanceof File) {
+        if (!value.size) {
+          return;
+        }
+        const fileMeta = {
+          name: value.name,
+          size: value.size,
+          type: value.type,
+        };
+        const existing = payload[key];
+        payload[key] = existing
+          ? Array.isArray(existing)
+            ? [...existing, fileMeta]
+            : [existing, fileMeta]
+          : fileMeta;
+      } else {
+        const existing = payload[key];
+        payload[key] = existing
+          ? Array.isArray(existing)
+            ? [...existing, value]
+            : [existing, value]
+          : value;
+      }
+    });
+
+    payload.paymentMode = paymentMode;
+
+    console.log("Business Entry Submission", JSON.stringify(payload, null, 2));
+  };
+
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -225,9 +261,10 @@ export default function BusinessEntryManager({
         </header>
 
         {showForm && (
-          <div className="space-y-6">
+          <form className="space-y-6" onSubmit={handleBusinessSubmit}>
             <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <TextField id="brokerName" label="Broker Name" placeholder="Broker Name" required />
                 <SelectField
                   id="insuranceCompany"
                   label="Insurance Company"
@@ -432,12 +469,15 @@ export default function BusinessEntryManager({
               </div>
 
               <div className="flex justify-end">
-                <button className="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700">
+                <button
+                  type="submit"
+                  className="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700"
+                >
                   Save Business
                 </button>
               </div>
             </div>
-          </div>
+          </form>
         )}
       </section>
 

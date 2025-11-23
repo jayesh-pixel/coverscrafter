@@ -15,6 +15,11 @@ type SelectFieldProps = BaseFieldProps & {
 } & ComponentProps<"select">;
 
 export function TextField({ label, required, hint, error, className = "", ...props }: TextFieldProps) {
+  const inputProps = {
+    ...props,
+    name: props.name ?? props.id,
+  };
+
   return (
     <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
       <span>
@@ -25,7 +30,7 @@ export function TextField({ label, required, hint, error, className = "", ...pro
         className={`rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition-all focus:border-blue-500 focus:shadow-md focus:ring-2 focus:ring-blue-100 ${
           className ?? ""
         }`}
-        {...props}
+        {...inputProps}
       />
       {hint && <p className="text-xs font-normal text-slate-400">{hint}</p>}
       {error && <p className="text-xs font-normal text-rose-500">{error}</p>}
@@ -34,6 +39,11 @@ export function TextField({ label, required, hint, error, className = "", ...pro
 }
 
 export function SelectField({ label, required, hint, error, options, placeholder = "Choose", className = "", ...props }: SelectFieldProps) {
+  const selectProps = {
+    ...props,
+    name: props.name ?? props.id,
+  };
+
   return (
     <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
       <span>
@@ -45,7 +55,7 @@ export function SelectField({ label, required, hint, error, options, placeholder
           className={`w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition-all focus:border-blue-500 focus:shadow-md focus:ring-2 focus:ring-blue-100 ${
             className ?? ""
           }`}
-          {...props}
+          {...selectProps}
         >
           <option value="">{placeholder}</option>
           {options.map((option) => (
@@ -65,6 +75,11 @@ export function SelectField({ label, required, hint, error, options, placeholder
 type FileUploadFieldProps = BaseFieldProps & ComponentProps<"input">;
 
 export function FileUploadField({ label, required, hint = "Upload 1 supported file. Max 10 MB.", error, className = "", ...props }: FileUploadFieldProps) {
+  const inputProps = {
+    ...props,
+    name: props.name ?? props.id,
+  };
+
   return (
     <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
       <span>
@@ -81,7 +96,7 @@ export function FileUploadField({ label, required, hint = "Upload 1 supported fi
         </svg>
         <span className="text-xs font-semibold text-slate-700">Drag & drop file</span>
         <span className="text-xs text-slate-500">or click to browse</span>
-        <input type="file" className="sr-only" {...props} />
+        <input type="file" className="sr-only" {...inputProps} />
       </div>
       {hint && <p className="text-xs font-normal text-slate-400">{hint}</p>}
       {error && <p className="text-xs font-normal text-rose-500">{error}</p>}
