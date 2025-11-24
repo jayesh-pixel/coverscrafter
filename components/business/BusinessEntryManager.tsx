@@ -111,11 +111,93 @@ const lineOfBusinessOptions = [
   "MOTOR Insurance",
 ];
 
-const productOptions = [
-  "AVIATION - HULL ALL RISKS POLICY SCHEDULE",
-  "Aviation Loss of Licence Insurance Policy",
-  "Aviation Personal Accident Insurance policy",
-];
+const productsByLineOfBusiness: Record<string, string[]> = {
+  "Aviation Insurance": [
+    "AVIATION - HULL ALL RISKS POLICY SCHEDULE",
+    "Aviation Loss of Licence Insurance Policy",
+    "Aviation Personal Accident Insurance policy",
+  ],
+  "ENGINEERING Insurance": [
+    "Boilers & Pressure Plants Policy",
+    "Contractor's All Risk Policy",
+    "Contractor's Plant and Machinery Policy",
+    "Electronic Equipment Policy",
+    "Erection All Risks Policy",
+    "Machinery Breakdown Policy",
+    "Portable Electronic Equipment Insurance Policy",
+  ],
+  "FIRE Insurance": [
+    "Standard Fire & Special Perils Policy",
+    "Fire Loss Of Profit Insurance Policy",
+    "Industrial All Risk Policy",
+  ],
+  "HEALTH & PA Insurance": [
+    "Family Floater Health Policy",
+    "Individual Health Policy",
+    "Group Health Policy",
+    "Group Personal Accident Policy",
+    "Personal Accident Policy",
+    "Corona Kavach (individual Health) Policy",
+    "Corona Kavach (Family Health) Policy",
+  ],
+  "LIABILITY Insurance": [
+    "Commercial General Liability Policy",
+    "Cyber Liability",
+    "Directors & Officers Liability",
+    "Workmen Compensation Policy",
+    "Lift Policy",
+    "Professional Indemnity Policy",
+    "Public Liability Policy",
+    "Public Liability Industrial Risk Policy",
+    "LIABILITY All Others",
+    "CLINICAL TRAIL INSURANCE",
+  ],
+  "Life Insurance": [
+    "Group Term Life Policy",
+    "Life Insurance Policy",
+    "Term Life Policy",
+  ],
+  "MARINE & HULL Insurance": [
+    "Marine Policy",
+    "Marine-Hull Policy",
+  ],
+  "Miscellaneous Insurance": [
+    "Travel Insurance Policy",
+    "All Risk Policy",
+    "Burglary Policy",
+    "Business Shield Policy",
+    "Business Suraksha Classic Policy",
+    "Event Policy",
+    "Fidelity Guarantee Policy",
+    "House Hold Package Policy",
+    "Jeweler's Shop Package Policy",
+    "Money Insurance Policy",
+    "Office Package Policy",
+    "Package Policy",
+    "Shopkeeper Package Policy",
+    "Society Insurance Policy",
+    "Stock Broker Insurance Policy",
+    "Trade Credit Insurance Policy",
+    "Miscellanious Others",
+    "Live Stock Insurance",
+    "Plate Glass Insurance Policy",
+  ],
+  "MOTOR Insurance": [
+    "GCV Vehicle Liability Policy",
+    "GCV Vehicle Package Policy",
+    "Misc. D Vehicle Liability Policy",
+    "Misc. D Vehicle Package Policy",
+    "Passenger Carrying Vehicle Liability Policy",
+    "Passenger Carrying Vehicle Package Policy",
+    "Private Car Liability Policy",
+    "Private Car Package Policy",
+    "Two Wheeler Liability Policy",
+    "Two Wheeler Package Policy",
+    "Two Wheeler OD Policy",
+    "Private Car OD Policy",
+    "CPA Policy",
+  ],
+};
 
 const subProductOptions = ["Retail Business", "Corporate Business"];
 
@@ -170,6 +252,7 @@ export default function BusinessEntryManager({
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedLineOfBusiness, setSelectedLineOfBusiness] = useState<string>("");
   const [brokerOptions, setBrokerOptions] = useState<BrokerName[]>([]);
   const [isLoadingBrokers, setIsLoadingBrokers] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<UploadResponse | null>(null);
@@ -546,6 +629,7 @@ export default function BusinessEntryManager({
       setSelectedState("");
       setSelectedRmId("");
       setSelectedAssociateId("");
+      setSelectedLineOfBusiness("");
       setRmOptions([]);
       setAssociateOptions([]);
       setUploadedFile(null);
@@ -651,16 +735,19 @@ export default function BusinessEntryManager({
                     label: option,
                     value: option,
                   }))}
+                  onChange={(e) => setSelectedLineOfBusiness(e.target.value)}
+                  value={selectedLineOfBusiness}
                 />
                 <SelectField
                   id="product"
                   label="Product"
                   required
-                  placeholder="--None--"
-                  options={productOptions.map((option) => ({
+                  placeholder={!selectedLineOfBusiness ? "Select Line of Business first" : "--None--"}
+                  options={(selectedLineOfBusiness ? productsByLineOfBusiness[selectedLineOfBusiness] || [] : []).map((option) => ({
                     label: option,
                     value: option,
                   }))}
+                  disabled={!selectedLineOfBusiness}
                 />
                 <SelectField
                   id="subProduct"
