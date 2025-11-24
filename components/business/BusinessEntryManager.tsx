@@ -502,6 +502,11 @@ export default function BusinessEntryManager({
       return;
     }
 
+    if (!uploadedFile || !uploadMeta.id) {
+      setErrorMessage("Please upload a policy document before saving.");
+      return;
+    }
+
     const formData = new FormData(event.currentTarget);
     const payload: Record<string, string | number> = {};
 

@@ -630,18 +630,18 @@ export function AssociateForm({
                 disabled={isSubmitting || isLoadingRMs}
               />
               <TextField
-                id="brokerCode"
-                label="Broker Code"
-                placeholder="Broker Code"
+                id="associateCode"
+                label="Associate Code"
+                placeholder="Associate Code"
                 required
                 value={associateForm.brokerCode}
                 onChange={(event) => updateAssociateForm("brokerCode", event.target.value)}
                 disabled={isSubmitting}
               />
               <TextField
-                id="brokerName"
-                label="Broker Name"
-                placeholder="Broker Name"
+                id="associateName"
+                label="Associate Name"
+                placeholder="Associate Name"
                 required
                 value={associateForm.brokerName}
                 onChange={(event) => updateAssociateForm("brokerName", event.target.value)}
