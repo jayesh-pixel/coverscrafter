@@ -32,7 +32,8 @@ export async function uploadDocument(file: File, authToken: string, fieldName = 
 
   if (!response.ok) {
     const message = isJson && payload?.message ? String(payload.message) : "Failed to upload document.";
-    throw new ApiError(message, response.status, payload);
+    const serverMsg = isJson && payload?.serverMsg ? String(payload.serverMsg) : '';
+    throw new ApiError(message, response.status, serverMsg);
   }
 
   if (!isJson) {

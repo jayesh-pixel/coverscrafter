@@ -5,19 +5,13 @@ export const DEFAULT_HEADERS: Record<string, string> = {
 };
 
 export class ApiError extends Error {
-  public readonly statusCode: number;
-  public readonly errorCode: string;
-  public readonly isOperational: boolean;
-  public readonly details?: any;
-  public readonly status: number; // Keep for backward compatibility
+  public readonly status: number;
+  public readonly serverMsg: string;
 
-  constructor(message: string, statusCode: number, errorCode: string = 'UNKNOWN_ERROR', isOperational: boolean = true, details?: any) {
+  constructor(message: string, status: number, serverMsg: string = '') {
     super(message);
     this.name = "ApiError";
-    this.statusCode = statusCode;
-    this.status = statusCode; // Backward compatibility
-    this.errorCode = errorCode;
-    this.isOperational = isOperational;
-    this.details = details;
+    this.status = status;
+    this.serverMsg = serverMsg;
   }
 }

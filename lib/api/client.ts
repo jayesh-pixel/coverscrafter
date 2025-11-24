@@ -44,17 +44,14 @@ export async function apiRequest<TResponse, TBody = unknown>({
   const payload = isJson ? await response.json() : await response.text();
 
   if (!response.ok) {
-    // Extract error message from various possible fields
-    const message = isJson && (payload?.message || payload?.error) 
-      ? (payload.message || payload.error) 
+    // Extract error message from StandardErrorResponse format
+    const message = isJson && payload?.message 
+      ? payload.message 
       : response.statusText || "Request failed";
     
-    // Extract error details if available
-    const errorCode = payload?.errorCode || payload?.code || 'UNKNOWN_ERROR';
-    const isOperational = payload?.isOperational !== undefined ? payload.isOperational : true;
-    const details = payload?.details || payload;
+    const serverMsg = isJson && payload?.serverMsg ? payload.serverMsg : '';
     
-    throw new ApiError(message, response.status, errorCode, isOperational, details);
+    throw new ApiError(message, response.status, serverMsg);
   }
 
   return payload as TResponse;
