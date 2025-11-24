@@ -44,7 +44,9 @@ export async function apiRequest<TResponse, TBody = unknown>({
   const payload = isJson ? await response.json() : await response.text();
 
   if (!response.ok) {
-    const message = isJson && payload?.message ? payload.message : response.statusText || "Request failed";
+    const message = isJson && (payload?.message || payload?.error) 
+      ? (payload.message || payload.error) 
+      : response.statusText || "Request failed";
     throw new ApiError(message, response.status, payload);
   }
 
