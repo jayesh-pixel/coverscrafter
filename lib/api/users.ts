@@ -108,3 +108,14 @@ export async function getAssociateUsers(authToken: string, id?: string, userId?:
     authToken,
   });
 }
+
+/**
+ * Get Admin users
+ */
+export async function getAdminUsers(authToken: string): Promise<UserProfile[]> {
+  return apiRequest<UserProfile[]>({
+    path: `${API_BASE_URL}/v1/users/admin`,
+    method: "GET",
+    authToken,
+  });
+}

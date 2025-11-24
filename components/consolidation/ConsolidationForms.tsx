@@ -5,7 +5,7 @@ import { FormSection, SelectField, TextField, SearchableSelectField } from "@/co
 import { registerAssociate, registerRM } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/config";
 import { getAuthSession } from "@/lib/utils/storage";
-import { getRMUsers, type RMUser } from "@/lib/api/users";
+import { getRMUsers, getAdminUsers, type RMUser } from "@/lib/api/users";
 
 const workingOffices = [
   "--None--",
@@ -36,8 +36,6 @@ const departments = [
   "OPERATIONS",
   "SALES & MARKETING",
 ];
-
-const reportingOffices = workingOffices;
 
 const indianStates = [
   "Andaman and Nicobar Islands",
@@ -77,6 +75,8 @@ const indianStates = [
   "Uttarakhand",
   "West Bengal",
 ];
+
+const reportingOffices = indianStates;
 
 const accountTypes = ["Savings", "Current", "Cash Credit"];
 
@@ -211,6 +211,8 @@ export function RMForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [adminOptions, setAdminOptions] = useState<{ label: string; value: string }[]>([]);
+  const [isLoadingAdmins, setIsLoadingAdmins] = useState(false);
 
   const updateRmForm = (field: keyof RmFormState, value: string) => {
     setRmForm((prev) => ({
@@ -218,6 +220,29 @@ export function RMForm({
       [field]: value,
     }));
   };
+
+  const fetchAdmins = async () => {
+    const session = getAuthSession();
+    if (!session?.token) return;
+
+    setIsLoadingAdmins(true);
+    try {
+      const admins = await getAdminUsers(session.token);
+      setAdminOptions(admins.map((admin) => ({
+        label: admin.name || admin.email,
+        value: admin.email,
+      })));
+    } catch (error) {
+      console.error("Failed to fetch admins", error);
+      setAdminOptions([]);
+    } finally {
+      setIsLoadingAdmins(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
 
   const handleResignedToggle = (checked: boolean) => {
     setIsResigned(checked);
@@ -402,7 +427,7 @@ export function RMForm({
                 value: dept,
               }))}
             />
-            <SelectField
+            <SearchableSelectField
               id="reportingOffice"
               label="Reporting Office"
               placeholder="--None--"
@@ -415,13 +440,14 @@ export function RMForm({
                 value: office,
               }))}
             />
-            <TextField
+            <SelectField
               id="reportingManager"
               label="Reporting Manager"
-              placeholder="Reporting Manager"
+              placeholder={isLoadingAdmins ? "Loading Admins..." : "--Select Admin--"}
               value={rmForm.reportingManager}
               onChange={(event) => updateRmForm("reportingManager", event.target.value)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoadingAdmins}
+              options={adminOptions}
             />
           </div>
         </div>
