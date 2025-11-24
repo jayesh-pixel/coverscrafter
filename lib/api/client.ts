@@ -45,8 +45,8 @@ export async function apiRequest<TResponse, TBody = unknown>({
 
   if (!response.ok) {
     // Extract error message from StandardErrorResponse format
-    const message = isJson && payload?.message 
-      ? payload.message 
+    const message = isJson && (payload?.message || payload?.error)
+      ? (payload.message || payload.error)
       : response.statusText || "Request failed";
     
     const serverMsg = isJson && payload?.serverMsg ? payload.serverMsg : '';
