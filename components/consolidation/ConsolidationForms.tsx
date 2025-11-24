@@ -127,8 +127,6 @@ type RmFormState = {
   contactNumber: string;
   emailId: string;
   state: string;
-  department: string;
-  reportingOffice: string;
   reportingManager: string;
   resignationDate: string;
   password: string;
@@ -144,8 +142,6 @@ const initialRmFormState: RmFormState = {
   contactNumber: "",
   emailId: "",
   state: "",
-  department: "",
-  reportingOffice: "",
   reportingManager: "",
   resignationDate: "",
   password: "",
@@ -212,7 +208,6 @@ export function RMForm({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [adminOptions, setAdminOptions] = useState<{ label: string; value: string }[]>([]);
-  const [isLoadingAdmins, setIsLoadingAdmins] = useState(false);
 
   const updateRmForm = (field: keyof RmFormState, value: string) => {
     setRmForm((prev) => ({
@@ -221,27 +216,9 @@ export function RMForm({
     }));
   };
 
-  const fetchAdmins = async () => {
-    const session = getAuthSession();
-    if (!session?.token) return;
-
-    setIsLoadingAdmins(true);
-    try {
-      const admins = await getAdminUsers(session.token);
-      setAdminOptions(admins.map((admin) => ({
-        label: admin.name || admin.email,
-        value: admin.email,
-      })));
-    } catch (error) {
-      console.error("Failed to fetch admins", error);
-      setAdminOptions([]);
-    } finally {
-      setIsLoadingAdmins(false);
-    }
-  };
-
   useEffect(() => {
-    fetchAdmins();
+    // Set hardcoded admin option
+    setAdminOptions([{ label: "Admin", value: "Admin" }]);
   }, []);
 
   const handleResignedToggle = (checked: boolean) => {
@@ -275,8 +252,6 @@ export function RMForm({
           ContactNo: rmForm.contactNumber,
           EmailID: rmForm.emailId,
           State: rmForm.state,
-          Department: rmForm.department,
-          ReportingOffice: rmForm.reportingOffice,
           ReportingManager: rmForm.reportingManager || undefined,
           Resigned: isResigned,
           ResignationDate: isResigned ? rmForm.resignationDate || undefined : undefined,
@@ -400,7 +375,7 @@ export function RMForm({
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2">
             <SearchableSelectField
               id="state"
               label="State"
@@ -415,38 +390,12 @@ export function RMForm({
               }))}
             />
             <SelectField
-              id="department"
-              label="Department"
-              placeholder="--None--"
-              required
-              value={rmForm.department}
-              onChange={(event) => updateRmForm("department", event.target.value)}
-              disabled={isSubmitting}
-              options={departments.map((dept) => ({
-                label: dept,
-                value: dept,
-              }))}
-            />
-            <SearchableSelectField
-              id="reportingOffice"
-              label="Reporting Office"
-              placeholder="--None--"
-              required
-              value={rmForm.reportingOffice}
-              onChange={(event) => updateRmForm("reportingOffice", event.target.value)}
-              disabled={isSubmitting}
-              options={reportingOffices.map((office) => ({
-                label: office,
-                value: office,
-              }))}
-            />
-            <SelectField
               id="reportingManager"
               label="Reporting Manager"
-              placeholder={isLoadingAdmins ? "Loading Admins..." : "--Select Admin--"}
+              placeholder="--Select Admin--"
               value={rmForm.reportingManager}
               onChange={(event) => updateRmForm("reportingManager", event.target.value)}
-              disabled={isSubmitting || isLoadingAdmins}
+              disabled={isSubmitting}
               options={adminOptions}
             />
           </div>

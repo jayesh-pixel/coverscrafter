@@ -39,8 +39,8 @@ export interface RegisterRmPayload {
   ContactNo: string;
   EmailID: string;
   State: string;
-  Department: string;
-  ReportingOffice: string;
+  Department?: string;
+  ReportingOffice?: string;
   ReportingManager?: string;
   Resigned: boolean;
   ResignationDate?: string;
