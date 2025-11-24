@@ -943,6 +943,7 @@ export default function BusinessEntryManager({
                   <th className="px-4 py-3 font-semibold text-slate-600">Payment Mode</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Cheque Number</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Policy File</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Created By</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Created At</th>
                 </tr>
               </thead>
@@ -953,6 +954,7 @@ export default function BusinessEntryManager({
                     ? `${entry.rmData.firstName || ''} ${entry.rmData.middleName || ''} ${entry.rmData.lastName || ''}`.trim()
                     : '';
                   const associateName = entry.associateData?.contactPerson || '';
+                  const createdByEmail = (entry as any).createdByData?.email || '';
                   
                   return (
                   <tr key={entry._id} className="transition hover:bg-blue-50/40">
@@ -1005,6 +1007,7 @@ export default function BusinessEntryManager({
                         </button>
                       ) : ''}
                     </td>
+                    <td className="px-4 py-4 text-slate-600">{createdByEmail}</td>
                     <td className="px-4 py-4 text-slate-600">{entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : ''}</td>
                   </tr>
                   );
