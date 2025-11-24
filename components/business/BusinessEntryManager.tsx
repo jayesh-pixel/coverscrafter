@@ -2,10 +2,10 @@
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { FileUploadField, SelectField, TextField } from "@/components/ui/forms";
-import { createBusinessEntry, getBusinessEntries, type BusinessEntry } from "@/lib/api/businessentry";
+import { createBusinessEntry, getBusinessEntries, bulkUpdateBusinessEntries, type BusinessEntry, type BulkUpdatePayload } from "@/lib/api/businessentry";
 import { getBrokerNames, type BrokerName } from "@/lib/api/brokername";
 import { uploadDocument, type UploadResponse } from "@/lib/api/uploads";
-import { ApiError } from "@/lib/api/config";
+import { ApiError, API_BASE_URL } from "@/lib/api/config";
 import { getAuthSession } from "@/lib/utils/storage";
 import { getRMUsers, getAssociateUsers, getUserProfile, type RMUser, type AssociateUser } from "@/lib/api/users";
 
@@ -354,14 +354,54 @@ export default function BusinessEntryManager({
   const [isFileDialogOpen, setIsFileDialogOpen] = useState(false);
   const [fileBlob, setFileBlob] = useState<string | null>(null);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
+  const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
+  const [bulkUpdateFile, setBulkUpdateFile] = useState<File | null>(null);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [bulkUpdateResult, setBulkUpdateResult] = useState<any>(null);
+  const [filters, setFilters] = useState({
+    policyNumber: "",
+    brokerid: "",
+    clientName: "",
+    contactNumber: "",
+    emailId: "",
+    state: "",
+    registrationNumber: "",
+    rmId: "",
+    utrno: "",
+    associateId: "",
+    dateField: "",
+    startDate: "",
+    endDate: "",
+  });
+  const [showFilters, setShowFilters] = useState(false);
 
-  const fetchEntries = async () => {
+  const fetchEntries = async (filterParams?: Record<string, string>) => {
     const session = getAuthSession();
     if (!session?.token) return;
 
     setIsLoading(true);
     try {
-      const entries = await getBusinessEntries(session.token);
+      // Build query params from filters
+      let url = `${API_BASE_URL}/v1/businessentry`;
+      if (filterParams) {
+        const params = new URLSearchParams();
+        Object.entries(filterParams).forEach(([key, value]) => {
+          if (value) params.append(key, value);
+        });
+        const queryString = params.toString();
+        if (queryString) url += `?${queryString}`;
+      }
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch entries');
+      const entries = await response.json();
       setBusinessEntries(entries);
     } catch (error) {
       console.error("Failed to fetch business entries", error);
@@ -392,8 +432,12 @@ export default function BusinessEntryManager({
 
     setIsLoadingUsers(true);
     try {
-      const associates = await getAssociateUsers(session.token);
+      const [associates, rms] = await Promise.all([
+        getAssociateUsers(session.token),
+        getRMUsers(session.token)
+      ]);
       setAllAssociates(associates);
+      setAllRMs(rms);
       setAssociateOptions([]); // Initially empty until RM is selected
     } catch (error) {
       console.error("Failed to fetch users", error);
@@ -640,6 +684,122 @@ export default function BusinessEntryManager({
     }
   };
 
+  const handleBulkUpdateFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setBulkUpdateFile(file);
+      setBulkUpdateResult(null);
+    }
+  };
+
+  const handleDownloadSample = () => {
+    // Create sample Excel data
+    const sampleData = [
+      ['Policy Number', 'Payment Date', 'UTR Number', 'Status'],
+      ['POL123456', '2025-11-24', 'UTR1234567890', 'Paid'],
+      ['POL789012', '2025-11-25', 'UTR0987654321', 'Pending'],
+    ];
+
+    // Convert to CSV format
+    const csv = sampleData.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'payment_status_sample.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleBulkUpdate = async () => {
+    if (!bulkUpdateFile) {
+      setErrorMessage('Please select a file to upload');
+      return;
+    }
+
+    const session = getAuthSession();
+    if (!session?.token) {
+      setErrorMessage('You must be signed in to update payment status');
+      return;
+    }
+
+    setIsBulkUpdating(true);
+    setErrorMessage(null);
+    setBulkUpdateResult(null);
+
+    try {
+      // Read the file
+      const text = await bulkUpdateFile.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      // Skip header row and parse data
+      const updates = lines.slice(1).map(line => {
+        const [policyNumber, paymentdate, utrno, status] = line.split(',').map(s => s.trim());
+        return {
+          policyNumber,
+          paymentdate: paymentdate || undefined,
+          utrno: utrno || undefined,
+          status: status || undefined,
+        };
+      }).filter(u => u.policyNumber); // Filter out empty rows
+
+      if (updates.length === 0) {
+        setErrorMessage('No valid records found in the file');
+        setIsBulkUpdating(false);
+        return;
+      }
+
+      // Call bulk update API
+      const result = await bulkUpdateBusinessEntries({ updates }, session.token);
+      setBulkUpdateResult(result);
+      setSuccessMessage(`Successfully updated ${result.successful} out of ${result.totalRecords} records`);
+      
+      // Refresh entries
+      await fetchEntries();
+      
+      // Reset file input
+      setBulkUpdateFile(null);
+    } catch (error) {
+      console.error('Bulk update failed:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to update payment status');
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleApplyFilters = () => {
+    const activeFilters: Record<string, string> = {};
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) activeFilters[key] = value;
+    });
+    fetchEntries(activeFilters);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      policyNumber: "",
+      brokerid: "",
+      clientName: "",
+      contactNumber: "",
+      emailId: "",
+      state: "",
+      registrationNumber: "",
+      rmId: "",
+      utrno: "",
+      associateId: "",
+      dateField: "",
+      startDate: "",
+      endDate: "",
+    });
+    fetchEntries();
+  };
+
   const handleStateChange = (state: string) => {
     setSelectedState(state);
     setSelectedRmId("");
@@ -738,14 +898,23 @@ export default function BusinessEntryManager({
             <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
             <p className="text-sm text-slate-500">{description}</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowForm((prev) => !prev)}
-            className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700"
-            aria-expanded={showForm}
-          >
-            {showForm ? "Hide Business Entry" : "Create Business Entry"}
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => setShowBulkUpdateModal(true)}
+              className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2 text-sm font-semibold text-emerald-600 shadow-sm transition hover:bg-emerald-100"
+            >
+              Import Payment Status
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowForm((prev) => !prev)}
+              className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700"
+              aria-expanded={showForm}
+            >
+              {showForm ? "Hide Business Entry" : "Create Business Entry"}
+            </button>
+          </div>
         </header>
 
         {showForm && (
@@ -1070,16 +1239,181 @@ export default function BusinessEntryManager({
             <input
               type="search"
               placeholder="Search by policy or client"
+              value={filters.policyNumber}
+              onChange={(e) => handleFilterChange('policyNumber', e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             />
             <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-400">⌕</span>
           </div>
-          <div className="flex gap-2 text-sm font-medium text-slate-500">
-            <button className="rounded-full border border-slate-200 px-4 py-2 transition hover:border-blue-200 hover:text-blue-600">All</button>
-            <button className="rounded-full border border-slate-200 px-4 py-2 transition hover:border-blue-200 hover:text-blue-600">Online</button>
-            <button className="rounded-full border border-slate-200 px-4 py-2 transition hover:border-blue-200 hover:text-blue-600">Cheque</button>
+          <div className="flex gap-2 text-sm font-medium">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`rounded-full border px-4 py-2 transition ${
+                showFilters ? 'border-blue-400 bg-blue-50 text-blue-600' : 'border-slate-200 text-slate-500 hover:border-blue-200 hover:text-blue-600'
+              }`}
+            >
+              🔍 Filters
+            </button>
+            <button
+              onClick={handleApplyFilters}
+              className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-emerald-600 transition hover:bg-emerald-100"
+            >
+              Apply
+            </button>
+            <button
+              onClick={handleClearFilters}
+              className="rounded-full border border-slate-200 px-4 py-2 text-slate-500 transition hover:border-blue-200 hover:text-blue-600"
+            >
+              Clear
+            </button>
           </div>
         </div>
+
+        {/* Advanced Filters */}
+        {showFilters && (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+            <h3 className="mb-4 text-sm font-semibold text-slate-900">Advanced Filters</h3>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700">Broker</label>
+                <select
+                  value={filters.brokerid}
+                  onChange={(e) => handleFilterChange('brokerid', e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="">All Brokers</option>
+                  {brokerOptions.map(broker => (
+                    <option key={broker._id} value={broker._id}>{broker.brokername}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700">Client Name</label>
+                <input
+                  type="text"
+                  value={filters.clientName}
+                  onChange={(e) => handleFilterChange('clientName', e.target.value)}
+                  placeholder="Search client name"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700">Contact Number</label>
+                <input
+                  type="text"
+                  value={filters.contactNumber}
+                  onChange={(e) => handleFilterChange('contactNumber', e.target.value)}
+                  placeholder="Contact number"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700">Email ID</label>
+                <input
+                  type="email"
+                  value={filters.emailId}
+                  onChange={(e) => handleFilterChange('emailId', e.target.value)}
+                  placeholder="Email address"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700">State</label>
+                <select
+                  value={filters.state}
+                  onChange={(e) => handleFilterChange('state', e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="">All States</option>
+                  {stateOptions.map(state => (
+                    <option key={state} value={state}>{state}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700">Registration Number</label>
+                <input
+                  type="text"
+                  value={filters.registrationNumber}
+                  onChange={(e) => handleFilterChange('registrationNumber', e.target.value)}
+                  placeholder="Registration number"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700">Relationship Manager</label>
+                <select
+                  value={filters.rmId}
+                  onChange={(e) => handleFilterChange('rmId', e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="">All RMs</option>
+                  {allRMs.map(rm => (
+                    <option key={rm._id} value={rm._id}>{`${rm.firstName} ${rm.lastName} (${rm.empCode})`}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700">Associate</label>
+                <select
+                  value={filters.associateId}
+                  onChange={(e) => handleFilterChange('associateId', e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="">All Associates</option>
+                  {allAssociates.map(assoc => (
+                    <option key={assoc._id} value={assoc._id}>{`${assoc.name} (${assoc.associateCode})`}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700">UTR Number</label>
+                <input
+                  type="text"
+                  value={filters.utrno}
+                  onChange={(e) => handleFilterChange('utrno', e.target.value)}
+                  placeholder="UTR number"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700">Date Field</label>
+                <select
+                  value={filters.dateField}
+                  onChange={(e) => handleFilterChange('dateField', e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="">Select Date Field</option>
+                  <option value="policyIssueDate">Policy Issue Date</option>
+                  <option value="policyStartDate">Policy Start Date</option>
+                  <option value="policyEndDate">Policy End Date</option>
+                  <option value="policyTpEndDate">Policy TP End Date</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700">Start Date</label>
+                <input
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                  disabled={!filters.dateField}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700">End Date</label>
+                <input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                  disabled={!filters.dateField}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400"
+                />
+              </div>
+            </div>
+          </div>
+        )}
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -1267,6 +1601,126 @@ export default function BusinessEntryManager({
               ) : (
                 <p className="text-center text-slate-500">No file to display</p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Update Modal */}
+      {showBulkUpdateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="relative mx-4 w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+            <button
+              onClick={() => {
+                setShowBulkUpdateModal(false);
+                setBulkUpdateFile(null);
+                setBulkUpdateResult(null);
+              }}
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600"
+            >
+              ✕
+            </button>
+
+            <h2 className="mb-6 text-xl font-semibold text-slate-900">Import Payment Status</h2>
+
+            <div className="space-y-6">
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                <p className="text-sm font-semibold text-blue-900">Instructions:</p>
+                <ul className="mt-2 space-y-1 text-sm text-blue-700">
+                  <li>• Download the sample file to see the required format</li>
+                  <li>• Fill in Policy Number, Payment Date, UTR Number, and Status</li>
+                  <li>• Upload the completed CSV/Excel file</li>
+                  <li>• The system will update matching policy numbers</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleDownloadSample}
+                  className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  📥 Download Sample File
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Upload File</label>
+                <input
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleBulkUpdateFileChange}
+                  className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                />
+                {bulkUpdateFile && (
+                  <p className="mt-2 text-sm text-emerald-600">✓ Selected: {bulkUpdateFile.name}</p>
+                )}
+              </div>
+
+              {bulkUpdateResult && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <h3 className="font-semibold text-slate-900">Update Results:</h3>
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-lg bg-blue-100 p-3">
+                      <p className="text-xs text-blue-700">Total Records</p>
+                      <p className="text-xl font-bold text-blue-900">{bulkUpdateResult.totalRecords}</p>
+                    </div>
+                    <div className="rounded-lg bg-emerald-100 p-3">
+                      <p className="text-xs text-emerald-700">Successful</p>
+                      <p className="text-xl font-bold text-emerald-900">{bulkUpdateResult.successful}</p>
+                    </div>
+                    <div className="rounded-lg bg-rose-100 p-3">
+                      <p className="text-xs text-rose-700">Failed</p>
+                      <p className="text-xl font-bold text-rose-900">{bulkUpdateResult.failed}</p>
+                    </div>
+                    <div className="rounded-lg bg-amber-100 p-3">
+                      <p className="text-xs text-amber-700">Processed</p>
+                      <p className="text-xl font-bold text-amber-900">{bulkUpdateResult.processed}</p>
+                    </div>
+                  </div>
+                  {bulkUpdateResult.results && bulkUpdateResult.results.length > 0 && (
+                    <div className="mt-4 max-h-40 overflow-y-auto">
+                      <p className="text-xs font-semibold text-slate-700">Detailed Results:</p>
+                      <div className="mt-2 space-y-1">
+                        {bulkUpdateResult.results.map((result: any, index: number) => (
+                          <div
+                            key={index}
+                            className={`rounded px-2 py-1 text-xs ${
+                              result.status === 'success'
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : 'bg-rose-50 text-rose-700'
+                            }`}
+                          >
+                            <span className="font-semibold">{result.policyNumber}:</span> {result.message}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBulkUpdateModal(false);
+                    setBulkUpdateFile(null);
+                    setBulkUpdateResult(null);
+                  }}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkUpdate}
+                  disabled={!bulkUpdateFile || isBulkUpdating}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {isBulkUpdating ? 'Updating...' : 'Update Payment Status'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

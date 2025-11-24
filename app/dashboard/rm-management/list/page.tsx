@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getRMUsers, getAssociateUsers, type RMUser, type AssociateUser } from "@/lib/api/users";
+import { getRMUsers, getAssociateUsers, updateRMUser, updateAssociateUser, type RMUser, type AssociateUser } from "@/lib/api/users";
 import { getAuthSession } from "@/lib/utils/storage";
 
 type AssociateRecord = {
@@ -44,6 +44,11 @@ export default function ConsolidationListPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"All" | RelationshipManagerRecord["status"]>("All");
+  const [editingRM, setEditingRM] = useState<RelationshipManagerRecord | null>(null);
+  const [editingAssociate, setEditingAssociate] = useState<AssociateUser | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -105,6 +110,101 @@ export default function ConsolidationListPage() {
     }
   };
 
+  const handleEditRM = (rm: RelationshipManagerRecord) => {
+    setEditingRM(rm);
+    setEditingAssociate(null);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditAssociate = (associate: AssociateUser) => {
+    setEditingAssociate(associate);
+    setEditingRM(null);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveRM = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingRM) return;
+
+    const session = getAuthSession();
+    if (!session?.token) {
+      setError("Please sign in to update RM");
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const formData = new FormData(event.currentTarget);
+      const data = {
+        FirstName: formData.get("firstName") as string,
+        MiddleName: formData.get("middleName") as string,
+        LastName: formData.get("lastName") as string,
+        ContactNo: formData.get("contactNo") as string,
+        EmailID: formData.get("email") as string,
+        State: formData.get("state") as string,
+        Department: formData.get("department") as string,
+        ReportingOffice: formData.get("reportingOffice") as string,
+        ReportingManager: formData.get("reportingManager") as string,
+        Resigned: formData.get("resigned") === "true",
+        status: formData.get("status") as string,
+      };
+
+      await updateRMUser(editingRM._id, data, session.token);
+      setSuccessMessage("RM updated successfully");
+      setIsEditModalOpen(false);
+      setEditingRM(null);
+      await fetchData();
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error) {
+      console.error("Failed to update RM:", error);
+      setError(error instanceof Error ? error.message : "Failed to update RM");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveAssociate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingAssociate) return;
+
+    const session = getAuthSession();
+    if (!session?.token) {
+      setError("Please sign in to update Associate");
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const formData = new FormData(event.currentTarget);
+      const data = {
+        AssociateName: formData.get("name") as string,
+        ContactNo: formData.get("contactNo") as string,
+        AssociateEmailId: formData.get("email") as string,
+        AssociateStateName: formData.get("stateName") as string,
+        AssociateAddress: formData.get("address") as string,
+        ContactPerson: formData.get("contactPerson") as string,
+        PosCode: formData.get("posCode") as string,
+        status: formData.get("status") as string,
+      };
+
+      await updateAssociateUser(editingAssociate._id, data, session.token);
+      setSuccessMessage("Associate updated successfully");
+      setIsEditModalOpen(false);
+      setEditingAssociate(null);
+      await fetchData();
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error) {
+      console.error("Failed to update Associate:", error);
+      setError(error instanceof Error ? error.message : "Failed to update Associate");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const filteredRMs = relationshipManagers.filter((rm) => {
     const matchesSearch = 
       rm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -117,6 +217,11 @@ export default function ConsolidationListPage() {
   });
   return (
     <div className="space-y-8">
+      {successMessage && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-600">
+          {successMessage}
+        </div>
+      )}
       <header className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.4em] text-blue-600">RM/Associate desk</p>
@@ -223,6 +328,7 @@ export default function ConsolidationListPage() {
                 <th className="px-4 py-3 font-semibold text-slate-600">Contact</th>
                 <th className="px-4 py-3 font-semibold text-slate-600">Email</th>
                 <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
+                <th className="px-4 py-3 font-semibold text-slate-600">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -245,6 +351,14 @@ export default function ConsolidationListPage() {
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[rm.status]}`}>
                       {rm.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-4">
+                    <button
+                      onClick={() => handleEditRM(rm)}
+                      className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
+                    >
+                      Edit
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -272,11 +386,15 @@ export default function ConsolidationListPage() {
                 <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
                 <th className="px-4 py-3 font-semibold text-slate-600">Contact</th>
                 <th className="px-4 py-3 font-semibold text-slate-600">Email</th>
+                <th className="px-4 py-3 font-semibold text-slate-600">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredRMs.flatMap((rm) =>
-                rm.associates.map((associate, index) => (
+                rm.associates.map((associate, index) => {
+                  // Find the full associate object from allAssociates
+                  const fullAssociate = allAssociates.find(a => a.associateCode === associate.brokerCode);
+                  return (
                   <tr key={`${rm.empCode}-${associate.brokerCode}-${index}`} className="transition hover:bg-blue-50/40">
                     <td className="px-4 py-4">
                       <div className="flex flex-col">
@@ -294,13 +412,286 @@ export default function ConsolidationListPage() {
                     </td>
                     <td className="px-4 py-4 text-slate-600">{associate.contact}</td>
                     <td className="px-4 py-4 text-slate-600">{associate.email}</td>
+                    <td className="px-4 py-4">
+                      {fullAssociate && (
+                        <button
+                          onClick={() => handleEditAssociate(fullAssociate)}
+                          className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </td>
                   </tr>
-                )),
+                  );
+                }),
               )}
             </tbody>
           </table>
         </div>
         </section>
+      )}
+
+      {/* Edit Modal */}
+      {isEditModalOpen && (editingRM || editingAssociate) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
+            <button
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setEditingRM(null);
+                setEditingAssociate(null);
+              }}
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600"
+            >
+              ✕
+            </button>
+
+            <h2 className="mb-6 text-xl font-semibold text-slate-900">
+              Edit {editingRM ? 'Relationship Manager' : 'Associate'}
+            </h2>
+
+            {editingRM && (
+              <form onSubmit={handleSaveRM} className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">First Name *</label>
+                    <input
+                      type="text"
+                      name="firstName"
+                      defaultValue={editingRM.name.split(' ')[0]}
+                      required
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Middle Name</label>
+                    <input
+                      type="text"
+                      name="middleName"
+                      defaultValue={editingRM.name.split(' ')[1] || ''}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Last Name *</label>
+                    <input
+                      type="text"
+                      name="lastName"
+                      defaultValue={editingRM.name.split(' ').slice(-1)[0]}
+                      required
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Contact Number *</label>
+                    <input
+                      type="tel"
+                      name="contactNo"
+                      defaultValue={editingRM.contact}
+                      required
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Email *</label>
+                    <input
+                      type="email"
+                      name="email"
+                      defaultValue={editingRM.email}
+                      required
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">State *</label>
+                    <input
+                      type="text"
+                      name="state"
+                      defaultValue={editingRM.office}
+                      required
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Department *</label>
+                    <input
+                      type="text"
+                      name="department"
+                      defaultValue={editingRM.department}
+                      required
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Reporting Office</label>
+                    <input
+                      type="text"
+                      name="reportingOffice"
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Reporting Manager</label>
+                    <input
+                      type="text"
+                      name="reportingManager"
+                      defaultValue={editingRM.reportingManager}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Status *</label>
+                    <select
+                      name="status"
+                      defaultValue={editingRM.status === 'Active' ? 'active' : editingRM.status === 'Resigned' ? 'inactive' : 'active'}
+                      required
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Resigned</label>
+                    <select
+                      name="resigned"
+                      defaultValue={editingRM.status === 'Resigned' ? 'true' : 'false'}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="false">No</option>
+                      <option value="true">Yes</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditModalOpen(false);
+                      setEditingRM(null);
+                    }}
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {editingAssociate && (
+              <form onSubmit={handleSaveAssociate} className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Associate Name *</label>
+                    <input
+                      type="text"
+                      name="name"
+                      defaultValue={editingAssociate.name}
+                      required
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Contact Person</label>
+                    <input
+                      type="text"
+                      name="contactPerson"
+                      defaultValue={editingAssociate.contactPerson}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Contact Number *</label>
+                    <input
+                      type="tel"
+                      name="contactNo"
+                      defaultValue={editingAssociate.contactNo}
+                      required
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Email *</label>
+                    <input
+                      type="email"
+                      name="email"
+                      defaultValue={editingAssociate.email}
+                      required
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">State *</label>
+                    <input
+                      type="text"
+                      name="stateName"
+                      defaultValue={editingAssociate.associateStateName}
+                      required
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">POS Code</label>
+                    <input
+                      type="text"
+                      name="posCode"
+                      defaultValue={editingAssociate.posCode || ''}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-slate-700">Address</label>
+                    <textarea
+                      name="address"
+                      defaultValue={editingAssociate.associateAddress}
+                      rows={2}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Status *</label>
+                    <select
+                      name="status"
+                      defaultValue={editingAssociate.status}
+                      required
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditModalOpen(false);
+                      setEditingAssociate(null);
+                    }}
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

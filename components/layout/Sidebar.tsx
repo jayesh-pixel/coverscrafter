@@ -32,12 +32,12 @@ const defaultNavItems: NavItem[] = [
     ],
   },
   {
-    label: "rm/associate",
+    label: "RM/Associate",
     href: "/dashboard/admin/rm-management",
     icon: ConsolidationIcon,
     children: [
-      { label: "Create rm/associate", href: "/dashboard/admin/rm-management" },
-      { label: "rm/associate List", href: "/dashboard/admin/rm-management/list" },
+      { label: "Create RM/Associate", href: "/dashboard/admin/rm-management" },
+      { label: "RM/Associate List", href: "/dashboard/admin/rm-management/list" },
       { label: "Business Entry", href: "/dashboard/admin/rm-management/business" },
       { label: "Broker Registry", href: "/dashboard/admin/rm-management/brokers" },
     ],

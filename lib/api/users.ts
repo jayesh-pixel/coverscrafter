@@ -119,3 +119,74 @@ export async function getAdminUsers(authToken: string): Promise<UserProfile[]> {
     authToken,
   });
 }
+
+/**
+ * Update RM user
+ */
+export async function updateRMUser(
+  id: string,
+  data: Partial<{
+    EmpCode: string;
+    JoiningDate: string;
+    FirstName: string;
+    MiddleName: string;
+    LastName: string;
+    Dob: string;
+    ContactNo: string;
+    EmailID: string;
+    State: string;
+    Department: string;
+    ReportingOffice: string;
+    ReportingManager: string;
+    Resigned: boolean;
+    ResignationDate: string;
+    status: string;
+  }>,
+  authToken: string
+): Promise<{ message: string; user: any }> {
+  return apiRequest<{ message: string; user: any }>({
+    path: `${API_BASE_URL}/v1/users/rm/${id}`,
+    method: "PUT",
+    authToken,
+    body: data,
+  });
+}
+
+/**
+ * Update Associate user
+ */
+export async function updateAssociateUser(
+  id: string,
+  data: Partial<{
+    AssociateCode: string;
+    AssociateName: string;
+    AssociatePanNo: string;
+    AssociateAadharNo: string;
+    ContactPerson: string;
+    ContactNo: string;
+    AssociateEmailId: string;
+    AssociateStateName: string;
+    AssociateAddress: string;
+    BPANNo: string;
+    BPANName: string;
+    AccountNo: string;
+    AccountType: string;
+    Default: boolean;
+    IFSC: string;
+    BankName: string;
+    StateName: string;
+    BranchName: string;
+    BankAddress: string;
+    isPos: boolean;
+    PosCode: string;
+    status: string;
+  }>,
+  authToken: string
+): Promise<{ message: string; user: any }> {
+  return apiRequest<{ message: string; user: any }>({
+    path: `${API_BASE_URL}/v1/users/associate/${id}`,
+    method: "PUT",
+    authToken,
+    body: data,
+  });
+}

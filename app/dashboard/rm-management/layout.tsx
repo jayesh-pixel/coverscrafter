@@ -7,10 +7,10 @@ const consolidationNavItems: NavItem[] = [
     href: "/dashboard/rm-management",
     icon: ConsolidationIcon,
     children: [
-      { label: "Create rm/associate", href: "/dashboard/rm-management" },
-      { label: "rm/associate List", href: "/dashboard/rm-management/list" },
+      { label: "Create RM/Associate", href: "/dashboard/rm-management" },
+      { label: "RM/Associate List", href: "/dashboard/rm-management/list" },
       { label: "Business Entry", href: "/dashboard/rm-management/business" },
-      { label: "Broker Registry", href: "/dashboard/rm-management/brokers" },
+      { label: "Add Broker", href: "/dashboard/rm-management/brokers" },
     ],
   },
 ];
@@ -24,7 +24,7 @@ export default function ConsolidationLayout({ children }: { children: ReactNode 
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-500">CoversCrafter</p>
             <h1 className="text-2xl font-semibold text-slate-900">Admin Panel</h1>
-            <p className="text-sm text-slate-500">Manage rm/associate entries and lists.</p>
+            <p className="text-sm text-slate-500">Manage RM/Associate entries and lists.</p>
           </div>
           <div className="flex items-center gap-3 rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-600">
             <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />

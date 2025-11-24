@@ -160,3 +160,38 @@ export async function deleteBusinessEntry(id: string, authToken: string) {
     authToken,
   });
 }
+
+export interface BulkUpdatePayload {
+  updates: Array<{
+    policyNumber: string;
+    paymentdate?: string;
+    utrno?: string;
+    status?: string;
+  }>;
+}
+
+export interface BulkUpdateResult {
+  message: string;
+  totalRecords: number;
+  processed: number;
+  successful: number;
+  failed: number;
+  results: Array<{
+    policyNumber: string;
+    status: string;
+    message: string;
+    updatedFields?: Record<string, any>;
+  }>;
+}
+
+export async function bulkUpdateBusinessEntries(
+  payload: BulkUpdatePayload,
+  authToken: string
+): Promise<BulkUpdateResult> {
+  return apiRequest<BulkUpdateResult, BulkUpdatePayload>({
+    path: `${API_BASE_URL}/v1/businessentry/bulk-update`,
+    method: "POST",
+    body: payload,
+    authToken,
+  });
+}
