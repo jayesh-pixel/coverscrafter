@@ -7,7 +7,7 @@ import { getBrokerNames, type BrokerName } from "@/lib/api/brokername";
 import { uploadDocument, type UploadResponse } from "@/lib/api/uploads";
 import { ApiError } from "@/lib/api/config";
 import { getAuthSession } from "@/lib/utils/storage";
-import { getRMUsers, getAssociateUsers, type RMUser, type AssociateUser } from "@/lib/api/users";
+import { getRMUsers, getAssociateUsers, getUserProfile, type RMUser, type AssociateUser } from "@/lib/api/users";
 
 const insuranceCompanies = [
   "Acko General Insurance",
@@ -121,8 +121,33 @@ const subProductOptions = ["Retail Business", "Corporate Business"];
 
 const regionOptions = [...stateOptions];
 
-const reportingFyOptions = ["2025-26"];
-const reportingMonthOptions = ["November"];
+const reportingFyOptions = [
+  "2019-20",
+  "2020-21",
+  "2021-22",
+  "2022-23",
+  "2023-24",
+  "2024-25",
+  "2025-26",
+  "2026-27",
+  "2027-28",
+  "2028-29"
+];
+
+const reportingMonthOptions = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December"
+];
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
@@ -159,6 +184,12 @@ export default function BusinessEntryManager({
   const [allAssociates, setAllAssociates] = useState<AssociateUser[]>([]);
   const [selectedState, setSelectedState] = useState<string>("");
   const [allRMs, setAllRMs] = useState<RMUser[]>([]);
+  const [isRmAutoFilled, setIsRmAutoFilled] = useState(false);
+  const [isAssociateAutoFilled, setIsAssociateAutoFilled] = useState(false);
+  const [viewFileUrl, setViewFileUrl] = useState<string | null>(null);
+  const [isFileDialogOpen, setIsFileDialogOpen] = useState(false);
+  const [fileBlob, setFileBlob] = useState<string | null>(null);
+  const [isLoadingFile, setIsLoadingFile] = useState(false);
 
   const fetchEntries = async () => {
     const session = getAuthSession();
@@ -207,6 +238,63 @@ export default function BusinessEntryManager({
     }
   };
 
+  const autoFillUserData = async () => {
+    const session = getAuthSession();
+    if (!session?.token || !session?.user) return;
+
+    const userRole = session.user.role;
+    const userId = session.user._id;
+
+    try {
+      // If logged in as RM
+      if (userRole === 'rm') {
+        // Fetch user profile to get RM details
+        const profile = await getUserProfile(session.token);
+        if (profile.state) {
+          // Auto-select state and fetch RMs
+          const formattedState = profile.state.toUpperCase();
+          setSelectedState(formattedState);
+          await fetchRMsByState(formattedState);
+          
+          // Auto-select current RM
+          setSelectedRmId(userId);
+          setIsRmAutoFilled(true);
+          
+          // Fetch associates for this RM
+          const associates = await getAssociateUsers(session.token, undefined, userId);
+          setAssociateOptions(associates);
+        }
+      }
+      // If logged in as Associate
+      else if (userRole === 'associate') {
+        // Fetch user profile to get associate details
+        const profile = await getUserProfile(session.token);
+        
+        // If associate has createdBy field, that's the RM
+        if (profile.createdBy && profile.state) {
+          // Auto-select state
+          const formattedState = profile.state.toUpperCase();
+          setSelectedState(formattedState);
+          await fetchRMsByState(formattedState);
+          
+          // Auto-select RM
+          setSelectedRmId(profile.createdBy);
+          setIsRmAutoFilled(true);
+          
+          // Fetch associates for this RM
+          const associates = await getAssociateUsers(session.token, undefined, profile.createdBy);
+          setAssociateOptions(associates);
+          
+          // Auto-select current associate
+          setSelectedAssociateId(userId);
+          setIsAssociateAutoFilled(true);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to auto-fill user data", error);
+    }
+  };
+
   const fetchRMsByState = async (state: string) => {
     const session = getAuthSession();
     if (!session?.token) return;
@@ -234,6 +322,7 @@ export default function BusinessEntryManager({
     fetchEntries();
     fetchBrokerOptions();
     fetchUsers();
+    autoFillUserData();
   }, []);
 
   const extractUploadMeta = (upload: UploadResponse | null): { id?: string; name?: string; url?: string } => {
@@ -340,6 +429,51 @@ export default function BusinessEntryManager({
 
   const handleAssociateChange = (associateId: string) => {
     setSelectedAssociateId(associateId);
+  };
+
+  const handleViewFile = async (fileUrl: string) => {
+    const session = getAuthSession();
+    if (!session?.token) {
+      setErrorMessage("You must be signed in to view files.");
+      return;
+    }
+    
+    setIsFileDialogOpen(true);
+    setIsLoadingFile(true);
+    setFileBlob(null);
+    
+    try {
+      // Fetch file with authentication token
+      const response = await fetch(`https://instapolicy.coverscrafter.com${fileUrl}`, {
+        headers: {
+          'Authorization': `Bearer ${session.token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch file');
+      }
+      
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      setFileBlob(blobUrl);
+      setViewFileUrl(`https://instapolicy.coverscrafter.com${fileUrl}`);
+    } catch (error) {
+      console.error('Error fetching file:', error);
+      setErrorMessage('Failed to load file. Please try again.');
+      setIsFileDialogOpen(false);
+    } finally {
+      setIsLoadingFile(false);
+    }
+  };
+
+  const handleCloseFileDialog = () => {
+    setIsFileDialogOpen(false);
+    setViewFileUrl(null);
+    if (fileBlob) {
+      URL.revokeObjectURL(fileBlob);
+      setFileBlob(null);
+    }
   };
 
   const handleStateChange = (state: string) => {
@@ -570,7 +704,7 @@ export default function BusinessEntryManager({
                   }))}
                   onChange={(e) => handleRmChange(e.target.value)}
                   value={selectedRmId}
-                  disabled={!selectedState}
+                  disabled={!selectedState || isRmAutoFilled}
                 />
                 <SelectField
                   id="associateId"
@@ -583,7 +717,7 @@ export default function BusinessEntryManager({
                   }))}
                   onChange={(e) => handleAssociateChange(e.target.value)}
                   value={selectedAssociateId}
-                  disabled={!selectedRmId}
+                  disabled={!selectedRmId || isAssociateAutoFilled}
                 />
                 <SelectField
                   id="reportingFy"
@@ -609,13 +743,13 @@ export default function BusinessEntryManager({
 
               {selectedAssociateId && (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <TextField id="odPremiumPayin" label="OD Premium Payin" type="number" placeholder="0" required />
-                <TextField id="tpPremiumPayin" label="TP Premium Payin" type="number" placeholder="0" required />
-                <TextField id="netPremiumPayin" label="Net Premium Payin" type="number" placeholder="0" required />
+                <TextField id="odPremiumPayin" label="OD Premium Payin (%)" type="number" placeholder="0" min="0" max="100" required />
+                <TextField id="tpPremiumPayin" label="TP Premium Payin (%)" type="number" placeholder="0" min="0" max="100" required />
+                <TextField id="netPremiumPayin" label="Net Premium Payin (%)" type="number" placeholder="0" min="0" max="100" required />
                 <TextField id="extraAmountPayin" label="Extra Amount Payin" type="number" placeholder="0" required />
-                <TextField id="odPremiumPayout" label="OD Premium Payout" type="number" placeholder="0" required />
-                <TextField id="tpPremiumPayout" label="TP Premium Payout" type="number" placeholder="0" required />
-                <TextField id="netPremiumPayout" label="Net Premium Payout" type="number" placeholder="0" required />
+                <TextField id="odPremiumPayout" label="OD Premium Payout (%)" type="number" placeholder="0" min="0" max="100" required />
+                <TextField id="tpPremiumPayout" label="TP Premium Payout (%)" type="number" placeholder="0" min="0" max="100" required />
+                <TextField id="netPremiumPayout" label="Net Premium Payout (%)" type="number" placeholder="0" min="0" max="100" required />
                 <TextField id="extraAmountPayout" label="Extra Amount Payout" type="number" placeholder="0" required />
               </div>
               )}
@@ -768,47 +902,110 @@ export default function BusinessEntryManager({
               <p className="text-sm text-slate-500">No business entries found. Create your first entry above.</p>
             </div>
           ) : (
-            <table className="min-w-[1100px] divide-y divide-slate-200 text-left text-sm">
+            <table className="min-w-[2000px] divide-y divide-slate-200 text-left text-sm">
               <thead className="bg-slate-50">
                 <tr>
                   <th className="px-4 py-3 font-semibold text-slate-600">Policy Number</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Registration Number</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Client Name</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Contact Number</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Email</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">State</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Insurance Company</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Broker</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Line of Business</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Product</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Sub Product</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Policy Issue Date</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Policy Start Date</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Policy End Date</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Policy TP End Date</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">OD Premium</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">TP Premium</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Net Premium</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Gross Premium</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">RM State</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">RM</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Associate</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Payment Mode</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Reporting FY</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Reporting Month</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">OD Premium Payin</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">TP Premium Payin</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Net Premium Payin</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Extra Amount Payin</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">OD Premium Payout</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">TP Premium Payout</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Net Premium Payout</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Extra Amount Payout</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Total Payin</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Total Payout</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Net Revenue</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Created</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Payment Mode</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Cheque Number</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Policy File</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Created At</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {businessEntries.map((entry) => {
                   const broker = brokerOptions.find(b => b._id === entry.brokerid);
                   const rmName = entry.rmData 
-                    ? `${entry.rmData.firstName} ${entry.rmData.middleName || ''} ${entry.rmData.lastName}`.trim()
-                    : 'N/A';
-                  const associateName = entry.associateData?.contactPerson || 'N/A';
+                    ? `${entry.rmData.firstName || ''} ${entry.rmData.middleName || ''} ${entry.rmData.lastName || ''}`.trim()
+                    : '';
+                  const associateName = entry.associateData?.contactPerson || '';
+                  
                   return (
                   <tr key={entry._id} className="transition hover:bg-blue-50/40">
                     <td className="px-4 py-4">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-slate-900">{entry.policyNumber}</span>
-                        <span className="text-xs uppercase tracking-wide text-slate-400">{entry.registrationNumber}</span>
-                      </div>
+                      <span className="font-semibold text-slate-900">{entry.policyNumber || ''}</span>
                     </td>
-                    <td className="px-4 py-4 text-slate-600">{entry.clientName}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.insuranceCompany}</td>
-                    <td className="px-4 py-4 text-slate-600">{broker?.brokername || entry.brokerData?.brokername || entry.brokerid}</td>
+                    <td className="px-4 py-4 text-xs uppercase tracking-wide text-slate-600">{entry.registrationNumber || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.clientName || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.contactNumber || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.emailId || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.state || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.insuranceCompany || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{broker?.brokername || entry.brokerData?.brokername || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.lineOfBusiness || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.product || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.subProduct || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.policyIssueDate ? new Date(entry.policyIssueDate).toLocaleDateString() : ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.policyStartDate ? new Date(entry.policyStartDate).toLocaleDateString() : ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.policyEndDate ? new Date(entry.policyEndDate).toLocaleDateString() : ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.policyTpEndDate ? new Date(entry.policyTpEndDate).toLocaleDateString() : ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.odPremium || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.tpPremium || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.netPremium || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.grossPremium || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.rmState || ''}</td>
                     <td className="px-4 py-4 text-slate-600">{rmName}</td>
                     <td className="px-4 py-4 text-slate-600">{associateName}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.paymentMode}</td>
-                    <td className="px-4 py-4 text-slate-600">₹{Number(entry.totalPayin).toLocaleString()}</td>
-                    <td className="px-4 py-4 text-slate-600">₹{Number(entry.totalPayout).toLocaleString()}</td>
-                    <td className="px-4 py-4 text-slate-600">₹{Number(entry.netRevenue).toLocaleString()}</td>
-                    <td className="px-4 py-4 text-slate-600">{new Date(entry.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.reportingFy || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.reportingMonth || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.odPremiumPayinAmt || entry.odPremiumPayin || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.tpPremiumPayinAmt || entry.tpPremiumPayin || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.netPremiumPayinAmt || entry.netPremiumPayin || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.extraAmountPayinAmt || entry.extraAmountPayin || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.odPremiumPayoutAmt || entry.odPremiumPayout || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.tpPremiumPayoutAmt || entry.tpPremiumPayout || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.netPremiumPayoutAmt || entry.netPremiumPayout || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.extraAmountPayoutAmt || entry.extraAmountPayout || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.totalPayin ? `₹${Number(entry.totalPayin).toLocaleString()}` : ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.totalPayout ? `₹${Number(entry.totalPayout).toLocaleString()}` : ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.netRevenue ? `₹${Number(entry.netRevenue).toLocaleString()}` : ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.paymentMode || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.chequeNumber || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">
+                      {entry.policyFileUrl ? (
+                        <button
+                          onClick={() => handleViewFile(entry.policyFileUrl!)}
+                          className="text-blue-600 hover:underline font-semibold"
+                        >
+                          View
+                        </button>
+                      ) : ''}
+                    </td>
+                    <td className="px-4 py-4 text-slate-600">{entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : ''}</td>
                   </tr>
                   );
                 })}
@@ -817,6 +1014,72 @@ export default function BusinessEntryManager({
           )}
         </div>
       </section>
+
+      {/* File Viewer Dialog */}
+      {isFileDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="relative mx-4 w-full max-w-5xl rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <h3 className="text-lg font-semibold text-slate-900">Policy Document</h3>
+              <button
+                onClick={handleCloseFileDialog}
+                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6">
+              {isLoadingFile ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+                    <p className="mt-4 text-sm text-slate-600">Loading file...</p>
+                  </div>
+                </div>
+              ) : fileBlob ? (
+                <div className="space-y-4">
+                  <div className="rounded-lg bg-slate-50 p-4">
+                    <p className="text-sm font-medium text-slate-700">File URL:</p>
+                    <p className="mt-1 break-all text-xs text-slate-600">{viewFileUrl}</p>
+                    <p className="mt-2 text-xs text-emerald-600">✓ Authenticated with Bearer token</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <a
+                      href={fileBlob}
+                      download
+                      className="rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700"
+                    >
+                      Download File
+                    </a>
+                    <button
+                      onClick={() => {
+                        if (viewFileUrl) {
+                          navigator.clipboard.writeText(viewFileUrl);
+                          alert('URL copied to clipboard!');
+                        }
+                      }}
+                      className="rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Copy URL
+                    </button>
+                  </div>
+                  <div className="h-[500px] overflow-hidden rounded-lg border border-slate-200">
+                    <iframe
+                      src={fileBlob}
+                      className="h-full w-full"
+                      title="Policy Document"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <p className="text-center text-slate-500">No file to display</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
