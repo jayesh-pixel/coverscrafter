@@ -69,10 +69,6 @@ export default function Home() {
             <h1 className="text-4xl font-semibold leading-tight text-slate-900 sm:text-5xl">
               CoversCrafter Admin Console
             </h1>
-            <p className="text-lg text-slate-600">
-              Keep every dealership onboarding in sync. Authenticate once, then
-              drive your operations from a single source of truth.
-            </p>
           </div>
           <ul className="grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
             {highlights.map((item) => (

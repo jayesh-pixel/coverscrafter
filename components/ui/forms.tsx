@@ -75,9 +75,29 @@ export function SelectField({ label, required, hint, error, options, placeholder
 type FileUploadFieldProps = BaseFieldProps & ComponentProps<"input">;
 
 export function FileUploadField({ label, required, hint = "Upload 1 supported file. Max 10 MB.", error, className = "", ...props }: FileUploadFieldProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
   const inputProps = {
     ...props,
     name: props.name ?? props.id,
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0 && inputRef.current) {
+      inputRef.current.files = e.dataTransfer.files;
+      const event = new Event('change', { bubbles: true });
+      inputRef.current.dispatchEvent(event);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleClick = () => {
+    inputRef.current?.click();
   };
 
   return (
@@ -87,7 +107,10 @@ export function FileUploadField({ label, required, hint = "Upload 1 supported fi
         {required && <span className="ml-1 text-rose-500">*</span>}
       </span>
       <div
-        className={`flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-center transition-all hover:border-blue-400 hover:bg-blue-50/50 ${
+        onClick={handleClick}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-center transition-all hover:border-blue-400 hover:bg-blue-50/50 ${
           className ?? ""
         }`}
       >
@@ -96,7 +119,7 @@ export function FileUploadField({ label, required, hint = "Upload 1 supported fi
         </svg>
         <span className="text-xs font-semibold text-slate-700">Drag & drop file</span>
         <span className="text-xs text-slate-500">or click to browse</span>
-        <input type="file" className="sr-only" {...inputProps} />
+        <input ref={inputRef} type="file" className="sr-only" {...inputProps} />
       </div>
       {hint && <p className="text-xs font-normal text-slate-400">{hint}</p>}
       {error && <p className="text-xs font-normal text-rose-500">{error}</p>}

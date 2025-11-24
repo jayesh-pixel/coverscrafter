@@ -198,7 +198,7 @@ const productsByLineOfBusiness: Record<string, string[]> = {
   ],
 };
 
-const vehicleTypesByProduct: Record<string, string[]> = {
+const subProductByProduct: Record<string, string[]> = {
   "GCV Vehicle Liability Policy": [
     "Three Wheeler",
     "GVW 12000 - 20000 kgs",
@@ -277,8 +277,6 @@ const vehicleTypesByProduct: Record<string, string[]> = {
     "Scooter",
   ],
 };
-
-const subProductOptions = ["Retail Business", "Corporate Business"];
 
 const regionOptions = [...stateOptions];
 
@@ -1021,23 +1019,11 @@ export default function BusinessEntryManager({
                   label="Sub Product"
                   required
                   placeholder="--None--"
-                  options={subProductOptions.map((option) => ({
+                  options={(subProductByProduct[selectedProduct] || []).map((option) => ({
                     label: option,
                     value: option,
                   }))}
                 />
-                {vehicleTypesByProduct[selectedProduct] && (
-                  <SelectField
-                    id="vehicleType"
-                    label="Vehicle Type"
-                    required
-                    placeholder="--None--"
-                    options={vehicleTypesByProduct[selectedProduct].map((option) => ({
-                      label: option,
-                      value: option,
-                    }))}
-                  />
-                )}
                 <TextField id="registrationNumber" label="Registration Number" placeholder="Registration Number" required />
                 <TextField id="policyIssueDate" label="Policy Issue Date" type="date" required />
                 <TextField id="policyStartDate" label="Policy Start Date" type="date" required />
