@@ -199,6 +199,86 @@ const productsByLineOfBusiness: Record<string, string[]> = {
   ],
 };
 
+const vehicleTypesByProduct: Record<string, string[]> = {
+  "GCV Vehicle Liability Policy": [
+    "Three Wheeler",
+    "GVW 12000 - 20000 kgs",
+    "GVW 20000 - 40000 kgs",
+    "GVW 2500 - 3500 kgs",
+    "GVW 3500 - 7500 kgs",
+    "GVW 7500 - 12000 kgs",
+    "GVW exceeding 40000 kgs",
+    "GVW Up to 2500 kgs",
+  ],
+  "GCV Vehicle Package Policy": [
+    "Three Wheeler",
+    "GVW 12000 - 20000 kgs",
+    "GVW 20000 - 40000 kgs",
+    "GVW 2500 - 3500 kgs",
+    "GVW 3500 - 7500 kgs",
+    "GVW 7500 - 12000 kgs",
+    "GVW exceeding 40000 kgs",
+    "GVW Up to 2500 kgs",
+  ],
+  "Misc. D Vehicle Liability Policy": [
+    "Miscellaneous Vehicle",
+    "JCB",
+    "Tractor",
+  ],
+  "Misc. D Vehicle Package Policy": [
+    "Miscellaneous Vehicle",
+    "JCB",
+    "Tractor",
+  ],
+  "Passenger Carrying Vehicle Liability Policy": [
+    "PCV - CONTRACT BUS",
+    "PCV - Others",
+    "PCV - School Bus",
+    "PCV - STAFF BUS",
+    "PCV - Taxi",
+    "PCV - Taxi (T-Permit)",
+    "PCV - Three Wheeler",
+    "Electric Vehicle",
+  ],
+  "Passenger Carrying Vehicle Package Policy": [
+    "PCV - CONTRACT BUS",
+    "PCV - Others",
+    "PCV - School Bus",
+    "PCV - STAFF BUS",
+    "PCV - Taxi",
+    "PCV - Taxi (T-Permit)",
+    "PCV - Three Wheeler",
+    "Electric Vehicle",
+  ],
+  "Private Car Liability Policy": [
+    "Four Wheeler",
+    "High-End",
+  ],
+  "Private Car Package Policy": [
+    "Four Wheeler",
+    "High-End",
+  ],
+  "Private Car OD Policy": [
+    "Four Wheeler",
+    "High-End",
+  ],
+  "Two Wheeler Liability Policy": [
+    "Two Wheeler",
+    "Bike",
+    "Scooter",
+  ],
+  "Two Wheeler Package Policy": [
+    "Two Wheeler",
+    "Bike",
+    "Scooter",
+  ],
+  "Two Wheeler OD Policy": [
+    "Two Wheeler",
+    "Bike",
+    "Scooter",
+  ],
+};
+
 const subProductOptions = ["Retail Business", "Corporate Business"];
 
 const regionOptions = [...stateOptions];
@@ -253,6 +333,7 @@ export default function BusinessEntryManager({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedLineOfBusiness, setSelectedLineOfBusiness] = useState<string>("");
+  const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [brokerOptions, setBrokerOptions] = useState<BrokerName[]>([]);
   const [isLoadingBrokers, setIsLoadingBrokers] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<UploadResponse | null>(null);
@@ -630,6 +711,7 @@ export default function BusinessEntryManager({
       setSelectedRmId("");
       setSelectedAssociateId("");
       setSelectedLineOfBusiness("");
+      setSelectedProduct("");
       setRmOptions([]);
       setAssociateOptions([]);
       setUploadedFile(null);
@@ -748,6 +830,8 @@ export default function BusinessEntryManager({
                     value: option,
                   }))}
                   disabled={!selectedLineOfBusiness}
+                  onChange={(e) => setSelectedProduct(e.target.value)}
+                  value={selectedProduct}
                 />
                 <SelectField
                   id="subProduct"
@@ -759,6 +843,18 @@ export default function BusinessEntryManager({
                     value: option,
                   }))}
                 />
+                {vehicleTypesByProduct[selectedProduct] && (
+                  <SelectField
+                    id="vehicleType"
+                    label="Vehicle Type"
+                    required
+                    placeholder="--None--"
+                    options={vehicleTypesByProduct[selectedProduct].map((option) => ({
+                      label: option,
+                      value: option,
+                    }))}
+                  />
+                )}
                 <TextField id="registrationNumber" label="Registration Number" placeholder="Registration Number" required />
                 <TextField id="policyIssueDate" label="Policy Issue Date" type="date" required />
                 <TextField id="policyStartDate" label="Policy Start Date" type="date" required />
