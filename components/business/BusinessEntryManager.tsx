@@ -1559,6 +1559,9 @@ export default function BusinessEntryManager({
                   )}
                   <th className="px-4 py-3 font-semibold text-slate-600">Payment Mode</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Cheque Number</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">UTR Number</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Payment Date</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Policy File</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Created By</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Created At</th>
@@ -1618,6 +1621,19 @@ export default function BusinessEntryManager({
                     )}
                     <td className="px-4 py-4 text-slate-600">{entry.paymentMode || ''}</td>
                     <td className="px-4 py-4 text-slate-600">{entry.chequeNumber || ''}</td>
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                        entry.status === 'completed' 
+                          ? 'bg-emerald-100 text-emerald-700' 
+                          : entry.status === 'pending'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-slate-100 text-slate-700'
+                      }`}>
+                        {entry.status || 'pending'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-slate-600">{entry.utrno || ''}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.paymentdate ? new Date(entry.paymentdate).toLocaleDateString() : ''}</td>
                     <td className="px-4 py-4 text-slate-600">
                       {entry.policyFileUrl ? (
                         <button
