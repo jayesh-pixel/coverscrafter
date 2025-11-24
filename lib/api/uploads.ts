@@ -14,15 +14,9 @@ export interface UploadResponse {
   [key: string]: unknown;
 }
 
-export async function uploadDocument(file: File, authToken: string, fieldName = "supportingFile"): Promise<UploadResponse> {
+export async function uploadDocument(file: File, authToken: string, fieldName = "file"): Promise<UploadResponse> {
   const formData = new FormData();
   formData.append(fieldName, file);
-  if (fieldName !== "file") {
-    formData.append("file", file);
-  }
-  if (fieldName !== "supportingFile") {
-    formData.append("supportingFile", file);
-  }
 
   const response = await fetch("https://instapolicy.coverscrafter.com/v1/uploads", {
     method: "POST",

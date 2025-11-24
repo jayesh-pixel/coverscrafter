@@ -69,6 +69,17 @@ export interface BusinessEntry {
   tpPremiumPayout: string;
   netPremiumPayout: string;
   extraAmountPayout: string;
+  odPremiumPayinAmt: string;
+  tpPremiumPayinAmt: string;
+  netPremiumPayinAmt: string;
+  extraAmountPayinAmt: string;
+  odPremiumPayoutAmt: string;
+  tpPremiumPayoutAmt: string;
+  netPremiumPayoutAmt: string;
+  extraAmountPayoutAmt: string;
+  totalPayin: string;
+  totalPayout: string;
+  netRevenue: string;
   associateId: string;
   reportingFy: string;
   reportingMonth: string;
@@ -78,8 +89,34 @@ export interface BusinessEntry {
   chequeNumber?: string;
   chequeDate?: string;
   policyFile: string;
+  policyFileUrl?: string;
+  brokerData?: {
+    _id: string;
+    brokername: string;
+    isDeleted: boolean;
+  };
+  associateData?: {
+    _id: string;
+    associateCode: string;
+    contactPerson: string;
+    contactNo: string;
+    email: string;
+    associateStateName: string;
+  };
+  rmData?: {
+    _id: string;
+    empCode: string;
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    email: string;
+    state: string;
+    department: string;
+  };
+  isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
+  createdBy?: string;
 }
 
 export async function createBusinessEntry(payload: BusinessEntryPayload, authToken: string) {

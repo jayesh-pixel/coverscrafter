@@ -138,7 +138,7 @@ export default function BusinessEntryManager({
     description = "Capture policy level business for consolidation.",
     initialShowForm = false
 }: BusinessEntryManagerProps) {
-  const [paymentMode, setPaymentMode] = useState<"online" | "cheque" | "cash">("online");
+  const [paymentMode, setPaymentMode] = useState<"Online" | "Cheque" | "Cash">("Online");
   const [showForm, setShowForm] = useState(initialShowForm);
   const [businessEntries, setBusinessEntries] = useState<BusinessEntry[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -154,6 +154,11 @@ export default function BusinessEntryManager({
   const [rmOptions, setRmOptions] = useState<RMUser[]>([]);
   const [associateOptions, setAssociateOptions] = useState<AssociateUser[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [selectedRmId, setSelectedRmId] = useState<string>("");
+  const [selectedAssociateId, setSelectedAssociateId] = useState<string>("");
+  const [allAssociates, setAllAssociates] = useState<AssociateUser[]>([]);
+  const [selectedState, setSelectedState] = useState<string>("");
+  const [allRMs, setAllRMs] = useState<RMUser[]>([]);
 
   const fetchEntries = async () => {
     const session = getAuthSession();
@@ -192,14 +197,34 @@ export default function BusinessEntryManager({
 
     setIsLoadingUsers(true);
     try {
-      const [rms, associates] = await Promise.all([
-        getRMUsers(session.token),
-        getAssociateUsers(session.token),
-      ]);
-      setRmOptions(rms);
-      setAssociateOptions(associates);
+      const associates = await getAssociateUsers(session.token);
+      setAllAssociates(associates);
+      setAssociateOptions([]); // Initially empty until RM is selected
     } catch (error) {
       console.error("Failed to fetch users", error);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  const fetchRMsByState = async (state: string) => {
+    const session = getAuthSession();
+    if (!session?.token) return;
+
+    setIsLoadingUsers(true);
+    try {
+      // Convert "TAMIL NADU" to "Tamil Nadu" format
+      const formattedState = state
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      
+      const rms = await getRMUsers(session.token, undefined, formattedState);
+      setRmOptions(rms);
+    } catch (error) {
+      console.error("Failed to fetch RMs for state", error);
+      setRmOptions([]);
     } finally {
       setIsLoadingUsers(false);
     }
@@ -290,6 +315,43 @@ export default function BusinessEntryManager({
     setFileInputKey((previous) => previous + 1);
   };
 
+  const handleRmChange = async (rmId: string) => {
+    setSelectedRmId(rmId);
+    setSelectedAssociateId("");
+    setAssociateOptions([]);
+    
+    if (!rmId) return;
+    
+    const session = getAuthSession();
+    if (!session?.token) return;
+    
+    setIsLoadingUsers(true);
+    try {
+      // Fetch associates created by the selected RM
+      const associates = await getAssociateUsers(session.token, undefined, rmId);
+      setAssociateOptions(associates);
+    } catch (error) {
+      console.error("Failed to fetch associates for RM", error);
+      setAssociateOptions([]);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  const handleAssociateChange = (associateId: string) => {
+    setSelectedAssociateId(associateId);
+  };
+
+  const handleStateChange = (state: string) => {
+    setSelectedState(state);
+    setSelectedRmId("");
+    setSelectedAssociateId("");
+    setAssociateOptions([]);
+    
+    // Fetch RMs by selected state from API
+    fetchRMsByState(state);
+  };
+
   const handleBusinessSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
@@ -329,8 +391,8 @@ export default function BusinessEntryManager({
     payload.netPremiumPayout = (payload.netPremiumPayout as string) || "0";
     payload.extraAmountPayout = (payload.extraAmountPayout as string) || "0";
 
-    if (uploadMeta.url) {
-      payload.policyFile = uploadMeta.url;
+    if (uploadMeta.id) {
+      payload.policyFile = uploadMeta.id;
     } else {
       payload.policyFile = "";
     }
@@ -341,7 +403,12 @@ export default function BusinessEntryManager({
       await createBusinessEntry(payload as any, session.token);
       setSuccessMessage("Business entry created successfully.");
       event.currentTarget.reset();
-      setPaymentMode("online");
+      setPaymentMode("Online");
+      setSelectedState("");
+      setSelectedRmId("");
+      setSelectedAssociateId("");
+      setRmOptions([]);
+      setAssociateOptions([]);
       setUploadedFile(null);
       setUploadError(null);
       setFileInputKey((previous) => previous + 1);
@@ -481,14 +548,42 @@ export default function BusinessEntryManager({
             <div className="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <SelectField
+                  id="rmState"
+                  label="RM State"
+                  required
+                  placeholder="--Select State--"
+                  options={stateOptions.map((option) => ({
+                    label: option,
+                    value: option,
+                  }))}
+                  onChange={(e) => handleStateChange(e.target.value)}
+                  value={selectedState}
+                />
+                <SelectField
+                  id="rmId"
+                  label="Relationship Manager"
+                  required
+                  placeholder={!selectedState ? "Select State first" : isLoadingUsers ? "Loading..." : "--Select RM--"}
+                  options={rmOptions.map((rm) => ({
+                    label: `${rm.firstName} ${rm.lastName} (${rm.empCode})`,
+                    value: rm._id,
+                  }))}
+                  onChange={(e) => handleRmChange(e.target.value)}
+                  value={selectedRmId}
+                  disabled={!selectedState}
+                />
+                <SelectField
                   id="associateId"
                   label="Associate"
                   required
-                  placeholder={isLoadingUsers ? "Loading..." : "--Select Associate--"}
+                  placeholder={!selectedRmId ? "Select RM first" : isLoadingUsers ? "Loading..." : "--Select Associate--"}
                   options={associateOptions.map((assoc) => ({
                     label: `${assoc.name} (${assoc.associateCode})`,
                     value: assoc._id,
                   }))}
+                  onChange={(e) => handleAssociateChange(e.target.value)}
+                  value={selectedAssociateId}
+                  disabled={!selectedRmId}
                 />
                 <SelectField
                   id="reportingFy"
@@ -510,28 +605,9 @@ export default function BusinessEntryManager({
                     value: option,
                   }))}
                 />
-                <SelectField
-                  id="rmState"
-                  label="RM State"
-                  required
-                  placeholder="--None--"
-                  options={stateOptions.map((option) => ({
-                    label: option,
-                    value: option,
-                  }))}
-                />
-                <SelectField
-                  id="rmId"
-                  label="Relationship Manager"
-                  required
-                  placeholder={isLoadingUsers ? "Loading..." : "--Select RM--"}
-                  options={rmOptions.map((rm) => ({
-                    label: `${rm.firstName} ${rm.lastName} (${rm.empCode})`,
-                    value: rm._id,
-                  }))}
-                />
               </div>
 
+              {selectedAssociateId && (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <TextField id="odPremiumPayin" label="OD Premium Payin" type="number" placeholder="0" required />
                 <TextField id="tpPremiumPayin" label="TP Premium Payin" type="number" placeholder="0" required />
@@ -542,6 +618,7 @@ export default function BusinessEntryManager({
                 <TextField id="netPremiumPayout" label="Net Premium Payout" type="number" placeholder="0" required />
                 <TextField id="extraAmountPayout" label="Extra Amount Payout" type="number" placeholder="0" required />
               </div>
+              )}
             </div>
 
             <div className="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
@@ -553,9 +630,9 @@ export default function BusinessEntryManager({
                       <input
                         type="radio"
                         name="paymentMode"
-                        value="online"
-                        checked={paymentMode === "online"}
-                        onChange={() => setPaymentMode("online")}
+                        value="Online"
+                        checked={paymentMode === "Online"}
+                        onChange={() => setPaymentMode("Online")}
                         className="h-4 w-4 text-blue-600"
                       />
                       Online
@@ -564,9 +641,9 @@ export default function BusinessEntryManager({
                       <input
                         type="radio"
                         name="paymentMode"
-                        value="cheque"
-                        checked={paymentMode === "cheque"}
-                        onChange={() => setPaymentMode("cheque")}
+                        value="Cheque"
+                        checked={paymentMode === "Cheque"}
+                        onChange={() => setPaymentMode("Cheque")}
                         className="h-4 w-4 text-blue-600"
                       />
                       Cheque
@@ -575,9 +652,9 @@ export default function BusinessEntryManager({
                       <input
                         type="radio"
                         name="paymentMode"
-                        value="cash"
-                        checked={paymentMode === "cash"}
-                        onChange={() => setPaymentMode("cash")}
+                        value="Cash"
+                        checked={paymentMode === "Cash"}
+                        onChange={() => setPaymentMode("Cash")}
                         className="h-4 w-4 text-blue-600"
                       />
                       Cash
@@ -585,7 +662,7 @@ export default function BusinessEntryManager({
                   </div>
                 </div>
                 <div className="grid w-full max-w-sm gap-4 md:grid-cols-2">
-                  {paymentMode === "cheque" && (
+                  {paymentMode === "Cheque" && (
                     <>
                       <TextField id="chequeNumber" label="Cheque Number" placeholder="Enter cheque number" required />
                       <TextField id="chequeDate" label="Cheque Date" type="date" required />
@@ -696,16 +773,25 @@ export default function BusinessEntryManager({
                 <tr>
                   <th className="px-4 py-3 font-semibold text-slate-600">Policy Number</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Client Name</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Registration</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Reporting FY</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Reporting Month</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Insurance Company</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Broker</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">RM</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Associate</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Payment Mode</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Gross Premium</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Total Payin</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Total Payout</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Net Revenue</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">Created</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {businessEntries.map((entry) => (
+                {businessEntries.map((entry) => {
+                  const broker = brokerOptions.find(b => b._id === entry.brokerid);
+                  const rmName = entry.rmData 
+                    ? `${entry.rmData.firstName} ${entry.rmData.middleName || ''} ${entry.rmData.lastName}`.trim()
+                    : 'N/A';
+                  const associateName = entry.associateData?.contactPerson || 'N/A';
+                  return (
                   <tr key={entry._id} className="transition hover:bg-blue-50/40">
                     <td className="px-4 py-4">
                       <div className="flex flex-col">
@@ -714,14 +800,18 @@ export default function BusinessEntryManager({
                       </div>
                     </td>
                     <td className="px-4 py-4 text-slate-600">{entry.clientName}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.registrationNumber}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.reportingFy}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.reportingMonth}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.brokerid}</td>
+                    <td className="px-4 py-4 text-slate-600">{entry.insuranceCompany}</td>
+                    <td className="px-4 py-4 text-slate-600">{broker?.brokername || entry.brokerData?.brokername || entry.brokerid}</td>
+                    <td className="px-4 py-4 text-slate-600">{rmName}</td>
+                    <td className="px-4 py-4 text-slate-600">{associateName}</td>
                     <td className="px-4 py-4 text-slate-600">{entry.paymentMode}</td>
-                    <td className="px-4 py-4 text-slate-600">₹{Number(entry.grossPremium).toLocaleString()}</td>
+                    <td className="px-4 py-4 text-slate-600">₹{Number(entry.totalPayin).toLocaleString()}</td>
+                    <td className="px-4 py-4 text-slate-600">₹{Number(entry.totalPayout).toLocaleString()}</td>
+                    <td className="px-4 py-4 text-slate-600">₹{Number(entry.netRevenue).toLocaleString()}</td>
+                    <td className="px-4 py-4 text-slate-600">{new Date(entry.createdAt).toLocaleDateString()}</td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}

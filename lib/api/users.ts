@@ -82,8 +82,11 @@ export async function getAllUsers(authToken: string): Promise<UserProfile[]> {
 /**
  * Get RM users
  */
-export async function getRMUsers(authToken: string, id?: string): Promise<RMUser[]> {
-  const query = id ? `?id=${encodeURIComponent(id)}` : "";
+export async function getRMUsers(authToken: string, id?: string, state?: string): Promise<RMUser[]> {
+  const params = new URLSearchParams();
+  if (id) params.append('id', id);
+  if (state) params.append('state', state);
+  const query = params.toString() ? `?${params.toString()}` : "";
   return apiRequest<RMUser[]>({
     path: `${API_BASE_URL}/v1/users/rm${query}`,
     method: "GET",
@@ -94,8 +97,11 @@ export async function getRMUsers(authToken: string, id?: string): Promise<RMUser
 /**
  * Get Associate users
  */
-export async function getAssociateUsers(authToken: string, id?: string): Promise<AssociateUser[]> {
-  const query = id ? `?id=${encodeURIComponent(id)}` : "";
+export async function getAssociateUsers(authToken: string, id?: string, userId?: string): Promise<AssociateUser[]> {
+  const params = new URLSearchParams();
+  if (id) params.append('id', id);
+  if (userId) params.append('userId', userId);
+  const query = params.toString() ? `?${params.toString()}` : "";
   return apiRequest<AssociateUser[]>({
     path: `${API_BASE_URL}/v1/users/associate${query}`,
     method: "GET",
