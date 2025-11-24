@@ -419,6 +419,9 @@ export default function BusinessEntryManager({
       setBrokerOptions(brokers.filter((broker) => !broker.isDeleted));
     } catch (error) {
       console.error("Failed to fetch broker names", error);
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+      }
       setBrokerOptions([]);
     } finally {
       setIsLoadingBrokers(false);
@@ -440,6 +443,9 @@ export default function BusinessEntryManager({
       setAssociateOptions([]); // Initially empty until RM is selected
     } catch (error) {
       console.error("Failed to fetch users", error);
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+      }
     } finally {
       setIsLoadingUsers(false);
     }
@@ -519,6 +525,9 @@ export default function BusinessEntryManager({
       setRmOptions(rms);
     } catch (error) {
       console.error("Failed to fetch RMs for state", error);
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+      }
       setRmOptions([]);
     } finally {
       setIsLoadingUsers(false);
@@ -762,7 +771,13 @@ export default function BusinessEntryManager({
       setBulkUpdateFile(null);
     } catch (error) {
       console.error('Bulk update failed:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to update payment status');
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+      } else if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage('Failed to update payment status');
+      }
     } finally {
       setIsBulkUpdating(false);
     }

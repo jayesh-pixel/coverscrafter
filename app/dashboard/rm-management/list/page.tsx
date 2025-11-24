@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getRMUsers, getAssociateUsers, updateRMUser, updateAssociateUser, type RMUser, type AssociateUser } from "@/lib/api/users";
 import { getAuthSession } from "@/lib/utils/storage";
+import { ApiError } from "@/lib/api/config";
 
 const indianStates = [
   "Andaman and Nicobar Islands",
@@ -143,7 +144,13 @@ export default function ConsolidationListPage() {
       setRelationshipManagers(mappedRMs);
     } catch (error) {
       console.error("Failed to fetch RM & Associates:", error);
-      setError(error instanceof Error ? error.message : "Failed to load data");
+      if (error instanceof ApiError) {
+        setError(error.message);
+      } else if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Failed to load data");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -195,7 +202,13 @@ export default function ConsolidationListPage() {
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Failed to update RM:", error);
-      setError(error instanceof Error ? error.message : "Failed to update RM");
+      if (error instanceof ApiError) {
+        setError(error.message);
+      } else if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Failed to update RM");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -246,7 +259,13 @@ export default function ConsolidationListPage() {
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Failed to update Associate:", error);
-      setError(error instanceof Error ? error.message : "Failed to update Associate");
+      if (error instanceof ApiError) {
+        setError(error.message);
+      } else if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Failed to update Associate");
+      }
     } finally {
       setIsSaving(false);
     }

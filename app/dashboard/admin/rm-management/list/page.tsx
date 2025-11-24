@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getRMUsers, getAssociateUsers, type RMUser, type AssociateUser } from "@/lib/api/users";
 import { getAuthSession } from "@/lib/utils/storage";
+import { ApiError } from "@/lib/api/config";
 
 type AssociateRecord = {
   name: string;
@@ -98,7 +99,13 @@ export default function ConsolidationListPage() {
       setRelationshipManagers(mappedRMs);
     } catch (error) {
       console.error("Failed to fetch RM & Associates:", error);
-      setError(error instanceof Error ? error.message : "Failed to load data");
+      if (error instanceof ApiError) {
+        setError(error.message);
+      } else if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Failed to load data");
+      }
     } finally {
       setIsLoading(false);
     }

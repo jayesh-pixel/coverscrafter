@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getAssociateUsers, type AssociateUser } from "@/lib/api/users";
 import { getAuthSession } from "@/lib/utils/storage";
+import { ApiError } from "@/lib/api/config";
 
 export default function RMAssociatesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [associates, setAssociates] = useState<AssociateUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAssociates = async () => {
@@ -22,8 +24,16 @@ export default function RMAssociatesPage() {
         // Fetch associates created by the logged-in user (RM)
         const data = await getAssociateUsers(session.token, (session.user as any)._id);
         setAssociates(data);
+        setError(null);
       } catch (error) {
         console.error("Failed to fetch associates:", error);
+        if (error instanceof ApiError) {
+          setError(error.message);
+        } else if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError("Failed to load associates");
+        }
       } finally {
         setIsLoading(false);
       }
@@ -52,6 +62,12 @@ export default function RMAssociatesPage() {
           Add New Associate
         </Link>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+          {error}
+        </div>
+      )}
 
       <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 p-4">
