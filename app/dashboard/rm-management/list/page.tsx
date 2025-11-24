@@ -5,6 +5,45 @@ import Link from "next/link";
 import { getRMUsers, getAssociateUsers, updateRMUser, updateAssociateUser, type RMUser, type AssociateUser } from "@/lib/api/users";
 import { getAuthSession } from "@/lib/utils/storage";
 
+const indianStates = [
+  "Andaman and Nicobar Islands",
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chandigarh",
+  "Chhattisgarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jammu and Kashmir",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Ladakh",
+  "Lakshadweep",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Puducherry",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+];
+
 type AssociateRecord = {
   name: string;
   code: string;
@@ -144,10 +183,7 @@ export default function ConsolidationListPage() {
         ContactNo: formData.get("contactNo") as string,
         EmailID: formData.get("email") as string,
         State: formData.get("state") as string,
-        Department: formData.get("department") as string,
-        ReportingOffice: formData.get("reportingOffice") as string,
         ReportingManager: formData.get("reportingManager") as string,
-        Resigned: formData.get("resigned") === "true",
         status: formData.get("status") as string,
       };
 
@@ -182,12 +218,23 @@ export default function ConsolidationListPage() {
       const formData = new FormData(event.currentTarget);
       const data = {
         AssociateName: formData.get("name") as string,
+        AssociatePanNo: formData.get("panNo") as string,
+        AssociateAadharNo: formData.get("aadharNo") as string,
+        ContactPerson: formData.get("contactPerson") as string,
         ContactNo: formData.get("contactNo") as string,
         AssociateEmailId: formData.get("email") as string,
         AssociateStateName: formData.get("stateName") as string,
         AssociateAddress: formData.get("address") as string,
-        ContactPerson: formData.get("contactPerson") as string,
-        PosCode: formData.get("posCode") as string,
+        BPANNo: formData.get("bpanNo") as string,
+        BPANName: formData.get("bpanName") as string,
+        AccountNo: formData.get("accountNo") as string,
+        AccountType: formData.get("accountType") as string,
+        IFSC: formData.get("ifsc") as string,
+        BankName: formData.get("bankName") as string,
+        StateName: formData.get("bankStateName") as string,
+        BranchName: formData.get("branchName") as string,
+        BankAddress: formData.get("bankAddress") as string,
+        PosCode: formData.get("posCode") as string || undefined,
         status: formData.get("status") as string,
       };
 
@@ -453,115 +500,97 @@ export default function ConsolidationListPage() {
 
             {editingRM && (
               <form onSubmit={handleSaveRM} className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">First Name *</label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      defaultValue={editingRM.name.split(' ')[0]}
-                      required
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">First Name *</label>
+                      <input
+                        type="text"
+                        name="firstName"
+                        defaultValue={editingRM.name.split(' ')[0]}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Middle Name</label>
+                      <input
+                        type="text"
+                        name="middleName"
+                        defaultValue={editingRM.name.split(' ').length > 2 ? editingRM.name.split(' ').slice(1, -1).join(' ') : ''}
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Last Name *</label>
+                      <input
+                        type="text"
+                        name="lastName"
+                        defaultValue={editingRM.name.split(' ').slice(-1)[0]}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Contact Number *</label>
+                      <input
+                        type="tel"
+                        name="contactNo"
+                        defaultValue={editingRM.contact}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Email *</label>
+                      <input
+                        type="email"
+                        name="email"
+                        defaultValue={editingRM.email}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Middle Name</label>
-                    <input
-                      type="text"
-                      name="middleName"
-                      defaultValue={editingRM.name.split(' ')[1] || ''}
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Last Name *</label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      defaultValue={editingRM.name.split(' ').slice(-1)[0]}
-                      required
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Contact Number *</label>
-                    <input
-                      type="tel"
-                      name="contactNo"
-                      defaultValue={editingRM.contact}
-                      required
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Email *</label>
-                    <input
-                      type="email"
-                      name="email"
-                      defaultValue={editingRM.email}
-                      required
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">State *</label>
-                    <input
-                      type="text"
-                      name="state"
-                      defaultValue={editingRM.office}
-                      required
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Department *</label>
-                    <input
-                      type="text"
-                      name="department"
-                      defaultValue={editingRM.department}
-                      required
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Reporting Office</label>
-                    <input
-                      type="text"
-                      name="reportingOffice"
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Reporting Manager</label>
-                    <input
-                      type="text"
-                      name="reportingManager"
-                      defaultValue={editingRM.reportingManager}
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Status *</label>
-                    <select
-                      name="status"
-                      defaultValue={editingRM.status === 'Active' ? 'active' : editingRM.status === 'Resigned' ? 'inactive' : 'active'}
-                      required
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Resigned</label>
-                    <select
-                      name="resigned"
-                      defaultValue={editingRM.status === 'Resigned' ? 'true' : 'false'}
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    >
-                      <option value="false">No</option>
-                      <option value="true">Yes</option>
-                    </select>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">State *</label>
+                      <select
+                        name="state"
+                        defaultValue={editingRM.office}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      >
+                        <option value="">--Select State--</option>
+                        {indianStates.map((state) => (
+                          <option key={state} value={state}>{state}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Reporting Manager</label>
+                      <input
+                        type="text"
+                        name="reportingManager"
+                        defaultValue={editingRM.reportingManager !== 'N/A' ? editingRM.reportingManager : ''}
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Status *</label>
+                      <select
+                        name="status"
+                        defaultValue={editingRM.status === 'Active' ? 'active' : 'inactive'}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
@@ -588,85 +617,215 @@ export default function ConsolidationListPage() {
 
             {editingAssociate && (
               <form onSubmit={handleSaveAssociate} className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Associate Name *</label>
-                    <input
-                      type="text"
-                      name="name"
-                      defaultValue={editingAssociate.name}
-                      required
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
+                <h3 className="text-sm font-semibold text-slate-700">Primary Details</h3>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Associate Name *</label>
+                      <input
+                        type="text"
+                        name="name"
+                        defaultValue={editingAssociate.name}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">PAN Number *</label>
+                      <input
+                        type="text"
+                        name="panNo"
+                        defaultValue={editingAssociate.associatePanNo}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">AADHAR No *</label>
+                      <input
+                        type="text"
+                        name="aadharNo"
+                        defaultValue={editingAssociate.associateAadharNo}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Contact Person *</label>
+                      <input
+                        type="text"
+                        name="contactPerson"
+                        defaultValue={editingAssociate.contactPerson}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Contact Number *</label>
+                      <input
+                        type="tel"
+                        name="contactNo"
+                        defaultValue={editingAssociate.contactNo}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Email *</label>
+                      <input
+                        type="email"
+                        name="email"
+                        defaultValue={editingAssociate.email}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">POS Code</label>
+                      <input
+                        type="text"
+                        name="posCode"
+                        defaultValue={editingAssociate.posCode || ''}
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">State *</label>
+                      <select
+                        name="stateName"
+                        defaultValue={editingAssociate.associateStateName}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      >
+                        <option value="">--Select State--</option>
+                        {indianStates.map((state) => (
+                          <option key={state} value={state}>{state}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Status *</label>
+                      <select
+                        name="status"
+                        defaultValue={editingAssociate.status}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+                    <div className="md:col-span-2 lg:col-span-3">
+                      <label className="block text-sm font-medium text-slate-700">Broker Communication Address</label>
+                      <textarea
+                        name="address"
+                        defaultValue={editingAssociate.associateAddress}
+                        rows={2}
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Contact Person</label>
-                    <input
-                      type="text"
-                      name="contactPerson"
-                      defaultValue={editingAssociate.contactPerson}
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Contact Number *</label>
-                    <input
-                      type="tel"
-                      name="contactNo"
-                      defaultValue={editingAssociate.contactNo}
-                      required
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Email *</label>
-                    <input
-                      type="email"
-                      name="email"
-                      defaultValue={editingAssociate.email}
-                      required
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">State *</label>
-                    <input
-                      type="text"
-                      name="stateName"
-                      defaultValue={editingAssociate.associateStateName}
-                      required
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">POS Code</label>
-                    <input
-                      type="text"
-                      name="posCode"
-                      defaultValue={editingAssociate.posCode || ''}
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700">Address</label>
-                    <textarea
-                      name="address"
-                      defaultValue={editingAssociate.associateAddress}
-                      rows={2}
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Status *</label>
-                    <select
-                      name="status"
-                      defaultValue={editingAssociate.status}
-                      required
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
+                </div>
+
+                <h3 className="text-sm font-semibold text-slate-700">Bank Account Details</h3>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Beneficiary PAN Number *</label>
+                      <input
+                        type="text"
+                        name="bpanNo"
+                        defaultValue={editingAssociate.bpanNo}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Name as in Bank Account *</label>
+                      <input
+                        type="text"
+                        name="bpanName"
+                        defaultValue={editingAssociate.bpanName}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Account No *</label>
+                      <input
+                        type="text"
+                        name="accountNo"
+                        defaultValue={editingAssociate.accountNo}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Account Type *</label>
+                      <select
+                        name="accountType"
+                        defaultValue={editingAssociate.accountType}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      >
+                        <option value="Savings">Savings</option>
+                        <option value="Current">Current</option>
+                        <option value="Cash Credit">Cash Credit</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">IFSC Code *</label>
+                      <input
+                        type="text"
+                        name="ifsc"
+                        defaultValue={editingAssociate.ifsc}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Bank Name *</label>
+                      <input
+                        type="text"
+                        name="bankName"
+                        defaultValue={editingAssociate.bankName}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Bank State *</label>
+                      <select
+                        name="bankStateName"
+                        defaultValue={editingAssociate.stateName}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      >
+                        <option value="">--Select State--</option>
+                        {indianStates.map((state) => (
+                          <option key={state} value={state}>{state}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Branch Name *</label>
+                      <input
+                        type="text"
+                        name="branchName"
+                        defaultValue={editingAssociate.branchName}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div className="md:col-span-2 lg:col-span-3">
+                      <label className="block text-sm font-medium text-slate-700">Bank Branch Address</label>
+                      <textarea
+                        name="bankAddress"
+                        defaultValue={editingAssociate.bankAddress}
+                        rows={2}
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
