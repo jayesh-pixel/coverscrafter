@@ -565,7 +565,7 @@ export function AssociateForm({
                 onChange={(event) => updateAssociateForm("rmId", event.target.value)}
                 options={rmOptions.map((rm) => ({
                   label: `${rm.firstName} ${rm.lastName} (${rm.empCode})`,
-                  value: rm._id,
+                  value: rm.firebaseUid,
                 }))}
                 disabled={isSubmitting || isLoadingRMs}
               />
