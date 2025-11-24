@@ -744,16 +744,16 @@ export default function BusinessEntryManager({
   };
 
   const handleDownloadSample = () => {
-    // Create sample Excel data
+    // Create sample Excel data with proper format
     const sampleData = [
       ['Policy Number', 'Payment Date', 'UTR Number', 'Status'],
-      ['POL123456', '2025-11-24', 'UTR1234567890', 'Paid'],
-      ['POL789012', '2025-11-25', 'UTR0987654321', 'Pending'],
+      ['1234567', '24-11-2025', 'UTR1234567890', 'Paid'],
+      ['7890123', '25-11-2025', 'UTR0987654321', 'Pending'],
     ];
 
-    // Convert to CSV format
+    // Convert to CSV format with proper separators
     const csv = sampleData.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -789,34 +789,76 @@ export default function BusinessEntryManager({
       console.log('Total lines:', lines.length);
       console.log('First few lines:', lines.slice(0, 3));
       
+      // Detect delimiter (comma or tab)
+      const firstDataLine = lines[1] || '';
+      const delimiter = firstDataLine.includes('\t') ? '\t' : ',';
+      console.log('Detected delimiter:', delimiter === '\t' ? 'TAB' : 'COMMA');
+      
       // Skip header row and parse data
       const updates = lines.slice(1).map((line, index) => {
-        // Split by comma and trim each value, also remove quotes if present
-        const values = line.split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
+        // Split by delimiter and trim each value, also remove quotes if present
+        const values = line.split(delimiter).map(s => s.trim().replace(/^["']|["']$/g, ''));
         const [policyNumber, paymentdate, utrno, status] = values;
         
+        console.log(`Row ${index + 1} raw values:`, values);
         console.log(`Row ${index + 1}:`, { policyNumber, paymentdate, utrno, status });
         
         // Parse and format date to YYYY-MM-DD if provided
         let formattedDate: string | undefined;
         if (paymentdate && paymentdate.trim()) {
           try {
-            const date = new Date(paymentdate);
+            // Handle multiple date formats
+            let date: Date;
+            
+            // Try DD-MM-YYYY format (e.g., 24-11-2025)
+            if (/^\d{2}-\d{2}-\d{4}$/.test(paymentdate)) {
+              const [day, month, year] = paymentdate.split('-');
+              date = new Date(`${year}-${month}-${day}`);
+            } 
+            // Try MM/DD/YYYY format
+            else if (/^\d{2}\/\d{2}\/\d{4}$/.test(paymentdate)) {
+              date = new Date(paymentdate);
+            }
+            // Try YYYY-MM-DD format
+            else if (/^\d{4}-\d{2}-\d{2}$/.test(paymentdate)) {
+              date = new Date(paymentdate);
+            }
+            // Default parsing
+            else {
+              date = new Date(paymentdate);
+            }
+            
             if (!isNaN(date.getTime())) {
               // Format as YYYY-MM-DD
               formattedDate = date.toISOString().split('T')[0];
+              console.log(`Date parsed: ${paymentdate} -> ${formattedDate}`);
+            } else {
+              console.error('Invalid date after parsing:', paymentdate);
             }
           } catch (e) {
-            console.error('Invalid date format:', paymentdate);
+            console.error('Invalid date format:', paymentdate, e);
           }
         }
         
-        const updateData = {
+        const updateData: {
+          policyNumber: string;
+          paymentdate?: string;
+          utrno?: string;
+          status?: string;
+        } = {
           policyNumber: policyNumber?.trim() || '',
-          paymentdate: formattedDate,
-          utrno: utrno?.trim() || undefined,
-          status: status?.trim() || undefined,
         };
+        
+        // Only add fields if they have values
+        if (formattedDate) {
+          updateData.paymentdate = formattedDate;
+        }
+        if (utrno && utrno.trim()) {
+          updateData.utrno = utrno.trim();
+        }
+        if (status && status.trim()) {
+          updateData.status = status.trim();
+        }
         
         console.log('Parsed data:', updateData);
         return updateData;
