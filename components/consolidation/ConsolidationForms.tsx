@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FormSection, SelectField, TextField } from "@/components/ui/forms";
 import { registerAssociate, registerRM } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/config";
 import { getAuthSession } from "@/lib/utils/storage";
+import { getRMUsers, type RMUser } from "@/lib/api/users";
 
 const workingOffices = [
   "--None--",
@@ -91,6 +92,7 @@ const initialRmFormState: RmFormState = {
 };
 
 type AssociateFormState = {
+  rmId: string;
   brokerCode: string;
   brokerName: string;
   brokerPan: string;
@@ -114,6 +116,7 @@ type AssociateFormState = {
 };
 
 const initialAssociateFormState: AssociateFormState = {
+  rmId: "",
   brokerCode: "",
   brokerName: "",
   brokerPan: "",
@@ -434,6 +437,8 @@ export function AssociateForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [rmOptions, setRmOptions] = useState<RMUser[]>([]);
+  const [isLoadingRMs, setIsLoadingRMs] = useState(false);
 
   const updateAssociateForm = (field: keyof AssociateFormState, value: string) => {
     setAssociateForm((prev) => ({
@@ -441,6 +446,26 @@ export function AssociateForm({
       [field]: value,
     }));
   };
+
+  const fetchRMs = async () => {
+    const session = getAuthSession();
+    if (!session?.token) return;
+
+    setIsLoadingRMs(true);
+    try {
+      const rms = await getRMUsers(session.token);
+      setRmOptions(rms);
+    } catch (error) {
+      console.error("Failed to fetch RMs", error);
+      setRmOptions([]);
+    } finally {
+      setIsLoadingRMs(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRMs();
+  }, []);
 
   const handleposStatusChange = (value: "yes" | "no" | "") => {
     setposStatus(value);
@@ -467,6 +492,7 @@ export function AssociateForm({
     try {
       await registerAssociate(
         {
+          RMId: associateForm.rmId,
           AssociateCode: associateForm.brokerCode,
           AssociateName: associateForm.brokerName,
           AssociatePanNo: associateForm.brokerPan,
@@ -530,6 +556,19 @@ export function AssociateForm({
         {showPrimaryDetails && (
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <SelectField
+                id="rmId"
+                label="Relationship Manager"
+                placeholder={isLoadingRMs ? "Loading RMs..." : "--Select RM--"}
+                required
+                value={associateForm.rmId}
+                onChange={(event) => updateAssociateForm("rmId", event.target.value)}
+                options={rmOptions.map((rm) => ({
+                  label: `${rm.firstName} ${rm.lastName} (${rm.empCode})`,
+                  value: rm._id,
+                }))}
+                disabled={isSubmitting || isLoadingRMs}
+              />
               <TextField
                 id="brokerCode"
                 label="Broker Code"
