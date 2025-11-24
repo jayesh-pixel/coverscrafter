@@ -9,11 +9,11 @@ const tabs = [
     label: "Create RM",
     description: "Capture all employment information before assigning dealer consolidations.",
   },
-  {
-    value: "associate" as const,
-    label: "Create Associate (POS Entry)",
-    description: "Capture POS partner identity, documentation, and settlement preferences.",
-  },
+  // {
+  //   value: "associate" as const,
+  //   label: "Create Associate (POS Entry)",
+  //   description: "Capture POS partner identity, documentation, and settlement preferences.",
+  // },
 ];
 
 export default function ConsolidationPage() {
@@ -41,7 +41,7 @@ export default function ConsolidationPage() {
 
       {activeTab === "rm" && <RMForm />}
 
-      {activeTab === "associate" && <AssociateForm />}
+      {/* {activeTab === "associate" && <AssociateForm />} */}
     </div>
   );
 }

@@ -492,7 +492,7 @@ export function AssociateForm({
     try {
       await registerAssociate(
         {
-          RMId: associateForm.rmId,
+          rmId: associateForm.rmId,
           AssociateCode: associateForm.brokerCode,
           AssociateName: associateForm.brokerName,
           AssociatePanNo: associateForm.brokerPan,

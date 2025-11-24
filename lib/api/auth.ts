@@ -48,7 +48,7 @@ export interface RegisterRmPayload {
 }
 
 export interface RegisterAssociatePayload {
-  RMId: string;
+  rmId: string;
   AssociateCode: string;
   AssociateName: string;
   AssociatePanNo: string;
