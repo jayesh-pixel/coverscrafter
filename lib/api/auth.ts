@@ -42,7 +42,7 @@ export interface RegisterRmPayload {
   Department?: string;
   ReportingOffice?: string;
   ReportingManager?: string;
-  Resigned: boolean;
+  Resigned?: boolean;
   ResignationDate?: string;
   Password: string;
 }

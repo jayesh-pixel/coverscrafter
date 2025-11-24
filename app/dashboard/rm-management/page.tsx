@@ -7,12 +7,10 @@ const tabs = [
   {
     value: "rm" as const,
     label: "Create RM",
-    description: "Capture all employment information before assigning dealer consolidations.",
   },
   {
     value: "associate" as const,
-    label: "Create Associate (POS Entry)",
-    description: "Capture POS partner identity, documentation, and settlement preferences.",
+    label: "Create Associate",
   },
 ];
 
@@ -21,7 +19,7 @@ export default function ConsolidationPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <div className="flex gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
+      <div className="flex gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm max-w-md">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.value;
           return (
@@ -33,7 +31,6 @@ export default function ConsolidationPage() {
               }`}
             >
               <span className="text-sm font-semibold">{tab.label}</span>
-              <span className={`text-xs ${isActive ? "text-blue-100" : "text-slate-400"}`}>{tab.description}</span>
             </button>
           );
         })}

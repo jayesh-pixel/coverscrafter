@@ -128,7 +128,6 @@ type RmFormState = {
   emailId: string;
   state: string;
   reportingManager: string;
-  resignationDate: string;
   password: string;
 };
 
@@ -143,7 +142,6 @@ const initialRmFormState: RmFormState = {
   emailId: "",
   state: "",
   reportingManager: "",
-  resignationDate: "",
   password: "",
 };
 
@@ -197,13 +195,12 @@ const initialAssociateFormState: AssociateFormState = {
 
 export function RMForm({
   title = "Create RM",
-  description = "Capture all employment information before assigning dealer consolidations.",
+  description,
 }: {
   title?: string;
   description?: string;
 }) {
   const [rmForm, setRmForm] = useState<RmFormState>(initialRmFormState);
-  const [isResigned, setIsResigned] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -220,13 +217,6 @@ export function RMForm({
     // Set hardcoded admin option
     setAdminOptions([{ label: "Admin", value: "Admin" }]);
   }, []);
-
-  const handleResignedToggle = (checked: boolean) => {
-    setIsResigned(checked);
-    if (!checked) {
-      updateRmForm("resignationDate", "");
-    }
-  };
 
   const handleSubmit = async () => {
     setErrorMessage(null);
@@ -253,8 +243,6 @@ export function RMForm({
           EmailID: rmForm.emailId,
           State: rmForm.state,
           ReportingManager: rmForm.reportingManager || undefined,
-          Resigned: isResigned,
-          ResignationDate: isResigned ? rmForm.resignationDate || undefined : undefined,
           Password: rmForm.password,
         },
         session.token,
@@ -262,7 +250,6 @@ export function RMForm({
 
       setSuccessMessage("RM registered successfully.");
       setRmForm(initialRmFormState);
-      setIsResigned(false);
     } catch (error) {
       if (error instanceof ApiError) {
         setErrorMessage(error.message || "Unable to register RM. Please verify the details.");
@@ -277,10 +264,8 @@ export function RMForm({
   return (
     <FormSection
       title={title}
-      description={description}
     >
-      <div className="col-span-full space-y-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="col-span-full space-y-4">        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="grid gap-4 md:grid-cols-2">
             <TextField
               id="empCode"
@@ -401,30 +386,6 @@ export function RMForm({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="flex items-center gap-3 text-sm font-semibold text-slate-700">
-              <input
-                type="checkbox"
-                checked={isResigned}
-                onChange={(event) => handleResignedToggle(event.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
-                disabled={isSubmitting}
-              />
-              Resigned
-            </label>
-            <TextField
-              id="resignationDate"
-              label="Resignation Date"
-              type="date"
-              disabled={!isResigned || isSubmitting}
-              required={isResigned}
-              value={rmForm.resignationDate}
-              onChange={(event) => updateRmForm("resignationDate", event.target.value)}
-            />
-          </div>
-        </div>
-
         {(errorMessage || successMessage) && (
           <div className="space-y-2">
             {errorMessage && (
@@ -457,8 +418,8 @@ export function RMForm({
 
 export function AssociateForm({
   contextLabel = "Associate Form Submission",
-  title = "Create Associate (POS Entry)",
-  description = "Capture POS partner identity, documentation, and settlement preferences.",
+  title = "Create Associate",
+  description,
 }: {
   contextLabel?: string;
   title?: string;
@@ -573,7 +534,6 @@ export function AssociateForm({
   return (
     <FormSection
       title={title}
-      description={description}
     >
       <div className="col-span-full space-y-4">
         <div className="flex items-center gap-2">

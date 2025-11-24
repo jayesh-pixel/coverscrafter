@@ -13,7 +13,6 @@ const insuranceCompanies = [
   "Acko General Insurance",
   "Aditya Birla Health Insurance Co. Ltd.",
   "Aditya Birla Sun Life Insurance Co. Ltd.",
-  "Aegis Covenant Private Limited",
   "Agriculture Insurance Co. of India Ltd.",
   "Apollo Munich Health Insurance Co. Ltd.",
   "Bajaj Allianz General Insurance Co. Ltd.",
