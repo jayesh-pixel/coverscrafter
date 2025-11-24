@@ -347,6 +347,11 @@ export default function BusinessEntryManager({
   const [allRMs, setAllRMs] = useState<RMUser[]>([]);
   const [isRmAutoFilled, setIsRmAutoFilled] = useState(false);
   const [isAssociateAutoFilled, setIsAssociateAutoFilled] = useState(false);
+  const [odPremium, setOdPremium] = useState<string>("");
+  const [tpPremium, setTpPremium] = useState<string>("");
+  const [netPremium, setNetPremium] = useState<string>("");
+  const [grossPremium, setGrossPremium] = useState<string>("");
+  const [userRole, setUserRole] = useState<string>("");
   const [viewFileUrl, setViewFileUrl] = useState<string | null>(null);
   const [isFileDialogOpen, setIsFileDialogOpen] = useState(false);
   const [fileBlob, setFileBlob] = useState<string | null>(null);
@@ -533,6 +538,10 @@ export default function BusinessEntryManager({
   };
 
   useEffect(() => {
+    const session = getAuthSession();
+    if (session?.user?.role) {
+      setUserRole(session.user.role);
+    }
     fetchEntries();
     fetchBrokerOptions();
     fetchUsers();
@@ -623,7 +632,22 @@ export default function BusinessEntryManager({
     setSelectedAssociateId("");
     setAssociateOptions([]);
     
-    if (!rmId) return;
+    if (!rmId) {
+      setSelectedState("");
+      return;
+    }
+    
+    // Auto-fill state from selected RM
+    const selectedRm = allRMs.find(rm => rm._id === rmId);
+    console.log('Selected RM:', selectedRm);
+    console.log('RM State:', selectedRm?.state);
+    
+    if (selectedRm?.state) {
+      // Convert state to match the format in stateOptions (UPPERCASE)
+      const formattedState = selectedRm.state.toUpperCase();
+      console.log('Setting state to:', formattedState);
+      setSelectedState(formattedState);
+    }
     
     const session = getAuthSession();
     if (!session?.token) return;
@@ -643,6 +667,26 @@ export default function BusinessEntryManager({
 
   const handleAssociateChange = (associateId: string) => {
     setSelectedAssociateId(associateId);
+  };
+
+  const handleOdPremiumChange = (value: string) => {
+    setOdPremium(value);
+    const od = parseFloat(value) || 0;
+    const tp = parseFloat(tpPremium) || 0;
+    const net = od + tp;
+    const gross = net * 1.18;
+    setNetPremium(net.toFixed(2));
+    setGrossPremium(gross.toFixed(2));
+  };
+
+  const handleTpPremiumChange = (value: string) => {
+    setTpPremium(value);
+    const od = parseFloat(odPremium) || 0;
+    const tp = parseFloat(value) || 0;
+    const net = od + tp;
+    const gross = net * 1.18;
+    setNetPremium(net.toFixed(2));
+    setGrossPremium(gross.toFixed(2));
   };
 
   const handleViewFile = async (fileUrl: string) => {
@@ -873,10 +917,13 @@ export default function BusinessEntryManager({
     }
 
     setIsSubmitting(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
 
     try {
       await createBusinessEntry(payload as any, session.token);
-      setSuccessMessage("Business entry created successfully.");
+      
+      // Reset form
       event.currentTarget.reset();
       setPaymentMode("Online");
       setSelectedState("");
@@ -884,13 +931,25 @@ export default function BusinessEntryManager({
       setSelectedAssociateId("");
       setSelectedLineOfBusiness("");
       setSelectedProduct("");
+      setOdPremium("");
+      setTpPremium("");
+      setNetPremium("");
+      setGrossPremium("");
       setRmOptions([]);
       setAssociateOptions([]);
       setUploadedFile(null);
       setUploadError(null);
       setFileInputKey((previous) => previous + 1);
-      fetchEntries();
-      setTimeout(() => setShowForm(false), 1500);
+      
+      // Refresh entries list
+      await fetchEntries();
+      
+      setSuccessMessage("Business entry created successfully.");
+      
+      // Keep form open so user can see success message
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
     } catch (error) {
       if (error instanceof ApiError) {
         setErrorMessage(error.message || "Unable to create business entry. Please verify the details.");
@@ -1029,39 +1088,71 @@ export default function BusinessEntryManager({
                 <TextField id="policyStartDate" label="Policy Start Date" type="date" required />
                 <TextField id="policyEndDate" label="Policy End Date" type="date" required />
                 <TextField id="policyTpEndDate" label="Policy TP End Date" type="date" required />
-                <TextField id="odPremium" label="OD Premium" type="number" placeholder="0" required />
-                <TextField id="tpPremium" label="TP Premium" type="number" placeholder="0" required />
-                <TextField id="netPremium" label="Net Premium" type="number" placeholder="0" required />
-                <TextField id="grossPremium" label="Gross Premium" type="number" placeholder="0" required />
+                <TextField 
+                  id="odPremium" 
+                  label="OD Premium" 
+                  type="number" 
+                  placeholder="0" 
+                  required 
+                  value={odPremium}
+                  onChange={(e) => handleOdPremiumChange(e.target.value)}
+                />
+                <TextField 
+                  id="tpPremium" 
+                  label="TP Premium" 
+                  type="number" 
+                  placeholder="0" 
+                  required 
+                  value={tpPremium}
+                  onChange={(e) => handleTpPremiumChange(e.target.value)}
+                />
+                <TextField 
+                  id="netPremium" 
+                  label="Net Premium" 
+                  type="number" 
+                  placeholder="0" 
+                  required 
+                  value={netPremium}
+                  disabled
+                />
+                <TextField 
+                  id="grossPremium" 
+                  label="Gross Premium" 
+                  type="number" 
+                  placeholder="0" 
+                  required 
+                  value={grossPremium}
+                  disabled
+                />
               </div>
             </div>
 
             <div className="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <SelectField
-                  id="rmState"
-                  label="RM State"
-                  required
-                  placeholder="--Select State--"
-                  options={stateOptions.map((option) => ({
-                    label: option,
-                    value: option,
-                  }))}
-                  onChange={(e) => handleStateChange(e.target.value)}
-                  value={selectedState}
-                />
-                <SelectField
                   id="rmId"
                   label="Relationship Manager"
                   required
-                  placeholder={!selectedState ? "Select State first" : isLoadingUsers ? "Loading..." : "--Select RM--"}
-                  options={rmOptions.map((rm) => ({
+                  placeholder={isLoadingUsers ? "Loading..." : "--Select RM--"}
+                  options={allRMs.map((rm) => ({
                     label: `${rm.firstName} ${rm.lastName} (${rm.empCode})`,
                     value: rm._id,
                   }))}
                   onChange={(e) => handleRmChange(e.target.value)}
                   value={selectedRmId}
-                  disabled={!selectedState || isRmAutoFilled}
+                  disabled={isRmAutoFilled}
+                />
+                <SelectField
+                  id="rmState"
+                  label="RM State"
+                  required
+                  placeholder="--Select RM first--"
+                  options={stateOptions.map((option) => ({
+                    label: option,
+                    value: option,
+                  }))}
+                  value={selectedState}
+                  disabled={!selectedState}
                 />
                 <SelectField
                   id="associateId"
@@ -1098,7 +1189,7 @@ export default function BusinessEntryManager({
                 />
               </div>
 
-              {selectedAssociateId && (
+              {selectedAssociateId && userRole !== 'rm' && userRole !== 'associate' && (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <TextField id="odPremiumPayin" label="OD Premium Payin (%)" type="number" placeholder="0" min="0" max="100" required />
                 <TextField id="tpPremiumPayin" label="TP Premium Payin (%)" type="number" placeholder="0" min="0" max="100" required />
@@ -1451,6 +1542,8 @@ export default function BusinessEntryManager({
                   <th className="px-4 py-3 font-semibold text-slate-600">Associate</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Reporting FY</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Reporting Month</th>
+                  {userRole !== 'rm' && userRole !== 'associate' && (
+                  <>
                   <th className="px-4 py-3 font-semibold text-slate-600">OD Premium Payin</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">TP Premium Payin</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Net Premium Payin</th>
@@ -1462,6 +1555,8 @@ export default function BusinessEntryManager({
                   <th className="px-4 py-3 font-semibold text-slate-600">Total Payin</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Total Payout</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Net Revenue</th>
+                  </>
+                  )}
                   <th className="px-4 py-3 font-semibold text-slate-600">Payment Mode</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Cheque Number</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">Policy File</th>
@@ -1506,6 +1601,8 @@ export default function BusinessEntryManager({
                     <td className="px-4 py-4 text-slate-600">{associateName}</td>
                     <td className="px-4 py-4 text-slate-600">{entry.reportingFy || ''}</td>
                     <td className="px-4 py-4 text-slate-600">{entry.reportingMonth || ''}</td>
+                    {userRole !== 'rm' && userRole !== 'associate' && (
+                    <>
                     <td className="px-4 py-4 text-slate-600">{entry.odPremiumPayinAmt || entry.odPremiumPayin || ''}</td>
                     <td className="px-4 py-4 text-slate-600">{entry.tpPremiumPayinAmt || entry.tpPremiumPayin || ''}</td>
                     <td className="px-4 py-4 text-slate-600">{entry.netPremiumPayinAmt || entry.netPremiumPayin || ''}</td>
@@ -1517,6 +1614,8 @@ export default function BusinessEntryManager({
                     <td className="px-4 py-4 text-slate-600">{entry.totalPayin ? `₹${Number(entry.totalPayin).toLocaleString()}` : ''}</td>
                     <td className="px-4 py-4 text-slate-600">{entry.totalPayout ? `₹${Number(entry.totalPayout).toLocaleString()}` : ''}</td>
                     <td className="px-4 py-4 text-slate-600">{entry.netRevenue ? `₹${Number(entry.netRevenue).toLocaleString()}` : ''}</td>
+                    </>
+                    )}
                     <td className="px-4 py-4 text-slate-600">{entry.paymentMode || ''}</td>
                     <td className="px-4 py-4 text-slate-600">{entry.chequeNumber || ''}</td>
                     <td className="px-4 py-4 text-slate-600">
@@ -1542,9 +1641,9 @@ export default function BusinessEntryManager({
 
       {/* File Viewer Dialog */}
       {isFileDialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="relative mx-4 w-full max-w-5xl rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-4xl max-h-[90vh] rounded-2xl bg-white shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 flex-shrink-0">
               <h3 className="text-lg font-semibold text-slate-900">Policy Document</h3>
               <button
                 onClick={handleCloseFileDialog}
@@ -1555,7 +1654,7 @@ export default function BusinessEntryManager({
                 </svg>
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto flex-1">
               {isLoadingFile ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-center">
@@ -1565,7 +1664,7 @@ export default function BusinessEntryManager({
                 </div>
               ) : fileBlob ? (
                 <div className="space-y-4">
-                  <div className="rounded-lg bg-slate-50 p-4">
+                  <div className="rounded-lg bg-slate-50 p-3">
                     <p className="text-sm font-medium text-slate-700">File URL:</p>
                     <p className="mt-1 break-all text-xs text-slate-600">{viewFileUrl}</p>
                     <p className="mt-2 text-xs text-emerald-600">✓ Authenticated with Bearer token</p>
@@ -1574,7 +1673,7 @@ export default function BusinessEntryManager({
                     <a
                       href={fileBlob}
                       download
-                      className="rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700"
+                      className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700"
                     >
                       Download File
                     </a>
@@ -1585,7 +1684,7 @@ export default function BusinessEntryManager({
                           alert('URL copied to clipboard!');
                         }
                       }}
-                      className="rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                      className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                     >
                       Copy URL
                     </button>

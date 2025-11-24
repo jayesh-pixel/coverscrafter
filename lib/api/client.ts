@@ -1,4 +1,6 @@
 import { API_BASE_URL, ApiError, DEFAULT_HEADERS } from "./config";
+import { getFreshIdToken } from "../firebase/auth";
+import { getAuthSession, saveAuthSession } from "../utils/storage";
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -50,6 +52,33 @@ export async function apiRequest<TResponse, TBody = unknown>({
       : response.statusText || "Request failed";
     
     const serverMsg = isJson && payload?.serverMsg ? payload.serverMsg : '';
+    
+    // Check if token is invalid or expired
+    if ((response.status === 401 || response.status === 403) && 
+        (message.toLowerCase().includes('invalid') || message.toLowerCase().includes('expired')) &&
+        (message.toLowerCase().includes('token'))) {
+      
+      // Try to refresh token
+      const freshToken = await getFreshIdToken();
+      
+      if (freshToken) {
+        // Update stored token
+        const session = getAuthSession();
+        if (session) {
+          const isPersistent = !!(window.localStorage.getItem('coverscrafter.auth.token'));
+          saveAuthSession(freshToken, session.user, isPersistent);
+          
+          // Retry the request with fresh token
+          return apiRequest({
+            path,
+            method,
+            body,
+            headers,
+            authToken: freshToken,
+          });
+        }
+      }
+    }
     
     throw new ApiError(message, response.status, serverMsg);
   }
