@@ -37,6 +37,7 @@ const statusStyles: Record<RelationshipManagerRecord["status"] | AssociateRecord
 };
 
 export default function ConsolidationListPage() {
+  const [activeTab, setActiveTab] = useState<"rm" | "associate">("rm");
   const [relationshipManagers, setRelationshipManagers] = useState<RelationshipManagerRecord[]>([]);
   const [allAssociates, setAllAssociates] = useState<AssociateUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -135,13 +136,33 @@ export default function ConsolidationListPage() {
         </div>
       </header>
 
+      <div className="flex gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm max-w-md">
+        <button
+          onClick={() => setActiveTab("rm")}
+          className={`flex flex-1 items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
+            activeTab === "rm" ? "bg-blue-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          Relationship Managers
+        </button>
+        <button
+          onClick={() => setActiveTab("associate")}
+          className={`flex flex-1 items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
+            activeTab === "associate" ? "bg-blue-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          Associates
+        </button>
+      </div>
+
       {error && (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
           {error}
         </div>
       )}
 
-      <section className="mx-auto w-full max-w-6xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      {activeTab === "rm" && (
+        <section className="mx-auto w-full max-w-6xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="relative w-full max-w-sm">
             <input
@@ -231,9 +252,11 @@ export default function ConsolidationListPage() {
           </table>
           </div>
         )}
-      </section>
+        </section>
+      )}
 
-      <section className="mx-auto w-full max-w-6xl space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      {activeTab === "associate" && (
+        <section className="mx-auto w-full max-w-6xl space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <header className="flex flex-col gap-2 border-b border-slate-200 pb-4">
           <h2 className="text-lg font-semibold text-slate-900">Associates mapped under each RM</h2>
           <p className="text-xs font-medium text-slate-500">Drill into POS associates directly from the parent RM list.</p>
@@ -253,8 +276,8 @@ export default function ConsolidationListPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredRMs.flatMap((rm) =>
-                rm.associates.map((associate) => (
-                  <tr key={`${rm.empCode}-${associate.code}`} className="transition hover:bg-blue-50/40">
+                rm.associates.map((associate, index) => (
+                  <tr key={`${rm.empCode}-${associate.brokerCode}-${index}`} className="transition hover:bg-blue-50/40">
                     <td className="px-4 py-4">
                       <div className="flex flex-col">
                         <span className="font-semibold text-slate-900">{rm.name}</span>
@@ -277,7 +300,8 @@ export default function ConsolidationListPage() {
             </tbody>
           </table>
         </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }

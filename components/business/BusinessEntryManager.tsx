@@ -810,7 +810,7 @@ export default function BusinessEntryManager({
                   key={fileInputKey}
                   id="supportingFile"
                   name="supportingFile"
-                  label="File"
+                  label="Policy Upload*"
                   hint="Upload supporting document (max 10 MB)."
                   onChange={handleFileChange}
                   disabled={isUploadingFile}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { FormSection, SelectField, TextField } from "@/components/ui/forms";
+import { FormSection, SelectField, TextField, SearchableSelectField } from "@/components/ui/forms";
 import { registerAssociate, registerRM } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/config";
 import { getAuthSession } from "@/lib/utils/storage";
@@ -40,22 +40,82 @@ const departments = [
 const reportingOffices = workingOffices;
 
 const indianStates = [
+  "Andaman and Nicobar Islands",
   "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chandigarh",
+  "Chhattisgarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
   "Delhi",
+  "Goa",
   "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jammu and Kashmir",
+  "Jharkhand",
   "Karnataka",
-  "Maharashtra",
+  "Kerala",
+  "Ladakh",
+  "Lakshadweep",
   "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Puducherry",
+  "Punjab",
   "Rajasthan",
+  "Sikkim",
   "Tamil Nadu",
   "Telangana",
+  "Tripura",
   "Uttar Pradesh",
+  "Uttarakhand",
   "West Bengal",
 ];
 
 const accountTypes = ["Savings", "Current", "Cash Credit"];
 
-const bankNames = ["HDFC Bank", "ICICI Bank", "State Bank of India", "Axis Bank", "Kotak Mahindra Bank"];
+const bankNames = [
+  "Axis Bank",
+  "Bandhan Bank",
+  "Bank of Baroda",
+  "Bank of India",
+  "Bank of Maharashtra",
+  "Canara Bank",
+  "Central Bank of India",
+  "City Union Bank",
+  "CSB Bank",
+  "DCB Bank",
+  "Dhanlaxmi Bank",
+  "Federal Bank",
+  "HDFC Bank",
+  "ICICI Bank",
+  "IDBI Bank",
+  "IDFC First Bank",
+  "Indian Bank",
+  "Indian Overseas Bank",
+  "IndusInd Bank",
+  "Jammu & Kashmir Bank",
+  "Karnataka Bank",
+  "Karur Vysya Bank",
+  "Kotak Mahindra Bank",
+  "Lakshmi Vilas Bank",
+  "Nainital Bank",
+  "Punjab & Sind Bank",
+  "Punjab National Bank",
+  "RBL Bank",
+  "South Indian Bank",
+  "State Bank of India",
+  "Tamilnad Mercantile Bank",
+  "UCO Bank",
+  "Union Bank of India",
+  "Yes Bank",
+];
 
 type RmFormState = {
   empCode: string;
@@ -316,7 +376,7 @@ export function RMForm({
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <SelectField
+            <SearchableSelectField
               id="state"
               label="State"
               placeholder="--None--"
@@ -658,7 +718,7 @@ export function AssociateForm({
                   disabled={isSubmitting}
                 />
               )}
-              <SelectField
+              <SearchableSelectField
                 id="brokerState"
                 label="Broker State"
                 placeholder="Select State"
@@ -769,7 +829,7 @@ export function AssociateForm({
                 onChange={(event) => updateAssociateForm("ifscCode", event.target.value)}
                 disabled={isSubmitting}
               />
-              <SelectField
+              <SearchableSelectField
                 id="bankName"
                 label="Bank Name"
                 placeholder="Select Bank"
@@ -781,7 +841,7 @@ export function AssociateForm({
                 }))}
                 disabled={isSubmitting}
               />
-              <SelectField
+              <SearchableSelectField
                 id="bankState"
                 label="Bank State"
                 placeholder="Select State"

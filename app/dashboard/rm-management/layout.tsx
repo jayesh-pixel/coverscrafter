@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 
 const consolidationNavItems: NavItem[] = [
   {
-    label: "rm/associate",
+    label: "Admin Panel",
     href: "/dashboard/rm-management",
     icon: ConsolidationIcon,
     children: [
