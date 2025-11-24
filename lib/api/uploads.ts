@@ -24,7 +24,7 @@ export async function uploadDocument(file: File, authToken: string, fieldName = 
     formData.append("supportingFile", file);
   }
 
-  const response = await fetch("/api/uploads", {
+  const response = await fetch("https://instapolicy.coverscrafter.com/v1/uploads", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${authToken}`,

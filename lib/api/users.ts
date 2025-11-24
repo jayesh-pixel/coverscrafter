@@ -1,11 +1,10 @@
 /**
  * Users API Client
- * Uses Next.js API proxy routes
+ * Calls backend API directly
  */
 
 import { apiRequest } from "./client";
-
-const API_BASE_URL = "/api";
+import { API_BASE_URL } from "./config";
 
 export interface UserProfile {
   _id: string;
@@ -63,7 +62,7 @@ export interface AssociateUser extends UserProfile {
  */
 export async function getUserProfile(authToken: string): Promise<UserProfile> {
   return apiRequest<UserProfile>({
-    path: `${API_BASE_URL}/users/profile`,
+    path: `${API_BASE_URL}/v1/users/profile`,
     method: "GET",
     authToken,
   });
@@ -74,7 +73,7 @@ export async function getUserProfile(authToken: string): Promise<UserProfile> {
  */
 export async function getAllUsers(authToken: string): Promise<UserProfile[]> {
   return apiRequest<UserProfile[]>({
-    path: `${API_BASE_URL}/users`,
+    path: `${API_BASE_URL}/v1/users`,
     method: "GET",
     authToken,
   });
@@ -86,7 +85,7 @@ export async function getAllUsers(authToken: string): Promise<UserProfile[]> {
 export async function getRMUsers(authToken: string, id?: string): Promise<RMUser[]> {
   const query = id ? `?id=${encodeURIComponent(id)}` : "";
   return apiRequest<RMUser[]>({
-    path: `${API_BASE_URL}/users/rm${query}`,
+    path: `${API_BASE_URL}/v1/users/rm${query}`,
     method: "GET",
     authToken,
   });
@@ -98,7 +97,7 @@ export async function getRMUsers(authToken: string, id?: string): Promise<RMUser
 export async function getAssociateUsers(authToken: string, id?: string): Promise<AssociateUser[]> {
   const query = id ? `?id=${encodeURIComponent(id)}` : "";
   return apiRequest<AssociateUser[]>({
-    path: `${API_BASE_URL}/users/associate${query}`,
+    path: `${API_BASE_URL}/v1/users/associate${query}`,
     method: "GET",
     authToken,
   });

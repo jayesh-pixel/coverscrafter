@@ -7,8 +7,8 @@ import { resolveDashboardRoute } from "@/lib/utils/routing";
 
 // Map dashboard paths to allowed roles
 const PATH_ROLE_MAP: Record<string, string[]> = {
-  "/dashboard/admin": ["admin", "superadmin"],
   "/dashboard/rm-management": ["rmadmin"],
+  "/dashboard/admin": ["admin", "superadmin"],
   "/dashboard/rm": ["rm", "relationship-manager"],
   "/dashboard/associate": ["associate", "pos"],
   "/dashboard/executive": ["executive"],
@@ -35,8 +35,9 @@ export default function RouteGuard({ children }: { children: React.ReactNode }) 
       
       // 2. Check if the current path requires specific roles
       // We sort keys by length descending to match the most specific path first
-      // (though here they are all distinct top-level dashboard paths)
-      const protectedPath = Object.keys(PATH_ROLE_MAP).find(path => pathname.startsWith(path));
+      const protectedPath = Object.keys(PATH_ROLE_MAP)
+        .sort((a, b) => b.length - a.length)
+        .find(path => pathname.startsWith(path));
 
       if (protectedPath) {
         const allowedRoles = PATH_ROLE_MAP[protectedPath];

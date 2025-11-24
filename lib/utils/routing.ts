@@ -7,7 +7,7 @@ const ROLE_ROUTE_MAP: Record<string, string> = {
   "relationship-manager": "/dashboard/rm",
   associate: "/dashboard/associate",
   pos: "/dashboard/associate",
-  rmadmin: "/dashboard/admin/rm-management",
+  rmadmin: "/dashboard/rm-management",
 };
 
 export function resolveDashboardRoute(role?: string) {

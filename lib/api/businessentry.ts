@@ -1,4 +1,5 @@
 import { apiRequest } from "./client";
+import { API_BASE_URL } from "./config";
 
 export interface BusinessEntryPayload {
   brokerid: string;
@@ -83,7 +84,7 @@ export interface BusinessEntry {
 
 export async function createBusinessEntry(payload: BusinessEntryPayload, authToken: string) {
   return apiRequest<BusinessEntry, BusinessEntryPayload>({
-    path: "/api/businessentry",
+    path: `${API_BASE_URL}/v1/businessentry`,
     method: "POST",
     body: payload,
     authToken,
@@ -92,7 +93,7 @@ export async function createBusinessEntry(payload: BusinessEntryPayload, authTok
 
 export async function getBusinessEntries(authToken: string) {
   return apiRequest<BusinessEntry[]>({
-    path: "/api/businessentry",
+    path: `${API_BASE_URL}/v1/businessentry`,
     method: "GET",
     authToken,
   });
@@ -100,7 +101,7 @@ export async function getBusinessEntries(authToken: string) {
 
 export async function getBusinessEntry(id: string, authToken: string) {
   return apiRequest<BusinessEntry>({
-    path: `/api/businessentry/${id}`,
+    path: `${API_BASE_URL}/v1/businessentry/${id}`,
     method: "GET",
     authToken,
   });
@@ -108,7 +109,7 @@ export async function getBusinessEntry(id: string, authToken: string) {
 
 export async function updateBusinessEntry(id: string, payload: Partial<BusinessEntryPayload>, authToken: string) {
   return apiRequest<BusinessEntry, Partial<BusinessEntryPayload>>({
-    path: `/api/businessentry/${id}`,
+    path: `${API_BASE_URL}/v1/businessentry/${id}`,
     method: "PUT",
     body: payload,
     authToken,
@@ -117,7 +118,7 @@ export async function updateBusinessEntry(id: string, payload: Partial<BusinessE
 
 export async function deleteBusinessEntry(id: string, authToken: string) {
   return apiRequest<{ message: string }>({
-    path: `/api/businessentry/${id}`,
+    path: `${API_BASE_URL}/v1/businessentry/${id}`,
     method: "DELETE",
     authToken,
   });

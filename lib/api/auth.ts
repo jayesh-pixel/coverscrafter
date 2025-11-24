@@ -1,4 +1,5 @@
 import { apiRequest } from "./client";
+import { API_BASE_URL } from "./config";
 
 export interface LoginPayload {
   email: string;
@@ -22,7 +23,7 @@ export interface LoginResponse {
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
   return apiRequest<LoginResponse, LoginPayload>({
-    path: "/api/auth/login",
+    path: `${API_BASE_URL}/v1/auth/login`,
     method: "POST",
     body: payload,
   });
@@ -73,7 +74,7 @@ export interface RegisterAssociatePayload {
 
 export async function registerRM(payload: RegisterRmPayload, authToken: string) {
   return apiRequest<unknown, RegisterRmPayload>({
-    path: "/api/auth/register-rm",
+    path: `${API_BASE_URL}/v1/auth/register_rm`,
     method: "POST",
     body: payload,
     authToken,
@@ -82,7 +83,7 @@ export async function registerRM(payload: RegisterRmPayload, authToken: string) 
 
 export async function registerAssociate(payload: RegisterAssociatePayload, authToken: string) {
   return apiRequest<unknown, RegisterAssociatePayload>({
-    path: "/api/auth/register-associate",
+    path: `${API_BASE_URL}/v1/auth/register_associate`,
     method: "POST",
     body: payload,
     authToken,
