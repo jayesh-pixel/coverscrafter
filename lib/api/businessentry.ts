@@ -90,6 +90,9 @@ export interface BusinessEntry {
   chequeDate?: string;
   policyFile: string;
   policyFileUrl?: string;
+  status?: string;
+  utrno?: string;
+  paymentdate?: string;
   brokerData?: {
     _id: string;
     brokername: string;
@@ -194,4 +197,33 @@ export async function bulkUpdateBusinessEntries(
     body: payload,
     authToken,
   });
+}
+
+export async function exportBusinessEntries(
+  authToken: string,
+  filters?: Record<string, string>
+): Promise<Blob> {
+  let url = `${API_BASE_URL}/v1/businessentry/export`;
+  
+  if (filters) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.append(key, value);
+    });
+    const queryString = params.toString();
+    if (queryString) url += `?${queryString}`;
+  }
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${authToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to export business entries');
+  }
+
+  return response.blob();
 }

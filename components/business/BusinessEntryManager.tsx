@@ -2,7 +2,7 @@
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { FileUploadField, SelectField, TextField } from "@/components/ui/forms";
-import { createBusinessEntry, getBusinessEntries, bulkUpdateBusinessEntries, type BusinessEntry, type BulkUpdatePayload } from "@/lib/api/businessentry";
+import { createBusinessEntry, getBusinessEntries, bulkUpdateBusinessEntries, exportBusinessEntries, type BusinessEntry, type BulkUpdatePayload } from "@/lib/api/businessentry";
 import { getBrokerNames, type BrokerName } from "@/lib/api/brokername";
 import { uploadDocument, type UploadResponse } from "@/lib/api/uploads";
 import { ApiError, API_BASE_URL } from "@/lib/api/config";
@@ -360,6 +360,7 @@ export default function BusinessEntryManager({
   const [bulkUpdateFile, setBulkUpdateFile] = useState<File | null>(null);
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [bulkUpdateResult, setBulkUpdateResult] = useState<any>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const [filters, setFilters] = useState({
     policyNumber: "",
     brokerid: "",
@@ -782,18 +783,47 @@ export default function BusinessEntryManager({
     try {
       // Read the file
       const text = await bulkUpdateFile.text();
-      const lines = text.split('\n').filter(line => line.trim());
+      // Split by newlines and remove empty lines and carriage returns
+      const lines = text.split(/\r?\n/).filter(line => line.trim());
+      
+      console.log('Total lines:', lines.length);
+      console.log('First few lines:', lines.slice(0, 3));
       
       // Skip header row and parse data
-      const updates = lines.slice(1).map(line => {
-        const [policyNumber, paymentdate, utrno, status] = line.split(',').map(s => s.trim());
-        return {
-          policyNumber,
-          paymentdate: paymentdate || undefined,
-          utrno: utrno || undefined,
-          status: status || undefined,
+      const updates = lines.slice(1).map((line, index) => {
+        // Split by comma and trim each value, also remove quotes if present
+        const values = line.split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
+        const [policyNumber, paymentdate, utrno, status] = values;
+        
+        console.log(`Row ${index + 1}:`, { policyNumber, paymentdate, utrno, status });
+        
+        // Parse and format date to YYYY-MM-DD if provided
+        let formattedDate: string | undefined;
+        if (paymentdate && paymentdate.trim()) {
+          try {
+            const date = new Date(paymentdate);
+            if (!isNaN(date.getTime())) {
+              // Format as YYYY-MM-DD
+              formattedDate = date.toISOString().split('T')[0];
+            }
+          } catch (e) {
+            console.error('Invalid date format:', paymentdate);
+          }
+        }
+        
+        const updateData = {
+          policyNumber: policyNumber?.trim() || '',
+          paymentdate: formattedDate,
+          utrno: utrno?.trim() || undefined,
+          status: status?.trim() || undefined,
         };
+        
+        console.log('Parsed data:', updateData);
+        return updateData;
       }).filter(u => u.policyNumber); // Filter out empty rows
+
+      console.log('Total valid updates:', updates.length);
+      console.log('Updates to send:', JSON.stringify(updates, null, 2));
 
       if (updates.length === 0) {
         setErrorMessage('No valid records found in the file');
@@ -803,6 +833,7 @@ export default function BusinessEntryManager({
 
       // Call bulk update API
       const result = await bulkUpdateBusinessEntries({ updates }, session.token);
+      console.log('Bulk update result:', result);
       setBulkUpdateResult(result);
       setSuccessMessage(`Successfully updated ${result.successful} out of ${result.totalRecords} records`);
       
@@ -854,6 +885,46 @@ export default function BusinessEntryManager({
       endDate: "",
     });
     fetchEntries();
+  };
+
+  const handleExport = async () => {
+    const session = getAuthSession();
+    if (!session?.token) {
+      setErrorMessage('You must be signed in to export data');
+      return;
+    }
+
+    setIsExporting(true);
+    setErrorMessage(null);
+
+    try {
+      // Build active filters
+      const activeFilters: Record<string, string> = {};
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) activeFilters[key] = value;
+      });
+
+      // Call export API
+      const blob = await exportBusinessEntries(session.token, activeFilters);
+      
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `business-entries-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setSuccessMessage('Business entries exported successfully');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error) {
+      console.error('Export failed:', error);
+      setErrorMessage('Failed to export business entries. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleStateChange = (state: string) => {
@@ -970,6 +1041,14 @@ export default function BusinessEntryManager({
             <p className="text-sm text-slate-500">{description}</p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={isExporting}
+              className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-2 text-sm font-semibold text-blue-600 shadow-sm transition hover:bg-blue-100 disabled:opacity-50"
+            >
+              {isExporting ? 'Exporting...' : '📊 Export to Excel'}
+            </button>
             <button
               type="button"
               onClick={() => setShowBulkUpdateModal(true)}
@@ -1659,7 +1738,7 @@ export default function BusinessEntryManager({
       {isFileDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="relative w-full max-w-4xl max-h-[90vh] rounded-2xl bg-white shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 flex-shrink-0">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 shrink-0">
               <h3 className="text-lg font-semibold text-slate-900">Policy Document</h3>
               <button
                 onClick={handleCloseFileDialog}
@@ -1723,119 +1802,122 @@ export default function BusinessEntryManager({
 
       {/* Bulk Update Modal */}
       {showBulkUpdateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="relative mx-4 w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
-            <button
-              onClick={() => {
-                setShowBulkUpdateModal(false);
-                setBulkUpdateFile(null);
-                setBulkUpdateResult(null);
-              }}
-              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600"
-            >
-              ✕
-            </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-3xl max-h-[90vh] rounded-3xl bg-white shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 shrink-0">
+              <h2 className="text-xl font-semibold text-slate-900">Import Payment Status</h2>
+              <button
+                onClick={() => {
+                  setShowBulkUpdateModal(false);
+                  setBulkUpdateFile(null);
+                  setBulkUpdateResult(null);
+                }}
+                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            </div>
 
-            <h2 className="mb-6 text-xl font-semibold text-slate-900">Import Payment Status</h2>
+            <div className="overflow-y-auto p-6 flex-1">
+              <div className="space-y-6">
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                  <p className="text-sm font-semibold text-blue-900">Instructions:</p>
+                  <ul className="mt-2 space-y-1 text-sm text-blue-700">
+                    <li>• Download the sample file to see the required format</li>
+                    <li>• Fill in Policy Number, Payment Date, UTR Number, and Status</li>
+                    <li>• Upload the completed CSV/Excel file</li>
+                    <li>• The system will update matching policy numbers</li>
+                  </ul>
+                </div>
 
-            <div className="space-y-6">
-              <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-                <p className="text-sm font-semibold text-blue-900">Instructions:</p>
-                <ul className="mt-2 space-y-1 text-sm text-blue-700">
-                  <li>• Download the sample file to see the required format</li>
-                  <li>• Fill in Policy Number, Payment Date, UTR Number, and Status</li>
-                  <li>• Upload the completed CSV/Excel file</li>
-                  <li>• The system will update matching policy numbers</li>
-                </ul>
-              </div>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handleDownloadSample}
+                    className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    📥 Download Sample File
+                  </button>
+                </div>
 
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={handleDownloadSample}
-                  className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  📥 Download Sample File
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Upload File</label>
-                <input
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  onChange={handleBulkUpdateFileChange}
-                  className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-                {bulkUpdateFile && (
-                  <p className="mt-2 text-sm text-emerald-600">✓ Selected: {bulkUpdateFile.name}</p>
-                )}
-              </div>
-
-              {bulkUpdateResult && (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <h3 className="font-semibold text-slate-900">Update Results:</h3>
-                  <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-lg bg-blue-100 p-3">
-                      <p className="text-xs text-blue-700">Total Records</p>
-                      <p className="text-xl font-bold text-blue-900">{bulkUpdateResult.totalRecords}</p>
-                    </div>
-                    <div className="rounded-lg bg-emerald-100 p-3">
-                      <p className="text-xs text-emerald-700">Successful</p>
-                      <p className="text-xl font-bold text-emerald-900">{bulkUpdateResult.successful}</p>
-                    </div>
-                    <div className="rounded-lg bg-rose-100 p-3">
-                      <p className="text-xs text-rose-700">Failed</p>
-                      <p className="text-xl font-bold text-rose-900">{bulkUpdateResult.failed}</p>
-                    </div>
-                    <div className="rounded-lg bg-amber-100 p-3">
-                      <p className="text-xs text-amber-700">Processed</p>
-                      <p className="text-xl font-bold text-amber-900">{bulkUpdateResult.processed}</p>
-                    </div>
-                  </div>
-                  {bulkUpdateResult.results && bulkUpdateResult.results.length > 0 && (
-                    <div className="mt-4 max-h-40 overflow-y-auto">
-                      <p className="text-xs font-semibold text-slate-700">Detailed Results:</p>
-                      <div className="mt-2 space-y-1">
-                        {bulkUpdateResult.results.map((result: any, index: number) => (
-                          <div
-                            key={index}
-                            className={`rounded px-2 py-1 text-xs ${
-                              result.status === 'success'
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : 'bg-rose-50 text-rose-700'
-                            }`}
-                          >
-                            <span className="font-semibold">{result.policyNumber}:</span> {result.message}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Upload File</label>
+                  <input
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    onChange={handleBulkUpdateFileChange}
+                    className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  />
+                  {bulkUpdateFile && (
+                    <p className="mt-2 text-sm text-emerald-600">✓ Selected: {bulkUpdateFile.name}</p>
                   )}
                 </div>
-              )}
 
-              <div className="flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowBulkUpdateModal(false);
-                    setBulkUpdateFile(null);
-                    setBulkUpdateResult(null);
-                  }}
-                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={handleBulkUpdate}
-                  disabled={!bulkUpdateFile || isBulkUpdating}
-                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
-                >
-                  {isBulkUpdating ? 'Updating...' : 'Update Payment Status'}
-                </button>
+                {bulkUpdateResult && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <h3 className="font-semibold text-slate-900">Update Results:</h3>
+                    <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                      <div className="rounded-lg bg-blue-100 p-3">
+                        <p className="text-xs text-blue-700">Total Records</p>
+                        <p className="text-xl font-bold text-blue-900">{bulkUpdateResult.totalRecords}</p>
+                      </div>
+                      <div className="rounded-lg bg-emerald-100 p-3">
+                        <p className="text-xs text-emerald-700">Successful</p>
+                        <p className="text-xl font-bold text-emerald-900">{bulkUpdateResult.successful}</p>
+                      </div>
+                      <div className="rounded-lg bg-rose-100 p-3">
+                        <p className="text-xs text-rose-700">Failed</p>
+                        <p className="text-xl font-bold text-rose-900">{bulkUpdateResult.failed}</p>
+                      </div>
+                      <div className="rounded-lg bg-amber-100 p-3">
+                        <p className="text-xs text-amber-700">Processed</p>
+                        <p className="text-xl font-bold text-amber-900">{bulkUpdateResult.processed}</p>
+                      </div>
+                    </div>
+                    {bulkUpdateResult.results && bulkUpdateResult.results.length > 0 && (
+                      <div className="mt-4 max-h-40 overflow-y-auto">
+                        <p className="text-xs font-semibold text-slate-700">Detailed Results:</p>
+                        <div className="mt-2 space-y-1">
+                          {bulkUpdateResult.results.map((result: any, index: number) => (
+                            <div
+                              key={index}
+                              className={`rounded px-2 py-1 text-xs ${
+                                result.status === 'success'
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : 'bg-rose-50 text-rose-700'
+                              }`}
+                            >
+                              <span className="font-semibold">{result.policyNumber}:</span> {result.message}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowBulkUpdateModal(false);
+                  setBulkUpdateFile(null);
+                  setBulkUpdateResult(null);
+                }}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkUpdate}
+                disabled={!bulkUpdateFile || isBulkUpdating}
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {isBulkUpdating ? 'Updating...' : 'Update Payment Status'}
+              </button>
             </div>
           </div>
         </div>
