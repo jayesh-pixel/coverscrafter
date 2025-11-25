@@ -328,6 +328,7 @@ export default function BusinessEntryManager({
   };
 
   const [paymentMode, setPaymentMode] = useState<"Online" | "Cheque" | "Cash">("Online");
+  const [payoutMode, setPayoutMode] = useState<"cut&pay" | "fullpay">("fullpay");
   const [showForm, setShowForm] = useState(initialShowForm);
   const [businessEntries, setBusinessEntries] = useState<BusinessEntry[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1016,6 +1017,15 @@ export default function BusinessEntryManager({
     });
 
     payload.paymentMode = paymentMode;
+    payload.payoutMode = payoutMode;
+    
+    // Add payment details if cut&pay is selected
+    if (payoutMode === "cut&pay") {
+      payload.status = "Paid";
+      payload.utrno = (payload.utrno as string) || "";
+      payload.paymentdate = new Date().toISOString().split('T')[0]; // Today's date in YYYY-MM-DD format
+    }
+    
     payload.odPremium = (payload.odPremium as string) || "0";
     payload.tpPremium = (payload.tpPremium as string) || "0";
     payload.netPremium = (payload.netPremium as string) || "0";
@@ -1045,6 +1055,7 @@ export default function BusinessEntryManager({
       // Reset form
       event.currentTarget.reset();
       setPaymentMode("Online");
+      setPayoutMode("fullpay");
       setSelectedState("");
       setSelectedRmId("");
       setSelectedAssociateId("");
@@ -1336,7 +1347,7 @@ export default function BusinessEntryManager({
             </div>
 
             <div className="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div className="grid gap-6 md:grid-cols-2">
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Payment Mode</p>
                   <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-600">
@@ -1375,14 +1386,60 @@ export default function BusinessEntryManager({
                     </label>
                   </div>
                 </div>
-                <div className="grid w-full max-w-sm gap-4 md:grid-cols-2">
-                  {paymentMode === "Cheque" && (
-                    <>
-                      <TextField id="chequeNumber" label="Cheque Number" placeholder="Enter cheque number" required />
-                      <TextField id="chequeDate" label="Cheque Date" type="date" required />
-                    </>
-                  )}
+                
+                <div>
+                  <p className="text-sm font-semibold text-slate-700">Payout Mode</p>
+                  <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-600">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="payoutMode"
+                        value="fullpay"
+                        checked={payoutMode === "fullpay"}
+                        onChange={() => setPayoutMode("fullpay")}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      Full Pay
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="payoutMode"
+                        value="cut&pay"
+                        checked={payoutMode === "cut&pay"}
+                        onChange={() => setPayoutMode("cut&pay")}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      Cut & Pay
+                    </label>
+                  </div>
                 </div>
+              </div>
+              
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {paymentMode === "Cheque" && (
+                  <>
+                    <TextField id="chequeNumber" label="Cheque Number" placeholder="Enter cheque number" required />
+                    <TextField id="chequeDate" label="Cheque Date" type="date" required />
+                  </>
+                )}
+                
+                {payoutMode === "cut&pay" && (
+                  <>
+                    <TextField 
+                      id="utrno" 
+                      label="UTR Number" 
+                      placeholder="Enter UTR number" 
+                      required 
+                    />
+                    <div className="md:col-span-2 lg:col-span-1">
+                      <p className="text-sm text-slate-600">
+                        <span className="font-semibold">Payment Status:</span> Paid<br />
+                        <span className="font-semibold">Payment Date:</span> {new Date().toLocaleDateString('en-GB')}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
