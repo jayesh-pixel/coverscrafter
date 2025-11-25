@@ -198,36 +198,36 @@ export default function ConsolidationListPage() {
           </div>
         ) : (
           <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-            <table className="min-w-[1100px] divide-y divide-slate-200 text-left text-sm">
-            <thead className="bg-slate-50">
+            <table className="min-w-[1100px] border-collapse text-left text-sm">
+            <thead className="bg-slate-100">
               <tr>
-                <th className="px-4 py-3 font-semibold text-slate-600">Relationship Manager</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Emp Code</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Office</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Department</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Reporting Manager</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Contact</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Email</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Relationship Manager</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Emp Code</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Office</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Department</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Reporting Manager</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Contact</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Email</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {filteredRMs.map((rm) => (
                 <tr key={rm.empCode} className="transition hover:bg-blue-50/40">
-                  <td className="px-4 py-4">
+                  <td className="border border-slate-300 px-4 py-3 bg-white">
                     <div className="flex flex-col">
                       <span className="font-semibold text-slate-900">{rm.name}</span>
                       <span className="text-xs uppercase tracking-wide text-slate-400">Joined {rm.joiningDate}</span>
                       <span className="text-xs text-slate-400">{rm.associates.length} Associates linked</span>
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-slate-600">{rm.empCode}</td>
-                  <td className="px-4 py-4 text-slate-600">{rm.office}</td>
-                  <td className="px-4 py-4 text-slate-600">{rm.department}</td>
-                  <td className="px-4 py-4 text-slate-600">{rm.reportingManager}</td>
-                  <td className="px-4 py-4 text-slate-600">{rm.contact}</td>
-                  <td className="px-4 py-4 text-slate-600">{rm.email}</td>
-                  <td className="px-4 py-4">
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.empCode}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.office}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.department}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.reportingManager}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.contact}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.email}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white">
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[rm.status]}`}>
                       {rm.status}
                     </span>
@@ -246,38 +246,38 @@ export default function ConsolidationListPage() {
           <p className="text-xs font-medium text-slate-500">Drill into POS associates directly from the parent RM list.</p>
         </header>
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-          <table className="min-w-[1000px] divide-y divide-slate-200 text-left text-sm">
-            <thead className="bg-slate-50">
+          <table className="min-w-[1000px] border-collapse text-left text-sm">
+            <thead className="bg-slate-100">
               <tr>
-                <th className="px-4 py-3 font-semibold text-slate-600">RM</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Associate</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">POS Code</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Broker Code</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Contact</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Email</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">RM</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Associate</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">POS Code</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Broker Code</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Status</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Contact</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Email</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {filteredRMs.flatMap((rm) =>
                 rm.associates.map((associate) => (
                   <tr key={`${rm.empCode}-${associate.code}`} className="transition hover:bg-blue-50/40">
-                    <td className="px-4 py-4">
+                    <td className="border border-slate-300 px-4 py-3 bg-white">
                       <div className="flex flex-col">
                         <span className="font-semibold text-slate-900">{rm.name}</span>
                         <span className="text-xs uppercase tracking-wide text-slate-400">{rm.empCode}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-slate-600">{associate.name}</td>
-                    <td className="px-4 py-4 text-slate-600">{associate.code}</td>
-                    <td className="px-4 py-4 text-slate-600">{associate.brokerCode}</td>
-                    <td className="px-4 py-4">
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.name}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.code}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.brokerCode}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white">
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[associate.status]}`}>
                         {associate.status}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-slate-600">{associate.contact}</td>
-                    <td className="px-4 py-4 text-slate-600">{associate.email}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.contact}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.email}</td>
                   </tr>
                 )),
               )}

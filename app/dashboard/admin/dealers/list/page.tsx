@@ -93,39 +93,39 @@ export default function DealersListPage() {
         </div>
 
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-          <table className="min-w-[1100px] divide-y divide-slate-200 text-left text-sm">
-            <thead className="bg-slate-50">
+          <table className="min-w-[1100px] border-collapse text-left text-sm">
+            <thead className="bg-slate-100">
               <tr>
-                <th className="px-4 py-3 font-semibold text-slate-600">Dealer</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Location</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Wallet sharing</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Assigned RM</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Sub dealers</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Created</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Dealer</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Location</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Status</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Wallet sharing</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Assigned RM</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Sub dealers</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Created</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {dealers.map((dealer) => (
                 <tr key={dealer.code} className="transition hover:bg-blue-50/40">
-                  <td className="px-4 py-4">
+                  <td className="border border-slate-300 px-4 py-3 bg-white">
                     <div className="flex flex-col">
                       <span className="font-semibold text-slate-900">{dealer.name}</span>
                       <span className="text-xs uppercase tracking-wide text-slate-400">{dealer.code}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-slate-600">
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">
                     {dealer.city}, {dealer.state}
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="border border-slate-300 px-4 py-3 bg-white">
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[dealer.status] ?? "bg-slate-100 text-slate-600"}`}>
                       {dealer.status}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-slate-600">{dealer.walletSharing}</td>
-                  <td className="px-4 py-4 text-slate-600">{dealer.rm}</td>
-                  <td className="px-4 py-4 text-slate-600">{dealer.subDealers}</td>
-                  <td className="px-4 py-4 text-slate-600">{dealer.createdAt}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{dealer.walletSharing}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{dealer.rm}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{dealer.subDealers}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{dealer.createdAt}</td>
                 </tr>
               ))}
             </tbody>

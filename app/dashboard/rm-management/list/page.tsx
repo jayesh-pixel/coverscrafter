@@ -80,6 +80,7 @@ export default function ConsolidationListPage() {
   const [activeTab, setActiveTab] = useState<"rm" | "associate">("rm");
   const [relationshipManagers, setRelationshipManagers] = useState<RelationshipManagerRecord[]>([]);
   const [allAssociates, setAllAssociates] = useState<AssociateUser[]>([]);
+  const [allRMs, setAllRMs] = useState<RMUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -91,6 +92,40 @@ export default function ConsolidationListPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [viewingAssociate, setViewingAssociate] = useState<AssociateUser | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+
+  const handleExportCredentials = (rm: RelationshipManagerRecord) => {
+    // Find the full RM object from allRMs
+    const fullRM = allRMs.find(r => r._id === rm._id);
+    
+    if (!fullRM) {
+      setError("RM data not found");
+      return;
+    }
+
+    // Create Excel data
+    const excelData = [
+      ['RM Credentials Export'],
+      [''],
+      ['Login Details'],
+      ['Email', fullRM.email],
+      ['Password', fullRM.password || 'Not Available'],
+    ];
+
+    // Convert to CSV
+    const csv = excelData.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `RM_Credentials_${fullRM.empCode}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    setSuccessMessage(`Credentials exported for ${fullRM.firstName} ${fullRM.lastName}`);
+    setTimeout(() => setSuccessMessage(null), 3000);
+  };
 
   useEffect(() => {
     fetchData();
@@ -113,6 +148,7 @@ export default function ConsolidationListPage() {
       ]);
 
       setAllAssociates(associateUsers);
+      setAllRMs(rmUsers);
 
       // Map RM users to RelationshipManagerRecord format
       const mappedRMs: RelationshipManagerRecord[] = rmUsers.map((rm) => {
@@ -261,6 +297,7 @@ export default function ConsolidationListPage() {
         BankAddress: formData.get("bankAddress") as string,
         PosCode: formData.get("posCode") as string || undefined,
         status: formData.get("status") as string,
+        createdBy: formData.get("createdBy") as string,
       };
 
       await updateAssociateUser(editingAssociate._id, data, token);
@@ -395,48 +432,56 @@ export default function ConsolidationListPage() {
           </div>
         ) : (
           <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-            <table className="min-w-[1100px] divide-y divide-slate-200 text-left text-sm">
-            <thead className="bg-slate-50">
+            <table className="min-w-[1100px] border-collapse text-left text-sm">
+            <thead className="bg-slate-100">
               <tr>
-                <th className="px-4 py-3 font-semibold text-slate-600">Relationship Manager</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Emp Code</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Office</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Department</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Reporting Manager</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Contact</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Email</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Actions</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Relationship Manager</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Emp Code</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Office</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Department</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Reporting Manager</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Contact</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Email</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Status</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {filteredRMs.map((rm) => (
                 <tr key={rm.empCode} className="transition hover:bg-blue-50/40">
-                  <td className="px-4 py-4">
+                  <td className="border border-slate-300 px-4 py-3 bg-white">
                     <div className="flex flex-col">
                       <span className="font-semibold text-slate-900">{rm.name}</span>
                       <span className="text-xs uppercase tracking-wide text-slate-400">Joined {rm.joiningDate}</span>
                       <span className="text-xs text-slate-400">{rm.associates.length} Associates linked</span>
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-slate-600">{rm.empCode}</td>
-                  <td className="px-4 py-4 text-slate-600">{rm.office}</td>
-                  <td className="px-4 py-4 text-slate-600">{rm.department}</td>
-                  <td className="px-4 py-4 text-slate-600">{rm.reportingManager}</td>
-                  <td className="px-4 py-4 text-slate-600">{rm.contact}</td>
-                  <td className="px-4 py-4 text-slate-600">{rm.email}</td>
-                  <td className="px-4 py-4">
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.empCode}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.office}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.department}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.reportingManager}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.contact}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.email}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white">
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[rm.status]}`}>
                       {rm.status}
                     </span>
                   </td>
-                  <td className="px-4 py-4">
-                    <button
-                      onClick={() => handleEditRM(rm)}
-                      className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
-                    >
-                      Edit
-                    </button>
+                  <td className="border border-slate-300 px-4 py-3 bg-white">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditRM(rm)}
+                        className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleExportCredentials(rm)}
+                        className="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-100"
+                      >
+                        Export
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -454,43 +499,43 @@ export default function ConsolidationListPage() {
           <p className="text-xs font-medium text-slate-500">Drill into POS associates directly from the parent RM list.</p>
         </header>
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-          <table className="min-w-[1000px] divide-y divide-slate-200 text-left text-sm">
-            <thead className="bg-slate-50">
+          <table className="min-w-[1000px] border-collapse text-left text-sm">
+            <thead className="bg-slate-100">
               <tr>
-                <th className="px-4 py-3 font-semibold text-slate-600">RM</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Associate</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">POS Code</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Broker Code</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Contact</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Email</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Actions</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">RM</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Associate</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">POS Code</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Broker Code</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Status</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Contact</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Email</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {filteredRMs.flatMap((rm) =>
                 rm.associates.map((associate, index) => {
                   // Find the full associate object from allAssociates
                   const fullAssociate = allAssociates.find(a => a.associateCode === associate.brokerCode);
                   return (
                   <tr key={`${rm.empCode}-${associate.brokerCode}-${index}`} className="transition hover:bg-blue-50/40">
-                    <td className="px-4 py-4">
+                    <td className="border border-slate-300 px-4 py-3 bg-white">
                       <div className="flex flex-col">
                         <span className="font-semibold text-slate-900">{rm.name}</span>
                         <span className="text-xs uppercase tracking-wide text-slate-400">{rm.empCode}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-slate-600">{associate.name}</td>
-                    <td className="px-4 py-4 text-slate-600">{associate.code}</td>
-                    <td className="px-4 py-4 text-slate-600">{associate.brokerCode}</td>
-                    <td className="px-4 py-4">
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.name}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.code}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.brokerCode}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white">
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[associate.status]}`}>
                         {associate.status}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-slate-600">{associate.contact}</td>
-                    <td className="px-4 py-4 text-slate-600">{associate.email}</td>
-                    <td className="px-4 py-4">
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.contact}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.email}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white">
                       <div className="flex gap-2">
                         {fullAssociate && (
                           <>
@@ -754,6 +799,22 @@ export default function ConsolidationListPage() {
                       >
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Relationship Manager *</label>
+                      <select
+                        name="createdBy"
+                        defaultValue={editingAssociate.createdBy || ''}
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      >
+                        <option value="">--Select RM--</option>
+                        {allRMs.map((rm) => (
+                          <option key={rm._id} value={rm._id}>
+                            {rm.firstName} {rm.lastName} ({rm.empCode})
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="md:col-span-2 lg:col-span-3">

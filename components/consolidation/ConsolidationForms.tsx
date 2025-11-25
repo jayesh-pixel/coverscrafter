@@ -252,7 +252,8 @@ export function RMForm({
       setRmForm(initialRmFormState);
     } catch (error) {
       if (error instanceof ApiError) {
-        setErrorMessage(error.message || "Unable to register RM. Please verify the details.");
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : (error.message || "Unable to register RM. Please verify the details.");
+        setErrorMessage(fullError);
       } else {
         setErrorMessage("Something went wrong while registering the RM. Please try again.");
       }
@@ -522,7 +523,8 @@ export function AssociateForm({
       setIsDefaultBank(true);
     } catch (error) {
       if (error instanceof ApiError) {
-        setErrorMessage(error.message || "Unable to register associate. Please check the details.");
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : (error.message || "Unable to register associate. Please check the details.");
+        setErrorMessage(fullError);
       } else {
         setErrorMessage("Something went wrong while registering the associate. Please try again.");
       }

@@ -1,10 +1,9 @@
 /**
  * Users API Client
- * Calls backend API directly
+ * Routes through Next.js API proxy
  */
 
 import { apiRequest } from "./client";
-import { API_BASE_URL } from "./config";
 
 export interface UserProfile {
   _id: string;
@@ -62,7 +61,7 @@ export interface AssociateUser extends UserProfile {
  */
 export async function getUserProfile(authToken: string): Promise<UserProfile> {
   return apiRequest<UserProfile>({
-    path: `${API_BASE_URL}/v1/profile`,
+    path: `/v1/profile`,
     method: "GET",
     authToken,
   });
@@ -73,7 +72,7 @@ export async function getUserProfile(authToken: string): Promise<UserProfile> {
  */
 export async function getAllUsers(authToken: string): Promise<UserProfile[]> {
   return apiRequest<UserProfile[]>({
-    path: `${API_BASE_URL}/v1/users`,
+    path: `/v1/users`,
     method: "GET",
     authToken,
   });
@@ -88,7 +87,7 @@ export async function getRMUsers(authToken: string, id?: string, state?: string)
   if (state) params.append('state', state);
   const query = params.toString() ? `?${params.toString()}` : "";
   return apiRequest<RMUser[]>({
-    path: `${API_BASE_URL}/v1/users/rm${query}`,
+    path: `/v1/users/rm${query}`,
     method: "GET",
     authToken,
   });
@@ -103,7 +102,7 @@ export async function getAssociateUsers(authToken: string, id?: string, userId?:
   if (userId) params.append('userId', userId);
   const query = params.toString() ? `?${params.toString()}` : "";
   return apiRequest<AssociateUser[]>({
-    path: `${API_BASE_URL}/v1/users/associate${query}`,
+    path: `/v1/users/associate${query}`,
     method: "GET",
     authToken,
   });
@@ -114,7 +113,7 @@ export async function getAssociateUsers(authToken: string, id?: string, userId?:
  */
 export async function getAdminUsers(authToken: string): Promise<UserProfile[]> {
   return apiRequest<UserProfile[]>({
-    path: `${API_BASE_URL}/v1/users/admin`,
+    path: `/v1/users/admin`,
     method: "GET",
     authToken,
   });
@@ -145,7 +144,7 @@ export async function updateRMUser(
   authToken: string
 ): Promise<{ message: string; user: any }> {
   return apiRequest<{ message: string; user: any }>({
-    path: `${API_BASE_URL}/v1/users/rm/${id}`,
+    path: `/v1/users/rm/${id}`,
     method: "PUT",
     authToken,
     body: data,
@@ -184,7 +183,7 @@ export async function updateAssociateUser(
   authToken: string
 ): Promise<{ message: string; user: any }> {
   return apiRequest<{ message: string; user: any }>({
-    path: `${API_BASE_URL}/v1/users/associate/${id}`,
+    path: `/v1/users/associate/${id}`,
     method: "PUT",
     authToken,
     body: data,

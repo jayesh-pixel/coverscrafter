@@ -32,7 +32,7 @@ function BriefcaseIcon({ active }: { active: boolean }) {
 }
 
 const navItems = [
-  { label: "Overview", href: "/dashboard/rm", icon: DashboardIcon },
+  // { label: "Overview", href: "/dashboard/rm", icon: DashboardIcon },
   { label: "Associates", href: "/dashboard/rm/associates", icon: UsersIcon },
   { label: "Business", href: "/dashboard/rm/business", icon: BriefcaseIcon },
 ];

@@ -93,7 +93,8 @@ export default function BrokerNameManager({
       }, 1000);
     } catch (error) {
       if (error instanceof ApiError) {
-        setErrorMessage(error.message);
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : error.message;
+        setErrorMessage(fullError);
       } else {
         setErrorMessage(error instanceof Error ? error.message : "Failed to create broker name");
       }
@@ -129,7 +130,8 @@ export default function BrokerNameManager({
       fetchBrokerNames();
     } catch (error) {
       if (error instanceof ApiError) {
-        setErrorMessage(error.message);
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : error.message;
+        setErrorMessage(fullError);
       } else {
         setErrorMessage(error instanceof Error ? error.message : "Failed to update broker name");
       }
@@ -154,7 +156,8 @@ export default function BrokerNameManager({
       fetchBrokerNames();
     } catch (error) {
       if (error instanceof ApiError) {
-        setErrorMessage(error.message);
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : error.message;
+        setErrorMessage(fullError);
       } else {
         setErrorMessage(error instanceof Error ? error.message : "Failed to delete broker name");
       }

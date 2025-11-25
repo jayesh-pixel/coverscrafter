@@ -95,42 +95,42 @@ export default function RMAssociatesPage() {
           />
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+          <table className="w-full border-collapse text-left text-sm">
+            <thead className="bg-slate-100">
               <tr>
-                <th className="px-6 py-4">Associate Name</th>
-                <th className="px-6 py-4">Associate Code</th>
-                <th className="px-6 py-4">Contact Person</th>
-                <th className="px-6 py-4">Contact Number</th>
-                <th className="px-6 py-4">Email</th>
-                <th className="px-6 py-4">State</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Action</th>
+                <th className="border border-slate-300 px-6 py-3 text-xs font-semibold uppercase text-slate-700 bg-slate-50">Associate Name</th>
+                <th className="border border-slate-300 px-6 py-3 text-xs font-semibold uppercase text-slate-700 bg-slate-50">Associate Code</th>
+                <th className="border border-slate-300 px-6 py-3 text-xs font-semibold uppercase text-slate-700 bg-slate-50">Contact Person</th>
+                <th className="border border-slate-300 px-6 py-3 text-xs font-semibold uppercase text-slate-700 bg-slate-50">Contact Number</th>
+                <th className="border border-slate-300 px-6 py-3 text-xs font-semibold uppercase text-slate-700 bg-slate-50">Email</th>
+                <th className="border border-slate-300 px-6 py-3 text-xs font-semibold uppercase text-slate-700 bg-slate-50">State</th>
+                <th className="border border-slate-300 px-6 py-3 text-xs font-semibold uppercase text-slate-700 bg-slate-50">Status</th>
+                <th className="border border-slate-300 px-6 py-3 text-right text-xs font-semibold uppercase text-slate-700 bg-slate-50">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={8} className="border border-slate-300 px-6 py-3 bg-white text-center text-slate-500">
                     Loading associates...
                   </td>
                 </tr>
               ) : filteredAssociates.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={8} className="border border-slate-300 px-6 py-3 bg-white text-center text-slate-500">
                     No associates found matching your search.
                   </td>
                 </tr>
               ) : (
                 filteredAssociates.map((assoc) => (
                   <tr key={assoc._id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 font-medium text-slate-900">{assoc.name}</td>
-                    <td className="px-6 py-4 text-slate-500">{assoc.associateCode}</td>
-                    <td className="px-6 py-4 text-slate-600">{assoc.contactPerson}</td>
-                    <td className="px-6 py-4 text-slate-600">{assoc.contactNo}</td>
-                    <td className="px-6 py-4 text-slate-600">{assoc.email}</td>
-                    <td className="px-6 py-4 text-slate-600">{assoc.associateStateName || '-'}</td>
-                    <td className="px-6 py-4">
+                    <td className="border border-slate-300 px-6 py-3 bg-white font-medium text-slate-900">{assoc.name}</td>
+                    <td className="border border-slate-300 px-6 py-3 bg-white text-slate-500">{assoc.associateCode}</td>
+                    <td className="border border-slate-300 px-6 py-3 bg-white text-slate-600">{assoc.contactPerson}</td>
+                    <td className="border border-slate-300 px-6 py-3 bg-white text-slate-600">{assoc.contactNo}</td>
+                    <td className="border border-slate-300 px-6 py-3 bg-white text-slate-600">{assoc.email}</td>
+                    <td className="border border-slate-300 px-6 py-3 bg-white text-slate-600">{assoc.associateStateName || '-'}</td>
+                    <td className="border border-slate-300 px-6 py-3 bg-white">
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           assoc.status === "active"
@@ -141,7 +141,7 @@ export default function RMAssociatesPage() {
                         {assoc.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="border border-slate-300 px-6 py-3 bg-white text-right">
                       <button 
                         onClick={() => handleViewDetails(assoc)}
                         className="text-blue-600 hover:text-blue-700 font-medium text-xs"

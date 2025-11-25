@@ -280,33 +280,36 @@ const subProductByProduct: Record<string, string[]> = {
 
 const regionOptions = [...stateOptions];
 
-const reportingFyOptions = [
-  "2019-20",
-  "2020-21",
-  "2021-22",
-  "2022-23",
-  "2023-24",
-  "2024-25",
-  "2025-26",
-  "2026-27",
-  "2027-28",
-  "2028-29"
-];
+// Generate reporting FY options dynamically based on current year
+const getCurrentFY = () => {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-11
+  
+  // If we're in Jan-Mar, FY starts from previous year
+  const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+  
+  const fyOptions = [];
+  for (let i = 0; i < 6; i++) {
+    const startYear = fyStartYear + i;
+    const endYear = startYear + 1;
+    fyOptions.push(`${startYear}-${endYear.toString().slice(-2)}`);
+  }
+  return fyOptions;
+};
 
-const reportingMonthOptions = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December"
-];
+// Generate reporting month options dynamically from current month onwards
+const getCurrentAndFutureMonths = () => {
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const currentMonth = new Date().getMonth(); // 0-11
+  return months.slice(currentMonth);
+};
+
+const reportingFyOptions = getCurrentFY();
+const reportingMonthOptions = getCurrentAndFutureMonths();
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
@@ -431,7 +434,8 @@ export default function BusinessEntryManager({
     } catch (error) {
       console.error("Failed to fetch broker names", error);
       if (error instanceof ApiError) {
-        setErrorMessage(error.message);
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : error.message;
+        setErrorMessage(fullError);
       }
       setBrokerOptions([]);
     } finally {
@@ -455,7 +459,8 @@ export default function BusinessEntryManager({
     } catch (error) {
       console.error("Failed to fetch users", error);
       if (error instanceof ApiError) {
-        setErrorMessage(error.message);
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : error.message;
+        setErrorMessage(fullError);
       }
     } finally {
       setIsLoadingUsers(false);
@@ -538,7 +543,8 @@ export default function BusinessEntryManager({
     } catch (error) {
       console.error("Failed to fetch RMs for state", error);
       if (error instanceof ApiError) {
-        setErrorMessage(error.message);
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : error.message;
+        setErrorMessage(fullError);
       }
       setRmOptions([]);
     } finally {
@@ -876,7 +882,8 @@ export default function BusinessEntryManager({
     } catch (error) {
       console.error('Bulk update failed:', error);
       if (error instanceof ApiError) {
-        setErrorMessage(error.message);
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : error.message;
+        setErrorMessage(fullError);
       } else if (error instanceof Error) {
         setErrorMessage(error.message);
       } else {
@@ -1003,7 +1010,8 @@ export default function BusinessEntryManager({
     } catch (error) {
       console.error("Failed to upload file", error);
       if (error instanceof ApiError) {
-        setErrorMessage(error.message || "Unable to upload document. Please try again.");
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : (error.message || "Unable to upload document. Please try again.");
+        setErrorMessage(fullError);
       } else {
         setErrorMessage("Something went wrong while uploading. Please try again.");
       }
@@ -1123,7 +1131,8 @@ export default function BusinessEntryManager({
       }, 3000);
     } catch (error) {
       if (error instanceof ApiError) {
-        setErrorMessage(error.message || "Unable to create business entry. Please verify the details.");
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : (error.message || "Unable to create business entry. Please verify the details.");
+        setErrorMessage(fullError);
       } else {
         setErrorMessage("Something went wrong while creating the business entry. Please try again.");
       }
@@ -1266,7 +1275,13 @@ export default function BusinessEntryManager({
                     value: option,
                   }))}
                 />
-                <TextField id="registrationNumber" label="Registration Number" placeholder="Registration Number" required />
+                <TextField 
+                  id="registrationNumber" 
+                  label="Registration Number" 
+                  placeholder="e.g., MH-47-BH-1645" 
+                  required 
+                  hint="Format: MH-47-BH-1645, MH-04-A-007, or 23BH9646G"
+                />
                 <TextField id="policyIssueDate" label="Policy Issue Date" type="date" required />
                 <TextField id="policyStartDate" label="Policy Start Date" type="date" required />
                 <TextField id="policyEndDate" label="Policy End Date" type="date" required />
@@ -1739,59 +1754,59 @@ export default function BusinessEntryManager({
               <p className="text-sm text-slate-500">No business entries found. Create your first entry above.</p>
             </div>
           ) : (
-            <table className="min-w-[2000px] divide-y divide-slate-200 text-left text-sm">
-              <thead className="bg-slate-50">
+            <table className="min-w-[2000px] border-collapse text-left text-sm">
+              <thead className="bg-slate-100">
                 <tr>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Policy Number</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Registration Number</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Client Name</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Contact Number</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Email</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">State</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Insurance Company</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Broker</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Line of Business</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Product</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Sub Product</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Policy Issue Date</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Policy Start Date</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Policy End Date</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Policy TP End Date</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">OD Premium</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">TP Premium</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Net Premium</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Gross Premium</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">RM State</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">RM</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Associate</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Reporting FY</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Reporting Month</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Policy Number</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Registration Number</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Client Name</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Contact Number</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Email</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">State</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Insurance Company</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Broker</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Line of Business</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Product</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Sub Product</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Policy Issue Date</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Policy Start Date</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Policy End Date</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Policy TP End Date</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">OD Premium</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">TP Premium</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Net Premium</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Gross Premium</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">RM State</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">RM</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Associate</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Reporting FY</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Reporting Month</th>
                   {userRole !== 'rm' && userRole !== 'associate' && (
                   <>
-                  <th className="px-4 py-3 font-semibold text-slate-600">OD Premium Payin</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">TP Premium Payin</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Net Premium Payin</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Extra Amount Payin</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">OD Premium Payout</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">TP Premium Payout</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Net Premium Payout</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Extra Amount Payout</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Total Payin</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Total Payout</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Net Revenue</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">OD Premium Payin</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">TP Premium Payin</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Net Premium Payin</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Extra Amount Payin</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">OD Premium Payout</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">TP Premium Payout</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Net Premium Payout</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Extra Amount Payout</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Total Payin</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Total Payout</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Net Revenue</th>
                   </>
                   )}
-                  <th className="px-4 py-3 font-semibold text-slate-600">Payment Mode</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Cheque Number</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">UTR Number</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Payment Date</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Policy File</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Created By</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Created At</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Payment Mode</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Cheque Number</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Status</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">UTR Number</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Payment Date</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Policy File</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Created By</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Created At</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {businessEntries.map((entry) => {
                   const broker = brokerOptions.find(b => b._id === entry.brokerid);
                   const rmName = entry.rmData 
@@ -1802,50 +1817,50 @@ export default function BusinessEntryManager({
                   
                   return (
                   <tr key={entry._id} className="transition hover:bg-blue-50/40">
-                    <td className="px-4 py-4">
+                    <td className="border border-slate-300 px-4 py-3 bg-white">
                       <span className="font-semibold text-slate-900">{entry.policyNumber || ''}</span>
                     </td>
-                    <td className="px-4 py-4 text-xs uppercase tracking-wide text-slate-600">{entry.registrationNumber || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.clientName || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.contactNumber || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.emailId || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.state || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.insuranceCompany || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{broker?.brokername || entry.brokerData?.brokername || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.lineOfBusiness || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.product || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.subProduct || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.policyIssueDate ? new Date(entry.policyIssueDate).toLocaleDateString() : ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.policyStartDate ? new Date(entry.policyStartDate).toLocaleDateString() : ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.policyEndDate ? new Date(entry.policyEndDate).toLocaleDateString() : ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.policyTpEndDate ? new Date(entry.policyTpEndDate).toLocaleDateString() : ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.odPremium || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.tpPremium || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.netPremium || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.grossPremium || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.rmState || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{rmName}</td>
-                    <td className="px-4 py-4 text-slate-600">{associateName}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.reportingFy || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.reportingMonth || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-xs uppercase tracking-wide text-slate-600">{entry.registrationNumber || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.clientName || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.contactNumber || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.emailId || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.state || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.insuranceCompany || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{broker?.brokername || entry.brokerData?.brokername || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.lineOfBusiness || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.product || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.subProduct || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.policyIssueDate ? new Date(entry.policyIssueDate).toLocaleDateString() : ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.policyStartDate ? new Date(entry.policyStartDate).toLocaleDateString() : ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.policyEndDate ? new Date(entry.policyEndDate).toLocaleDateString() : ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.policyTpEndDate ? new Date(entry.policyTpEndDate).toLocaleDateString() : ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.odPremium || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.tpPremium || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.netPremium || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.grossPremium || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.rmState || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rmName}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associateName}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.reportingFy || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.reportingMonth || ''}</td>
                     {userRole !== 'rm' && userRole !== 'associate' && (
                     <>
-                    <td className="px-4 py-4 text-slate-600">{entry.odPremiumPayinAmt || entry.odPremiumPayin || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.tpPremiumPayinAmt || entry.tpPremiumPayin || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.netPremiumPayinAmt || entry.netPremiumPayin || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.extraAmountPayinAmt || entry.extraAmountPayin || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.odPremiumPayoutAmt || entry.odPremiumPayout || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.tpPremiumPayoutAmt || entry.tpPremiumPayout || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.netPremiumPayoutAmt || entry.netPremiumPayout || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.extraAmountPayoutAmt || entry.extraAmountPayout || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.totalPayin ? `₹${Number(entry.totalPayin).toLocaleString()}` : ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.totalPayout ? `₹${Number(entry.totalPayout).toLocaleString()}` : ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.netRevenue ? `₹${Number(entry.netRevenue).toLocaleString()}` : ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.odPremiumPayinAmt || entry.odPremiumPayin || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.tpPremiumPayinAmt || entry.tpPremiumPayin || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.netPremiumPayinAmt || entry.netPremiumPayin || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.extraAmountPayinAmt || entry.extraAmountPayin || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.odPremiumPayoutAmt || entry.odPremiumPayout || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.tpPremiumPayoutAmt || entry.tpPremiumPayout || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.netPremiumPayoutAmt || entry.netPremiumPayout || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.extraAmountPayoutAmt || entry.extraAmountPayout || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.totalPayin ? `₹${Number(entry.totalPayin).toLocaleString()}` : ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.totalPayout ? `₹${Number(entry.totalPayout).toLocaleString()}` : ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.netRevenue ? `₹${Number(entry.netRevenue).toLocaleString()}` : ''}</td>
                     </>
                     )}
-                    <td className="px-4 py-4 text-slate-600">{entry.paymentMode || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.chequeNumber || ''}</td>
-                    <td className="px-4 py-4">
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.paymentMode || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.chequeNumber || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white">
                       <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
                         entry.status === 'completed' 
                           ? 'bg-emerald-100 text-emerald-700' 
@@ -1856,9 +1871,9 @@ export default function BusinessEntryManager({
                         {entry.status || 'pending'}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-slate-600">{entry.utrno || ''}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.paymentdate ? new Date(entry.paymentdate).toLocaleDateString() : ''}</td>
-                    <td className="px-4 py-4 text-slate-600">
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.utrno || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.paymentdate ? new Date(entry.paymentdate).toLocaleDateString() : ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">
                       {entry.policyFileUrl ? (
                         <button
                           onClick={() => handleViewFile(entry.policyFileUrl!)}
@@ -1868,8 +1883,8 @@ export default function BusinessEntryManager({
                         </button>
                       ) : ''}
                     </td>
-                    <td className="px-4 py-4 text-slate-600">{createdByEmail}</td>
-                    <td className="px-4 py-4 text-slate-600">{entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{createdByEmail}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : ''}</td>
                   </tr>
                   );
                 })}
