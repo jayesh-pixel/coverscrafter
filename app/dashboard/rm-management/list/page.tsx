@@ -92,6 +92,9 @@ export default function ConsolidationListPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [viewingAssociate, setViewingAssociate] = useState<AssociateUser | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [rmCurrentPage, setRmCurrentPage] = useState(1);
+  const [associateCurrentPage, setAssociateCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const handleExportCredentials = (rm: RelationshipManagerRecord) => {
     // Find the full RM object from allRMs
@@ -124,6 +127,32 @@ export default function ConsolidationListPage() {
     URL.revokeObjectURL(url);
 
     setSuccessMessage(`Credentials exported for ${fullRM.firstName} ${fullRM.lastName}`);
+    setTimeout(() => setSuccessMessage(null), 3000);
+  };
+
+  const handleExportAssociateCredentials = (associate: AssociateUser) => {
+    // Create Excel data
+    const excelData = [
+      ['Associate Credentials Export'],
+      [''],
+      ['Login Details'],
+      ['Email', associate.email],
+      ['Password', associate.password || 'Not Available'],
+    ];
+
+    // Convert to CSV
+    const csv = excelData.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Associate_Credentials_${associate.associateCode}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    setSuccessMessage(`Credentials exported for ${associate.name}`);
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
@@ -330,6 +359,73 @@ export default function ConsolidationListPage() {
     
     return matchesSearch && matchesStatus;
   });
+
+  const filteredAssociates = allAssociates.filter((assoc) => {
+    if (assoc.status === "deleted") return false;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      assoc.name.toLowerCase().includes(searchLower) ||
+      assoc.associateCode.toLowerCase().includes(searchLower) ||
+      assoc.email.toLowerCase().includes(searchLower) ||
+      (assoc.posCode && assoc.posCode.toLowerCase().includes(searchLower)) ||
+      (assoc.contactPerson && assoc.contactPerson.toLowerCase().includes(searchLower))
+    );
+  });
+
+  // Pagination calculations
+  const rmTotalPages = Math.ceil(filteredRMs.length / itemsPerPage);
+  const rmStartIndex = (rmCurrentPage - 1) * itemsPerPage;
+  const rmEndIndex = rmStartIndex + itemsPerPage;
+  const paginatedRMs = filteredRMs.slice(rmStartIndex, rmEndIndex);
+
+  const associateTotalPages = Math.ceil(filteredAssociates.length / itemsPerPage);
+  const associateStartIndex = (associateCurrentPage - 1) * itemsPerPage;
+  const associateEndIndex = associateStartIndex + itemsPerPage;
+  const paginatedAssociates = filteredAssociates.slice(associateStartIndex, associateEndIndex);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setRmCurrentPage(1);
+    setAssociateCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  // Helper function to generate page numbers with ellipsis
+  const getPageNumbers = (currentPage: number, totalPages: number) => {
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible + 2) {
+      // Show all pages if total is small
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Always show first page
+      pages.push(1);
+
+      if (currentPage > 3) {
+        pages.push('...');
+      }
+
+      // Show pages around current page
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+
+      if (currentPage < totalPages - 2) {
+        pages.push('...');
+      }
+
+      // Always show last page
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
   return (
     <div className="space-y-8">
       {successMessage && (
@@ -431,6 +527,7 @@ export default function ConsolidationListPage() {
             <p className="text-sm text-slate-500">No relationship managers found.</p>
           </div>
         ) : (
+          <>
           <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
             <table className="min-w-[1100px] border-collapse text-left text-sm">
             <thead className="bg-slate-100">
@@ -447,7 +544,7 @@ export default function ConsolidationListPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredRMs.map((rm) => (
+              {paginatedRMs.map((rm) => (
                 <tr key={rm.empCode} className="transition hover:bg-blue-50/40">
                   <td className="border border-slate-300 px-4 py-3 bg-white">
                     <div className="flex flex-col">
@@ -488,6 +585,51 @@ export default function ConsolidationListPage() {
             </tbody>
           </table>
           </div>
+          
+          {/* Pagination */}
+          {rmTotalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 mt-4">
+              <div className="text-sm text-slate-500">
+                Showing {rmStartIndex + 1} to {Math.min(rmEndIndex, filteredRMs.length)} of {filteredRMs.length} results
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setRmCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={rmCurrentPage === 1}
+                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                {getPageNumbers(rmCurrentPage, rmTotalPages).map((page, index) => (
+                  typeof page === 'number' ? (
+                    <button
+                      key={page}
+                      onClick={() => setRmCurrentPage(page)}
+                      className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+                        rmCurrentPage === page
+                          ? 'bg-blue-600 text-white'
+                          : 'border border-slate-300 text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ) : (
+                    <span key={`ellipsis-${index}`} className="px-2 py-1.5 text-slate-400">
+                      {page}
+                    </span>
+                  )
+                ))}
+                <button
+                  onClick={() => setRmCurrentPage(p => Math.min(rmTotalPages, p + 1))}
+                  disabled={rmCurrentPage === rmTotalPages}
+                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+          </>
         )}
         </section>
       )}
@@ -498,6 +640,19 @@ export default function ConsolidationListPage() {
           <h2 className="text-lg font-semibold text-slate-900">All Associates</h2>
           <p className="text-xs font-medium text-slate-500">Complete list of all associates in the system.</p>
         </header>
+        
+        {/* Search Box for Associates */}
+        <div className="relative w-full max-w-sm">
+          <input
+            type="search"
+            placeholder="Search by name, code, or email"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          />
+          <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-400">⌕</span>
+        </div>
+        
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
           <table className="min-w-[1000px] border-collapse text-left text-sm">
             <thead className="bg-slate-100">
@@ -513,9 +668,7 @@ export default function ConsolidationListPage() {
               </tr>
             </thead>
             <tbody>
-              {allAssociates
-                .filter((assoc) => assoc.status !== "deleted")
-                .map((associate) => (
+              {paginatedAssociates.map((associate) => (
                   <tr key={associate._id} className="transition hover:bg-blue-50/40">
                     <td className="border border-slate-300 px-4 py-3 bg-white">
                       <div className="flex flex-col">
@@ -553,6 +706,13 @@ export default function ConsolidationListPage() {
                         >
                           Edit
                         </button>
+                        <button
+                          onClick={() => handleExportAssociateCredentials(associate)}
+                          className="rounded-lg bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-600 transition hover:bg-green-100"
+                          title="Export Credentials"
+                        >
+                          Export
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -560,6 +720,50 @@ export default function ConsolidationListPage() {
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination */}
+        {associateTotalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 mt-4">
+            <div className="text-sm text-slate-500">
+              Showing {associateStartIndex + 1} to {Math.min(associateEndIndex, filteredAssociates.length)} of {filteredAssociates.length} results
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setAssociateCurrentPage(p => Math.max(1, p - 1))}
+                disabled={associateCurrentPage === 1}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              {getPageNumbers(associateCurrentPage, associateTotalPages).map((page, index) => (
+                typeof page === 'number' ? (
+                  <button
+                    key={page}
+                    onClick={() => setAssociateCurrentPage(page)}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+                      associateCurrentPage === page
+                        ? 'bg-blue-600 text-white'
+                        : 'border border-slate-300 text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ) : (
+                  <span key={`ellipsis-${index}`} className="px-2 py-1.5 text-slate-400">
+                    {page}
+                  </span>
+                )
+              ))}
+              <button
+                onClick={() => setAssociateCurrentPage(p => Math.min(associateTotalPages, p + 1))}
+                disabled={associateCurrentPage === associateTotalPages}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
         </section>
       )}
 
