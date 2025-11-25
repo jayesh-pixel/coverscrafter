@@ -89,6 +89,8 @@ export default function ConsolidationListPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [viewingAssociate, setViewingAssociate] = useState<AssociateUser | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -166,6 +168,16 @@ export default function ConsolidationListPage() {
     setEditingAssociate(associate);
     setEditingRM(null);
     setIsEditModalOpen(true);
+  };
+
+  const handleViewAssociate = (associate: AssociateUser) => {
+    setViewingAssociate(associate);
+    setIsViewModalOpen(true);
+  };
+
+  const handleCloseViewModal = () => {
+    setIsViewModalOpen(false);
+    setViewingAssociate(null);
   };
 
   const handleSaveRM = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -479,14 +491,24 @@ export default function ConsolidationListPage() {
                     <td className="px-4 py-4 text-slate-600">{associate.contact}</td>
                     <td className="px-4 py-4 text-slate-600">{associate.email}</td>
                     <td className="px-4 py-4">
-                      {fullAssociate && (
-                        <button
-                          onClick={() => handleEditAssociate(fullAssociate)}
-                          className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
-                        >
-                          Edit
-                        </button>
-                      )}
+                      <div className="flex gap-2">
+                        {fullAssociate && (
+                          <>
+                            <button
+                              onClick={() => handleViewAssociate(fullAssociate)}
+                              className="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-100"
+                            >
+                              View
+                            </button>
+                            <button
+                              onClick={() => handleEditAssociate(fullAssociate)}
+                              className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
+                            >
+                              Edit
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                   );
@@ -868,6 +890,175 @@ export default function ConsolidationListPage() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* View Associate Details Modal */}
+      {isViewModalOpen && viewingAssociate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-4xl max-h-[90vh] rounded-3xl bg-white shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 shrink-0">
+              <h2 className="text-xl font-semibold text-slate-900">Associate Details</h2>
+              <button
+                onClick={handleCloseViewModal}
+                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-6 flex-1">
+              <div className="space-y-6">
+                {/* Basic Information */}
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                  <h3 className="mb-4 text-lg font-semibold text-slate-900">Basic Information</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Associate Name</label>
+                      <p className="mt-1 text-sm font-semibold text-slate-900">{viewingAssociate.name}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Associate Code</label>
+                      <p className="mt-1 text-sm font-semibold text-slate-900">{viewingAssociate.associateCode}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Contact Person</label>
+                      <p className="mt-1 text-sm text-slate-900">{viewingAssociate.contactPerson}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Contact Number</label>
+                      <p className="mt-1 text-sm text-slate-900">{viewingAssociate.contactNo}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Email</label>
+                      <p className="mt-1 text-sm text-slate-900">{viewingAssociate.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Status</label>
+                      <p className="mt-1">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          viewingAssociate.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"
+                        }`}>
+                          {viewingAssociate.status}
+                        </span>
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">PAN Number</label>
+                      <p className="mt-1 text-sm text-slate-900">{viewingAssociate.associatePanNo}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Aadhar Number</label>
+                      <p className="mt-1 text-sm text-slate-900">{viewingAssociate.associateAadharNo}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">State</label>
+                      <p className="mt-1 text-sm text-slate-900">{viewingAssociate.associateStateName || '-'}</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="text-xs font-medium text-slate-500">Address</label>
+                      <p className="mt-1 text-sm text-slate-900">{viewingAssociate.associateAddress}</p>
+                    </div>
+                    {viewingAssociate.isPos && (
+                      <div>
+                        <label className="text-xs font-medium text-slate-500">POS Code</label>
+                        <p className="mt-1 text-sm text-slate-900">{viewingAssociate.posCode || '-'}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bank Details */}
+                <div className="rounded-2xl border border-slate-200 bg-blue-50 p-6">
+                  <h3 className="mb-4 text-lg font-semibold text-slate-900">Bank Details</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Bank Name</label>
+                      <p className="mt-1 text-sm font-semibold text-slate-900">{viewingAssociate.bankName}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Account Number</label>
+                      <p className="mt-1 text-sm font-semibold text-slate-900">{viewingAssociate.accountNo}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">IFSC Code</label>
+                      <p className="mt-1 text-sm text-slate-900">{viewingAssociate.ifsc}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Account Type</label>
+                      <p className="mt-1 text-sm text-slate-900">{viewingAssociate.accountType}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Branch Name</label>
+                      <p className="mt-1 text-sm text-slate-900">{viewingAssociate.branchName}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Branch State</label>
+                      <p className="mt-1 text-sm text-slate-900">{viewingAssociate.stateName}</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="text-xs font-medium text-slate-500">Bank Address</label>
+                      <p className="mt-1 text-sm text-slate-900">{viewingAssociate.bankAddress}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Beneficiary PAN</label>
+                      <p className="mt-1 text-sm text-slate-900">{viewingAssociate.bpanNo}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Beneficiary Name</label>
+                      <p className="mt-1 text-sm text-slate-900">{viewingAssociate.bpanName}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Default Account</label>
+                      <p className="mt-1">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          viewingAssociate.default ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"
+                        }`}>
+                          {viewingAssociate.default ? "Yes" : "No"}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timestamps */}
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                  <h3 className="mb-4 text-lg font-semibold text-slate-900">System Information</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Created At</label>
+                      <p className="mt-1 text-sm text-slate-900">
+                        {new Date(viewingAssociate.createdAt).toLocaleString('en-IN', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short'
+                        })}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500">Last Updated</label>
+                      <p className="mt-1 text-sm text-slate-900">
+                        {new Date(viewingAssociate.updatedAt).toLocaleString('en-IN', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4 shrink-0">
+              <button
+                onClick={handleCloseViewModal}
+                className="rounded-xl border border-slate-300 px-6 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
