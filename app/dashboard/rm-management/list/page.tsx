@@ -495,70 +495,68 @@ export default function ConsolidationListPage() {
       {activeTab === "associate" && (
         <section className="mx-auto w-full max-w-6xl space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <header className="flex flex-col gap-2 border-b border-slate-200 pb-4">
-          <h2 className="text-lg font-semibold text-slate-900">Associates mapped under each RM</h2>
-          <p className="text-xs font-medium text-slate-500">Drill into POS associates directly from the parent RM list.</p>
+          <h2 className="text-lg font-semibold text-slate-900">All Associates</h2>
+          <p className="text-xs font-medium text-slate-500">Complete list of all associates in the system.</p>
         </header>
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
           <table className="min-w-[1000px] border-collapse text-left text-sm">
             <thead className="bg-slate-100">
               <tr>
-                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">RM</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Associate</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Associate Code</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">POS Code</th>
-                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Broker Code</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Status</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Contact</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Email</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">State</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredRMs.flatMap((rm) =>
-                rm.associates.map((associate, index) => {
-                  // Find the full associate object from allAssociates
-                  const fullAssociate = allAssociates.find(a => a.associateCode === associate.brokerCode);
-                  return (
-                  <tr key={`${rm.empCode}-${associate.brokerCode}-${index}`} className="transition hover:bg-blue-50/40">
+              {allAssociates
+                .filter((assoc) => assoc.status !== "deleted")
+                .map((associate) => (
+                  <tr key={associate._id} className="transition hover:bg-blue-50/40">
                     <td className="border border-slate-300 px-4 py-3 bg-white">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-slate-900">{rm.name}</span>
-                        <span className="text-xs uppercase tracking-wide text-slate-400">{rm.empCode}</span>
+                        <span className="font-semibold text-slate-900">{associate.name}</span>
+                        <span className="text-xs text-slate-400">{associate.contactPerson}</span>
                       </div>
                     </td>
-                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.name}</td>
-                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.code}</td>
-                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.brokerCode}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.associateCode}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.posCode || 'N/A'}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white">
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[associate.status]}`}>
-                        {associate.status}
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        associate.status === "active" ? "bg-emerald-100 text-emerald-700" : 
+                        associate.status === "inactive" ? "bg-slate-200 text-slate-700" : 
+                        "bg-amber-100 text-amber-700"
+                      }`}>
+                        {associate.status === "active" ? "Active" : associate.status === "inactive" ? "Inactive" : "Pending"}
                       </span>
                     </td>
-                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.contact}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">
+                      {associate.contactNo === "null" ? "N/A" : associate.contactNo}
+                    </td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.email}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.associateStateName || 'N/A'}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white">
                       <div className="flex gap-2">
-                        {fullAssociate && (
-                          <>
-                            <button
-                              onClick={() => handleViewAssociate(fullAssociate)}
-                              className="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-100"
-                            >
-                              View
-                            </button>
-                            <button
-                              onClick={() => handleEditAssociate(fullAssociate)}
-                              className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
-                            >
-                              Edit
-                            </button>
-                          </>
-                        )}
+                        <button
+                          onClick={() => handleViewAssociate(associate)}
+                          className="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-100"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleEditAssociate(associate)}
+                          className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
+                        >
+                          Edit
+                        </button>
                       </div>
                     </td>
                   </tr>
-                  );
-                }),
-              )}
+                ))}
             </tbody>
           </table>
         </div>
