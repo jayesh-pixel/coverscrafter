@@ -62,7 +62,7 @@ export interface AssociateUser extends UserProfile {
  */
 export async function getUserProfile(authToken: string): Promise<UserProfile> {
   return apiRequest<UserProfile>({
-    path: `${API_BASE_URL}/v1/users/profile`,
+    path: `${API_BASE_URL}/v1/profile`,
     method: "GET",
     authToken,
   });

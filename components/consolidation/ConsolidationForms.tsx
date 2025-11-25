@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { FormSection, SelectField, TextField, SearchableSelectField } from "@/components/ui/forms";
 import { registerAssociate, registerRM } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/config";
-import { getAuthSession } from "@/lib/utils/storage";
+import { getValidAuthToken } from "@/lib/utils/storage";
 import { getRMUsers, getAdminUsers, type RMUser } from "@/lib/api/users";
 
 const workingOffices = [
@@ -222,8 +222,8 @@ export function RMForm({
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getValidAuthToken();
+    if (!token) {
       setErrorMessage("You must be signed in to register an RM.");
       return;
     }
@@ -245,7 +245,7 @@ export function RMForm({
           ReportingManager: rmForm.reportingManager || undefined,
           Password: rmForm.password,
         },
-        session.token,
+        token,
       );
 
       setSuccessMessage("RM registered successfully.");
@@ -444,12 +444,12 @@ export function AssociateForm({
   };
 
   const fetchRMs = async () => {
-    const session = getAuthSession();
-    if (!session?.token) return;
+    const token = await getValidAuthToken();
+    if (!token) return;
 
     setIsLoadingRMs(true);
     try {
-      const rms = await getRMUsers(session.token);
+      const rms = await getRMUsers(token);
       setRmOptions(rms);
     } catch (error) {
       console.error("Failed to fetch RMs", error);
@@ -477,8 +477,8 @@ export function AssociateForm({
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getValidAuthToken();
+    if (!token) {
       setErrorMessage("You must be signed in to register an associate.");
       return;
     }
@@ -512,7 +512,7 @@ export function AssociateForm({
           PosCode: posStatus === "yes" ? associateForm.posCode || undefined : undefined,
           Password: associateForm.password,
         },
-        session.token,
+        token,
       );
 
       console.log(contextLabel, "Associate registered successfully");

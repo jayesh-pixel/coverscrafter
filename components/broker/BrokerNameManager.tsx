@@ -10,7 +10,7 @@ import {
   type BrokerName,
 } from "@/lib/api/brokername";
 import { ApiError } from "@/lib/api/config";
-import { getAuthSession } from "@/lib/utils/storage";
+import { getValidAuthToken } from "@/lib/utils/storage";
 
 interface BrokerNameManagerProps {
   title?: string;
@@ -30,8 +30,8 @@ export default function BrokerNameManager({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchBrokerNames = async () => {
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getValidAuthToken();
+    if (!token) {
       setErrorMessage("Please sign in to view broker names.");
       return;
     }
@@ -39,7 +39,7 @@ export default function BrokerNameManager({
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const names = await getBrokerNames(session.token);
+      const names = await getBrokerNames(token);
       setBrokerNames(names.filter((b) => !b.isDeleted));
     } catch (error) {
       console.error("Failed to fetch broker names", error);
@@ -58,8 +58,8 @@ export default function BrokerNameManager({
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getValidAuthToken();
+    if (!token) {
       setErrorMessage("You must be signed in to create a broker name.");
       return;
     }
@@ -75,7 +75,7 @@ export default function BrokerNameManager({
     setIsSubmitting(true);
 
     try {
-      await createBrokerName({ brokername }, session.token);
+      await createBrokerName({ brokername }, token);
       setSuccessMessage("Broker name created successfully.");
       
       // Reset form
@@ -111,8 +111,8 @@ export default function BrokerNameManager({
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getValidAuthToken();
+    if (!token) {
       setErrorMessage("You must be signed in to update a broker name.");
       return;
     }
@@ -123,7 +123,7 @@ export default function BrokerNameManager({
     }
 
     try {
-      await updateBrokerName(id, { brokername: editValue }, session.token);
+      await updateBrokerName(id, { brokername: editValue }, token);
       setSuccessMessage("Broker name updated successfully.");
       setEditingId(null);
       fetchBrokerNames();
@@ -142,14 +142,14 @@ export default function BrokerNameManager({
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getValidAuthToken();
+    if (!token) {
       setErrorMessage("You must be signed in to delete a broker name.");
       return;
     }
 
     try {
-      await deleteBrokerName(id, session.token);
+      await deleteBrokerName(id, token);
       setSuccessMessage("Broker name deleted successfully.");
       fetchBrokerNames();
     } catch (error) {

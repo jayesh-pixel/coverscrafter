@@ -384,8 +384,8 @@ export default function BusinessEntryManager({
   const [showFilters, setShowFilters] = useState(false);
 
   const fetchEntries = async (filterParams?: Record<string, string>) => {
-    const session = getAuthSession();
-    if (!session?.token) return;
+    const token = await getToken();
+    if (!token) return;
 
     setIsLoading(true);
     try {
@@ -403,7 +403,7 @@ export default function BusinessEntryManager({
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${session.token}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -419,12 +419,12 @@ export default function BusinessEntryManager({
   };
 
   const fetchBrokerOptions = async () => {
-    const session = getAuthSession();
-    if (!session?.token) return;
+    const token = await getToken();
+    if (!token) return;
 
     setIsLoadingBrokers(true);
     try {
-      const brokers = await getBrokerNames(session.token);
+      const brokers = await getBrokerNames(token);
       setBrokerOptions(brokers.filter((broker) => !broker.isDeleted));
     } catch (error) {
       console.error("Failed to fetch broker names", error);
@@ -438,14 +438,14 @@ export default function BusinessEntryManager({
   };
 
   const fetchUsers = async () => {
-    const session = getAuthSession();
-    if (!session?.token) return;
+    const token = await getToken();
+    if (!token) return;
 
     setIsLoadingUsers(true);
     try {
       const [associates, rms] = await Promise.all([
-        getAssociateUsers(session.token),
-        getRMUsers(session.token)
+        getAssociateUsers(token),
+        getRMUsers(token)
       ]);
       setAllAssociates(associates);
       setAllRMs(rms);
@@ -461,8 +461,9 @@ export default function BusinessEntryManager({
   };
 
   const autoFillUserData = async () => {
+    const token = await getToken();
     const session = getAuthSession();
-    if (!session?.token || !session?.user) return;
+    if (!token || !session?.user) return;
 
     const userRole = session.user.role;
     const userId = session.user._id;
@@ -471,7 +472,7 @@ export default function BusinessEntryManager({
       // If logged in as RM
       if (userRole === 'rm') {
         // Fetch user profile to get RM details
-        const profile = await getUserProfile(session.token);
+        const profile = await getUserProfile(token);
         if (profile.state) {
           // Auto-select state and fetch RMs
           const formattedState = profile.state.toUpperCase();
@@ -483,14 +484,14 @@ export default function BusinessEntryManager({
           setIsRmAutoFilled(true);
           
           // Fetch associates for this RM
-          const associates = await getAssociateUsers(session.token, undefined, userId);
+          const associates = await getAssociateUsers(token, undefined, userId);
           setAssociateOptions(associates);
         }
       }
       // If logged in as Associate
       else if (userRole === 'associate') {
         // Fetch user profile to get associate details
-        const profile = await getUserProfile(session.token);
+        const profile = await getUserProfile(token);
         
         // If associate has createdBy field, that's the RM
         if (profile.createdBy && profile.state) {
@@ -504,7 +505,7 @@ export default function BusinessEntryManager({
           setIsRmAutoFilled(true);
           
           // Fetch associates for this RM
-          const associates = await getAssociateUsers(session.token, undefined, profile.createdBy);
+          const associates = await getAssociateUsers(token, undefined, profile.createdBy);
           setAssociateOptions(associates);
           
           // Auto-select current associate
@@ -518,8 +519,8 @@ export default function BusinessEntryManager({
   };
 
   const fetchRMsByState = async (state: string) => {
-    const session = getAuthSession();
-    if (!session?.token) return;
+    const token = await getToken();
+    if (!token) return;
 
     setIsLoadingUsers(true);
     try {
@@ -530,7 +531,7 @@ export default function BusinessEntryManager({
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
       
-      const rms = await getRMUsers(session.token, undefined, formattedState);
+      const rms = await getRMUsers(token, undefined, formattedState);
       setRmOptions(rms);
     } catch (error) {
       console.error("Failed to fetch RMs for state", error);
@@ -602,8 +603,8 @@ export default function BusinessEntryManager({
       return;
     }
 
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getToken();
+    if (!token) {
       setUploadError("You must be signed in to upload documents.");
       event.target.value = "";
       return;
@@ -612,7 +613,7 @@ export default function BusinessEntryManager({
     setIsUploadingFile(true);
 
     try {
-      const response = await uploadDocument(file, session.token);
+      const response = await uploadDocument(file, token);
       setUploadedFile(response);
     } catch (error) {
       console.error("Failed to upload file", error);
@@ -655,13 +656,13 @@ export default function BusinessEntryManager({
       setSelectedState(formattedState);
     }
     
-    const session = getAuthSession();
-    if (!session?.token) return;
+    const token = await getToken();
+    if (!token) return;
     
     setIsLoadingUsers(true);
     try {
       // Fetch associates created by the selected RM
-      const associates = await getAssociateUsers(session.token, undefined, rmId);
+      const associates = await getAssociateUsers(token, undefined, rmId);
       setAssociateOptions(associates);
     } catch (error) {
       console.error("Failed to fetch associates for RM", error);
@@ -696,8 +697,8 @@ export default function BusinessEntryManager({
   };
 
   const handleViewFile = async (fileUrl: string) => {
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getToken();
+    if (!token) {
       setErrorMessage("You must be signed in to view files.");
       return;
     }
@@ -710,7 +711,7 @@ export default function BusinessEntryManager({
       // Fetch file with authentication token
       const response = await fetch(`https://instapolicy.coverscrafter.com${fileUrl}`, {
         headers: {
-          'Authorization': `Bearer ${session.token}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -775,8 +776,8 @@ export default function BusinessEntryManager({
       return;
     }
 
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getToken();
+    if (!token) {
       setErrorMessage('You must be signed in to update payment status');
       return;
     }
@@ -879,7 +880,7 @@ export default function BusinessEntryManager({
       }
 
       // Call bulk update API
-      const result = await bulkUpdateBusinessEntries({ updates }, session.token);
+      const result = await bulkUpdateBusinessEntries({ updates }, token);
       console.log('Bulk update result:', result);
       setBulkUpdateResult(result);
       setSuccessMessage(`Successfully updated ${result.successful} out of ${result.totalRecords} records`);
@@ -935,8 +936,8 @@ export default function BusinessEntryManager({
   };
 
   const handleExport = async () => {
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getToken();
+    if (!token) {
       setErrorMessage('You must be signed in to export data');
       return;
     }
@@ -952,7 +953,7 @@ export default function BusinessEntryManager({
       });
 
       // Call export API
-      const blob = await exportBusinessEntries(session.token, activeFilters);
+      const blob = await exportBusinessEntries(token, activeFilters);
       
       // Create download link
       const url = URL.createObjectURL(blob);
@@ -989,8 +990,8 @@ export default function BusinessEntryManager({
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getToken();
+    if (!token) {
       setErrorMessage("You must be signed in to create a business entry.");
       return;
     }
@@ -1039,7 +1040,7 @@ export default function BusinessEntryManager({
     setSuccessMessage(null);
 
     try {
-      await createBusinessEntry(payload as any, session.token);
+      await createBusinessEntry(payload as any, token);
       
       // Reset form
       event.currentTarget.reset();
@@ -1096,7 +1097,7 @@ export default function BusinessEntryManager({
             >
               {isExporting ? 'Exporting...' : '📊 Export to Excel'}
             </button>
-            {userRole !== 'rm' && (
+            {userRole !== 'rm' && userRole !== 'associate' && (
               <button
                 type="button"
                 onClick={() => setShowBulkUpdateModal(true)}
@@ -1105,18 +1106,20 @@ export default function BusinessEntryManager({
                 Import Payment Status
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setShowForm((prev) => !prev)}
-              className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700"
-              aria-expanded={showForm}
-            >
-              {showForm ? "Hide Business Entry" : "Create Business Entry"}
-            </button>
+            {userRole !== 'associate' && (
+              <button
+                type="button"
+                onClick={() => setShowForm((prev) => !prev)}
+                className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700"
+                aria-expanded={showForm}
+              >
+                {showForm ? "Hide Business Entry" : "Create Business Entry"}
+              </button>
+            )}
           </div>
         </header>
 
-        {showForm && (
+        {showForm && userRole !== 'associate' && (
           <form className="space-y-6" onSubmit={handleBusinessSubmit}>
             <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -1280,7 +1283,8 @@ export default function BusinessEntryManager({
                     value: option,
                   }))}
                   value={selectedState}
-                  disabled={!selectedState}
+                  onChange={(e) => handleStateChange(e.target.value)}
+                  disabled={isRmAutoFilled}
                 />
                 <SelectField
                   id="associateId"
