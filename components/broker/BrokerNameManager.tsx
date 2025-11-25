@@ -78,19 +78,16 @@ export default function BrokerNameManager({
       await createBrokerName({ brokername }, token);
       setSuccessMessage("Broker name created successfully.");
       
-      // Reset form
-      const form = event.currentTarget;
-      if (form) {
-        form.reset();
-      }
-      
       // Refresh the list
       await fetchBrokerNames();
       
-      // Reload page after short delay to show success message
+      // Reset form
+      event.currentTarget.reset();
+      
+      // Clear success message after delay
       setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+        setSuccessMessage(null);
+      }, 3000);
     } catch (error) {
       if (error instanceof ApiError) {
         const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : error.message;
