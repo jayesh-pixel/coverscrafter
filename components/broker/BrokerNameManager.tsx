@@ -58,17 +58,19 @@ export default function BrokerNameManager({
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const token = await getValidAuthToken();
-    if (!token) {
-      setErrorMessage("You must be signed in to create a broker name.");
+    // Extract value immediately before any async operations
+    const form = event.currentTarget;
+    const brokernameInput = form.querySelector('input[name="brokername"]') as HTMLInputElement;
+    const brokername = brokernameInput?.value?.trim() || "";
+
+    if (!brokername) {
+      setErrorMessage("Broker name cannot be empty.");
       return;
     }
 
-    const formData = new FormData(event.currentTarget);
-    const brokername = formData.get("brokername") as string;
-
-    if (!brokername?.trim()) {
-      setErrorMessage("Broker name cannot be empty.");
+    const token = await getValidAuthToken();
+    if (!token) {
+      setErrorMessage("You must be signed in to create a broker name.");
       return;
     }
 
@@ -82,7 +84,9 @@ export default function BrokerNameManager({
       await fetchBrokerNames();
       
       // Reset form
-      event.currentTarget.reset();
+      if (brokernameInput) {
+        brokernameInput.value = "";
+      }
       
       // Clear success message after delay
       setTimeout(() => {
