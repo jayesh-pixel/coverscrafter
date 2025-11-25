@@ -152,15 +152,15 @@ export default function ConsolidationListPage() {
 
       // Map RM users to RelationshipManagerRecord format
       const mappedRMs: RelationshipManagerRecord[] = rmUsers.map((rm) => {
-        // Filter associates that belong to this RM (you may need to adjust based on your data structure)
+        // Filter associates that belong to this RM based on createdBy field
         const rmAssociates = associateUsers
-          .filter((assoc) => assoc.status !== "deleted")
+          .filter((assoc) => assoc.status !== "deleted" && assoc.createdBy === rm.firebaseUid)
           .map((assoc) => ({
             name: assoc.name,
             code: assoc.posCode || "N/A",
             brokerCode: assoc.associateCode,
             status: (assoc.status === "active" ? "Active" : assoc.status === "inactive" ? "Inactive" : "Pending") as AssociateRecord["status"],
-            contact: assoc.contactNo,
+            contact: assoc.contactNo === "null" ? "N/A" : assoc.contactNo,
             email: assoc.email,
           }));
 
