@@ -340,6 +340,7 @@ export default function BusinessEntryManager({
   const [brokerOptions, setBrokerOptions] = useState<BrokerName[]>([]);
   const [isLoadingBrokers, setIsLoadingBrokers] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<UploadResponse | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -588,10 +589,11 @@ export default function BusinessEntryManager({
 
   const uploadMeta = extractUploadMeta(uploadedFile);
 
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
     setUploadError(null);
+    setSelectedFile(null);
     setUploadedFile(null);
 
     if (!file) {
@@ -604,32 +606,12 @@ export default function BusinessEntryManager({
       return;
     }
 
-    const token = await getToken();
-    if (!token) {
-      setUploadError("You must be signed in to upload documents.");
-      event.target.value = "";
-      return;
-    }
-
-    setIsUploadingFile(true);
-
-    try {
-      const response = await uploadDocument(file, token);
-      setUploadedFile(response);
-    } catch (error) {
-      console.error("Failed to upload file", error);
-      if (error instanceof ApiError) {
-        setUploadError(error.message || "Unable to upload document. Please try again.");
-      } else {
-        setUploadError("Something went wrong while uploading. Please try again.");
-      }
-      event.target.value = "";
-    } finally {
-      setIsUploadingFile(false);
-    }
+    // Just store the file, don't upload yet
+    setSelectedFile(file);
   };
 
   const handleRemoveUploadedFile = () => {
+    setSelectedFile(null);
     setUploadedFile(null);
     setUploadError(null);
     setFileInputKey((previous) => previous + 1);
@@ -988,6 +970,14 @@ export default function BusinessEntryManager({
 
   const handleBusinessSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    
+    // Capture form element immediately before any async operations
+    const form = event.currentTarget;
+    if (!form) {
+      setErrorMessage("Form element not found.");
+      return;
+    }
+    
     setErrorMessage(null);
     setSuccessMessage(null);
 
@@ -997,24 +987,82 @@ export default function BusinessEntryManager({
       return;
     }
 
-    if (isUploadingFile) {
-      setErrorMessage("Please wait for the document upload to complete before saving.");
+    // Check if file is selected
+    if (!selectedFile) {
+      setErrorMessage("Please select a policy document before saving.");
       return;
     }
 
-    if (!uploadedFile || !uploadMeta.id) {
-      setErrorMessage("Please upload a policy document before saving.");
-      return;
-    }
-
-    const formData = new FormData(event.currentTarget);
-    const payload: Record<string, string | number> = {};
-
-    formData.forEach((value, key) => {
-      if (!(value instanceof File)) {
-        payload[key] = value as string;
+    // Upload the file now
+    setIsUploadingFile(true);
+    let uploadResponse: UploadResponse;
+    
+    try {
+      uploadResponse = await uploadDocument(selectedFile, token);
+      setUploadedFile(uploadResponse);
+    } catch (error) {
+      console.error("Failed to upload file", error);
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message || "Unable to upload document. Please try again.");
+      } else {
+        setErrorMessage("Something went wrong while uploading. Please try again.");
       }
-    });
+      setIsUploadingFile(false);
+      return;
+    } finally {
+      setIsUploadingFile(false);
+    }
+
+    // Extract upload metadata
+    const uploadMeta = extractUploadMeta(uploadResponse);
+    if (!uploadMeta.id) {
+      setErrorMessage("File upload failed. Please try again.");
+      return;
+    }
+
+    // Extract values from form elements
+    const formElements = form.elements as any;
+    
+    const payload: Record<string, string | number> = {
+      brokerid: formElements.brokerid?.value || '',
+      insuranceCompany: formElements.insuranceCompany?.value || '',
+      policyNumber: formElements.policyNumber?.value || '',
+      clientName: formElements.clientName?.value || '',
+      contactNumber: formElements.contactNumber?.value || '',
+      emailId: formElements.emailId?.value || '',
+      state: formElements.state?.value || '',
+      lineOfBusiness: formElements.lineOfBusiness?.value || '',
+      product: formElements.product?.value || '',
+      subProduct: formElements.subProduct?.value || '',
+      registrationNumber: formElements.registrationNumber?.value || '',
+      policyIssueDate: formElements.policyIssueDate?.value || '',
+      policyStartDate: formElements.policyStartDate?.value || '',
+      policyEndDate: formElements.policyEndDate?.value || '',
+      policyTpEndDate: formElements.policyTpEndDate?.value || '',
+      rmId: formElements.rmId?.value || '',
+      rmState: formElements.rmState?.value || '',
+      associateId: formElements.associateId?.value || '',
+      reportingFy: formElements.reportingFy?.value || '',
+      reportingMonth: formElements.reportingMonth?.value || '',
+    };
+
+    // Add payin/payout fields if associate is selected and user is admin
+    if (selectedAssociateId && userRole !== 'rm' && userRole !== 'associate') {
+      payload.odPremiumPayin = formElements.odPremiumPayin?.value || '0';
+      payload.tpPremiumPayin = formElements.tpPremiumPayin?.value || '0';
+      payload.netPremiumPayin = formElements.netPremiumPayin?.value || '0';
+      payload.extraAmountPayin = formElements.extraAmountPayin?.value || '0';
+      payload.odPremiumPayout = formElements.odPremiumPayout?.value || '0';
+      payload.tpPremiumPayout = formElements.tpPremiumPayout?.value || '0';
+      payload.netPremiumPayout = formElements.netPremiumPayout?.value || '0';
+      payload.extraAmountPayout = formElements.extraAmountPayout?.value || '0';
+    }
+
+    // Add cheque details if payment mode is Cheque
+    if (paymentMode === "Cheque") {
+      payload.chequeNumber = formElements.chequeNumber?.value || '';
+      payload.chequeDate = formElements.chequeDate?.value || '';
+    }
 
     payload.paymentMode = paymentMode;
     payload.payoutMode = payoutMode;
@@ -1022,22 +1070,14 @@ export default function BusinessEntryManager({
     // Add payment details if cut&pay is selected
     if (payoutMode === "cut&pay") {
       payload.status = "Paid";
-      payload.utrno = (payload.utrno as string) || "";
+      payload.utrno = "cut&pay";
       payload.paymentdate = new Date().toISOString().split('T')[0]; // Today's date in YYYY-MM-DD format
     }
     
-    payload.odPremium = (payload.odPremium as string) || "0";
-    payload.tpPremium = (payload.tpPremium as string) || "0";
-    payload.netPremium = (payload.netPremium as string) || "0";
-    payload.grossPremium = (payload.grossPremium as string) || "0";
-    payload.odPremiumPayin = (payload.odPremiumPayin as string) || "0";
-    payload.tpPremiumPayin = (payload.tpPremiumPayin as string) || "0";
-    payload.netPremiumPayin = (payload.netPremiumPayin as string) || "0";
-    payload.extraAmountPayin = (payload.extraAmountPayin as string) || "0";
-    payload.odPremiumPayout = (payload.odPremiumPayout as string) || "0";
-    payload.tpPremiumPayout = (payload.tpPremiumPayout as string) || "0";
-    payload.netPremiumPayout = (payload.netPremiumPayout as string) || "0";
-    payload.extraAmountPayout = (payload.extraAmountPayout as string) || "0";
+    payload.odPremium = odPremium || "0";
+    payload.tpPremium = tpPremium || "0";
+    payload.netPremium = netPremium || "0";
+    payload.grossPremium = grossPremium || "0";
 
     if (uploadMeta.id) {
       payload.policyFile = uploadMeta.id;
@@ -1053,7 +1093,7 @@ export default function BusinessEntryManager({
       await createBusinessEntry(payload as any, token);
       
       // Reset form
-      event.currentTarget.reset();
+      form.reset();
       setPaymentMode("Online");
       setPayoutMode("fullpay");
       setSelectedState("");
@@ -1067,6 +1107,7 @@ export default function BusinessEntryManager({
       setGrossPremium("");
       setRmOptions([]);
       setAssociateOptions([]);
+      setSelectedFile(null);
       setUploadedFile(null);
       setUploadError(null);
       setFileInputKey((previous) => previous + 1);
@@ -1349,7 +1390,7 @@ export default function BusinessEntryManager({
             <div className="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                  <p className="text-sm font-semibold text-slate-700">Payment Mode</p>
+                  <p className="text-sm font-semibold text-slate-700">Payment Mode*</p>
                   <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-600">
                     <label className="flex items-center gap-2">
                       <input
@@ -1359,6 +1400,7 @@ export default function BusinessEntryManager({
                         checked={paymentMode === "Online"}
                         onChange={() => setPaymentMode("Online")}
                         className="h-4 w-4 text-blue-600"
+                        required
                       />
                       Online
                     </label>
@@ -1388,7 +1430,7 @@ export default function BusinessEntryManager({
                 </div>
                 
                 <div>
-                  <p className="text-sm font-semibold text-slate-700">Payout Mode</p>
+                  <p className="text-sm font-semibold text-slate-700">Payout Mode*</p>
                   <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-600">
                     <label className="flex items-center gap-2">
                       <input
@@ -1398,6 +1440,7 @@ export default function BusinessEntryManager({
                         checked={payoutMode === "fullpay"}
                         onChange={() => setPayoutMode("fullpay")}
                         className="h-4 w-4 text-blue-600"
+                        required
                       />
                       Full Pay
                     </label>
@@ -1429,7 +1472,9 @@ export default function BusinessEntryManager({
                     <TextField 
                       id="utrno" 
                       label="UTR Number" 
-                      placeholder="Enter UTR number" 
+                      placeholder="cut&pay" 
+                      value="cut&pay"
+                      disabled
                       required 
                     />
                     <div className="md:col-span-2 lg:col-span-1">
@@ -1448,26 +1493,16 @@ export default function BusinessEntryManager({
                   id="supportingFile"
                   name="supportingFile"
                   label="Policy Upload*"
-                  hint="Upload supporting document (max 10 MB)."
+                  hint="File will be uploaded when you submit the form (max 10 MB)."
                   onChange={handleFileChange}
                   disabled={isUploadingFile}
                   error={uploadError || undefined}
                 />
                 <div className="col-span-full space-y-2 text-xs text-slate-600">
                   {isUploadingFile && <p className="rounded-xl bg-slate-100 px-3 py-2 text-slate-500">Uploading document...</p>}
-                  {uploadedFile && !isUploadingFile && !uploadError && (
+                  {selectedFile && !isUploadingFile && !uploadError && (
                     <div className="flex flex-wrap items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700">
-                      <span className="font-semibold">{uploadMeta.name ?? "Document uploaded"}</span>
-                      {uploadMeta.url && (
-                        <a
-                          href={uploadMeta.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs font-semibold text-blue-600 hover:underline"
-                        >
-                          View
-                        </a>
-                      )}
+                      <span className="font-semibold">{selectedFile.name}</span>
                       <button
                         type="button"
                         onClick={handleRemoveUploadedFile}
