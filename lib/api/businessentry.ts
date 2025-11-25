@@ -131,9 +131,20 @@ export async function createBusinessEntry(payload: BusinessEntryPayload, authTok
   });
 }
 
-export async function getBusinessEntries(authToken: string) {
+export async function getBusinessEntries(authToken: string, filters?: Record<string, string>) {
+  let path = `${API_BASE_URL}/v1/businessentry`;
+  
+  if (filters) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.append(key, value);
+    });
+    const queryString = params.toString();
+    if (queryString) path += `?${queryString}`;
+  }
+  
   return apiRequest<BusinessEntry[]>({
-    path: `${API_BASE_URL}/v1/businessentry`,
+    path,
     method: "GET",
     authToken,
   });

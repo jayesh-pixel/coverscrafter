@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getRMUsers, getAssociateUsers, type RMUser, type AssociateUser } from "@/lib/api/users";
-import { getAuthSession } from "@/lib/utils/storage";
+import { getValidAuthToken } from "@/lib/utils/storage";
 import { ApiError } from "@/lib/api/config";
 
 type AssociateRecord = {
@@ -50,8 +50,8 @@ export default function ConsolidationListPage() {
   }, []);
 
   const fetchData = async () => {
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getValidAuthToken();
+    if (!token) {
       setError("Please sign in to view RM & Associates");
       return;
     }
@@ -61,8 +61,8 @@ export default function ConsolidationListPage() {
 
     try {
       const [rmUsers, associateUsers] = await Promise.all([
-        getRMUsers(session.token),
-        getAssociateUsers(session.token),
+        getRMUsers(token),
+        getAssociateUsers(token),
       ]);
 
       setAllAssociates(associateUsers);

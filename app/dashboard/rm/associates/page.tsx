@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getAssociateUsers, type AssociateUser } from "@/lib/api/users";
-import { getAuthSession } from "@/lib/utils/storage";
+import { getValidAuthToken, getAuthSession } from "@/lib/utils/storage";
 import { ApiError } from "@/lib/api/config";
 
 export default function RMAssociatesPage() {
@@ -14,15 +14,16 @@ export default function RMAssociatesPage() {
 
   useEffect(() => {
     const fetchAssociates = async () => {
+      const token = await getValidAuthToken();
       const session = getAuthSession();
-      if (!session?.token || !session?.user) {
+      if (!token || !session?.user) {
         setIsLoading(false);
         return;
       }
 
       try {
         // Fetch associates created by the logged-in user (RM)
-        const data = await getAssociateUsers(session.token, (session.user as any)._id);
+        const data = await getAssociateUsers(token, (session.user as any)._id);
         setAssociates(data);
         setError(null);
       } catch (error) {

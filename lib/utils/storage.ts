@@ -8,6 +8,25 @@ function getStorage(persist: boolean) {
   return persist ? window.localStorage : window.sessionStorage;
 }
 
+/**
+ * Decode JWT token and check expiry
+ */
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const exp = payload.exp;
+    
+    if (!exp) return false; // No expiry in token
+    
+    // Check if token expires in next 5 minutes
+    const now = Math.floor(Date.now() / 1000);
+    return exp < (now + 300); // 5 minutes buffer
+  } catch (error) {
+    console.error('Failed to decode token:', error);
+    return true; // Treat as expired if we can't decode
+  }
+}
+
 export function saveAuthSession(token: string, user: unknown, persist: boolean) {
   const storage = getStorage(persist);
   if (!storage) return;
@@ -44,4 +63,40 @@ export function getAuthSession() {
     clearAuthSession();
     return null;
   }
+}
+
+/**
+ * Get valid auth token - refresh if expired
+ */
+export async function getValidAuthToken(): Promise<string | null> {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const session = getAuthSession();
+  if (!session) {
+    return null;
+  }
+
+  // Check if token is expired or about to expire
+  if (isTokenExpired(session.token)) {
+    console.log('Token expired or expiring soon, refreshing...');
+    
+    // Try to refresh token
+    const { getFreshIdToken } = await import('../firebase/auth');
+    const freshToken = await getFreshIdToken();
+    
+    if (freshToken) {
+      const isPersistent = !!(window.localStorage.getItem(TOKEN_KEY));
+      saveAuthSession(freshToken, session.user, isPersistent);
+      console.log('Token refreshed successfully');
+      return freshToken;
+    } else {
+      console.log('Failed to refresh token');
+      clearAuthSession();
+      return null;
+    }
+  }
+
+  return session.token;
 }

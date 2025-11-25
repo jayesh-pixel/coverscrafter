@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getRMUsers, getAssociateUsers, updateRMUser, updateAssociateUser, type RMUser, type AssociateUser } from "@/lib/api/users";
-import { getAuthSession } from "@/lib/utils/storage";
+import { getValidAuthToken } from "@/lib/utils/storage";
 import { ApiError } from "@/lib/api/config";
 
 const indianStates = [
@@ -95,8 +95,8 @@ export default function ConsolidationListPage() {
   }, []);
 
   const fetchData = async () => {
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getValidAuthToken();
+    if (!token) {
       setError("Please sign in to view RM & Associates");
       return;
     }
@@ -106,8 +106,8 @@ export default function ConsolidationListPage() {
 
     try {
       const [rmUsers, associateUsers] = await Promise.all([
-        getRMUsers(session.token),
-        getAssociateUsers(session.token),
+        getRMUsers(token),
+        getAssociateUsers(token),
       ]);
 
       setAllAssociates(associateUsers);
@@ -172,8 +172,8 @@ export default function ConsolidationListPage() {
     event.preventDefault();
     if (!editingRM) return;
 
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getValidAuthToken();
+    if (!token) {
       setError("Please sign in to update RM");
       return;
     }
@@ -194,7 +194,7 @@ export default function ConsolidationListPage() {
         status: formData.get("status") as string,
       };
 
-      await updateRMUser(editingRM._id, data, session.token);
+      await updateRMUser(editingRM._id, data, token);
       setSuccessMessage("RM updated successfully");
       setIsEditModalOpen(false);
       setEditingRM(null);
@@ -218,8 +218,8 @@ export default function ConsolidationListPage() {
     event.preventDefault();
     if (!editingAssociate) return;
 
-    const session = getAuthSession();
-    if (!session?.token) {
+    const token = await getValidAuthToken();
+    if (!token) {
       setError("Please sign in to update Associate");
       return;
     }
@@ -251,7 +251,7 @@ export default function ConsolidationListPage() {
         status: formData.get("status") as string,
       };
 
-      await updateAssociateUser(editingAssociate._id, data, session.token);
+      await updateAssociateUser(editingAssociate._id, data, token);
       setSuccessMessage("Associate updated successfully");
       setIsEditModalOpen(false);
       setEditingAssociate(null);

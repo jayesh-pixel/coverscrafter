@@ -6,7 +6,7 @@ import { createBusinessEntry, getBusinessEntries, bulkUpdateBusinessEntries, exp
 import { getBrokerNames, type BrokerName } from "@/lib/api/brokername";
 import { uploadDocument, type UploadResponse } from "@/lib/api/uploads";
 import { ApiError, API_BASE_URL } from "@/lib/api/config";
-import { getAuthSession } from "@/lib/utils/storage";
+import { getAuthSession, getValidAuthToken } from "@/lib/utils/storage";
 import { getRMUsers, getAssociateUsers, getUserProfile, type RMUser, type AssociateUser } from "@/lib/api/users";
 
 const insuranceCompanies = [
@@ -322,6 +322,11 @@ export default function BusinessEntryManager({
     description = "Capture policy level business for consolidation.",
     initialShowForm = false
 }: BusinessEntryManagerProps) {
+  // Helper to get valid token
+  const getToken = async (): Promise<string | null> => {
+    return await getValidAuthToken();
+  };
+
   const [paymentMode, setPaymentMode] = useState<"Online" | "Cheque" | "Cash">("Online");
   const [showForm, setShowForm] = useState(initialShowForm);
   const [businessEntries, setBusinessEntries] = useState<BusinessEntry[]>([]);
@@ -1091,13 +1096,15 @@ export default function BusinessEntryManager({
             >
               {isExporting ? 'Exporting...' : '📊 Export to Excel'}
             </button>
-            <button
-              type="button"
-              onClick={() => setShowBulkUpdateModal(true)}
-              className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2 text-sm font-semibold text-emerald-600 shadow-sm transition hover:bg-emerald-100"
-            >
-              Import Payment Status
-            </button>
+            {userRole !== 'rm' && (
+              <button
+                type="button"
+                onClick={() => setShowBulkUpdateModal(true)}
+                className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2 text-sm font-semibold text-emerald-600 shadow-sm transition hover:bg-emerald-100"
+              >
+                Import Payment Status
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowForm((prev) => !prev)}

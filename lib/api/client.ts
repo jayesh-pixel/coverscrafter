@@ -10,6 +10,7 @@ interface ApiRequestOptions<TBody> {
   body?: TBody;
   headers?: Record<string, string>;
   authToken?: string;
+  _isRetry?: boolean; // Internal flag to prevent infinite retries
 }
 
 export async function apiRequest<TResponse, TBody = unknown>({
@@ -18,6 +19,7 @@ export async function apiRequest<TResponse, TBody = unknown>({
   body,
   headers,
   authToken,
+  _isRetry = false,
 }: ApiRequestOptions<TBody>): Promise<TResponse> {
   const url = path.startsWith("http")
     ? path
@@ -53,29 +55,45 @@ export async function apiRequest<TResponse, TBody = unknown>({
     
     const serverMsg = isJson && payload?.serverMsg ? payload.serverMsg : '';
     
-    // Check if token is invalid or expired
-    if ((response.status === 401 || response.status === 403) && 
-        (message.toLowerCase().includes('invalid') || message.toLowerCase().includes('expired')) &&
-        (message.toLowerCase().includes('token'))) {
+    // Check if token is invalid or expired - only try refresh if this is not already a retry
+    if (!_isRetry && 
+        (response.status === 401 || response.status === 403) && 
+        (message.toLowerCase().includes('invalid') || 
+         message.toLowerCase().includes('expired') ||
+         message.toLowerCase().includes('unauthorized')) &&
+        (message.toLowerCase().includes('token') || response.status === 401)) {
+      
+      console.log('Token expired or invalid, attempting refresh...');
       
       // Try to refresh token
       const freshToken = await getFreshIdToken();
       
-      if (freshToken) {
+      if (freshToken && freshToken !== authToken) {
         // Update stored token
         const session = getAuthSession();
         if (session) {
           const isPersistent = !!(window.localStorage.getItem('coverscrafter.auth.token'));
           saveAuthSession(freshToken, session.user, isPersistent);
           
-          // Retry the request with fresh token
+          console.log('Token refreshed successfully, retrying request...');
+          
+          // Retry the request with fresh token (with retry flag to prevent loop)
           return apiRequest({
             path,
             method,
             body,
             headers,
             authToken: freshToken,
+            _isRetry: true, // Mark as retry to prevent infinite loop
           });
+        }
+      } else {
+        console.log('Failed to refresh token, redirecting to login...');
+        // If refresh failed, clear session and redirect to login
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('coverscrafter.auth.token');
+          sessionStorage.removeItem('coverscrafter.auth.token');
+          window.location.href = '/';
         }
       }
     }
