@@ -2,7 +2,7 @@
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { FileUploadField, SelectField, TextField } from "@/components/ui/forms";
-import { createBusinessEntry, getBusinessEntries, bulkUpdateBusinessEntries, exportBusinessEntries, type BusinessEntry, type BulkUpdatePayload } from "@/lib/api/businessentry";
+import { createBusinessEntry, getBusinessEntries, bulkUpdateBusinessEntries, exportBusinessEntries, updateBusinessEntry, type BusinessEntry, type BulkUpdatePayload } from "@/lib/api/businessentry";
 import { getBrokerNames, type BrokerName } from "@/lib/api/brokername";
 import { uploadDocument, type UploadResponse } from "@/lib/api/uploads";
 import { ApiError, API_BASE_URL } from "@/lib/api/config";
@@ -387,6 +387,9 @@ export default function BusinessEntryManager({
     endDate: "",
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<BusinessEntry | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isUpdatingEntry, setIsUpdatingEntry] = useState(false);
 
   const fetchEntries = async (filterParams?: Record<string, string>) => {
     const token = await getToken();
@@ -962,6 +965,66 @@ export default function BusinessEntryManager({
       setErrorMessage('Failed to export business entries. Please try again.');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleEditEntry = (entry: BusinessEntry) => {
+    setEditingEntry(entry);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditingEntry(null);
+    setIsEditModalOpen(false);
+  };
+
+  const handleUpdateEntry = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingEntry) return;
+
+    const token = await getToken();
+    if (!token) {
+      setErrorMessage('You must be signed in to update business entry');
+      return;
+    }
+
+    setIsUpdatingEntry(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      const form = event.currentTarget;
+      const formData = new FormData(form);
+      
+      const updatePayload: any = {};
+      
+      // Only include changed fields
+      formData.forEach((value, key) => {
+        if (value && value !== '') {
+          updatePayload[key] = value;
+        }
+      });
+
+      await updateBusinessEntry(editingEntry._id, updatePayload, token);
+      
+      setSuccessMessage('Business entry updated successfully');
+      setTimeout(() => setSuccessMessage(null), 3000);
+      
+      // Refresh entries list
+      await fetchEntries();
+      
+      // Close modal
+      handleCloseEditModal();
+    } catch (error) {
+      console.error('Update failed:', error);
+      if (error instanceof ApiError) {
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : error.message;
+        setErrorMessage(fullError);
+      } else {
+        setErrorMessage('Failed to update business entry. Please try again.');
+      }
+    } finally {
+      setIsUpdatingEntry(false);
     }
   };
 
@@ -1804,6 +1867,7 @@ export default function BusinessEntryManager({
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Policy File</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Created By</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Created At</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1885,6 +1949,14 @@ export default function BusinessEntryManager({
                     </td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{createdByEmail}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white">
+                      <button
+                        onClick={() => handleEditEntry(entry)}
+                        className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
+                      >
+                        Edit
+                      </button>
+                    </td>
                   </tr>
                   );
                 })}
@@ -2078,6 +2150,150 @@ export default function BusinessEntryManager({
               >
                 {isBulkUpdating ? 'Updating...' : 'Update Payment Status'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {isEditModalOpen && editingEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-4xl max-h-[90vh] rounded-3xl bg-white shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 shrink-0">
+              <h2 className="text-xl font-semibold text-slate-900">Edit Business Entry</h2>
+              <button
+                onClick={handleCloseEditModal}
+                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-6 flex-1">
+              <form onSubmit={handleUpdateEntry} className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <TextField
+                    id="policyNumber"
+                    name="policyNumber"
+                    label="Policy Number"
+                    defaultValue={editingEntry.policyNumber}
+                    required
+                  />
+                  <TextField
+                    id="clientName"
+                    name="clientName"
+                    label="Client Name"
+                    defaultValue={editingEntry.clientName}
+                    required
+                  />
+                  <TextField
+                    id="contactNumber"
+                    name="contactNumber"
+                    label="Contact Number"
+                    defaultValue={editingEntry.contactNumber}
+                    type="tel"
+                    required
+                  />
+                  <TextField
+                    id="emailId"
+                    name="emailId"
+                    label="Email ID"
+                    defaultValue={editingEntry.emailId}
+                    type="email"
+                    required
+                  />
+                  <TextField
+                    id="registrationNumber"
+                    name="registrationNumber"
+                    label="Registration Number"
+                    defaultValue={editingEntry.registrationNumber}
+                    required
+                  />
+                  <TextField
+                    id="odPremium"
+                    name="odPremium"
+                    label="OD Premium"
+                    defaultValue={editingEntry.odPremium}
+                    type="number"
+                    required
+                  />
+                  <TextField
+                    id="tpPremium"
+                    name="tpPremium"
+                    label="TP Premium"
+                    defaultValue={editingEntry.tpPremium}
+                    type="number"
+                    required
+                  />
+                  <TextField
+                    id="netPremium"
+                    name="netPremium"
+                    label="Net Premium"
+                    defaultValue={editingEntry.netPremium}
+                    type="number"
+                    required
+                  />
+                  <TextField
+                    id="grossPremium"
+                    name="grossPremium"
+                    label="Gross Premium"
+                    defaultValue={editingEntry.grossPremium}
+                    type="number"
+                    required
+                  />
+                  <SelectField
+                    id="status"
+                    name="status"
+                    label="Status"
+                    defaultValue={editingEntry.status || 'pending'}
+                    options={[
+                      { label: 'Pending', value: 'pending' },
+                      { label: 'Paid', value: 'Paid' },
+                      { label: 'Completed', value: 'completed' },
+                      { label: 'Cancelled', value: 'cancelled' }
+                    ]}
+                    required
+                  />
+                  <TextField
+                    id="utrno"
+                    name="utrno"
+                    label="UTR Number"
+                    defaultValue={editingEntry.utrno || ''}
+                  />
+                  <TextField
+                    id="paymentdate"
+                    name="paymentdate"
+                    label="Payment Date"
+                    defaultValue={editingEntry.paymentdate ? new Date(editingEntry.paymentdate).toISOString().split('T')[0] : ''}
+                    type="date"
+                  />
+                </div>
+
+                {(errorMessage || successMessage) && (
+                  <div className={`rounded-xl p-4 text-sm ${
+                    errorMessage ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                  }`}>
+                    {errorMessage || successMessage}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                  <button
+                    type="button"
+                    onClick={handleCloseEditModal}
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUpdatingEntry}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isUpdatingEntry ? 'Updating...' : 'Update Entry'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
