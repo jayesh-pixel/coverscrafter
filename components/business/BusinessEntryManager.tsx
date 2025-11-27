@@ -393,6 +393,7 @@ export default function BusinessEntryManager({
   const [deletingEntry, setDeletingEntry] = useState<BusinessEntry | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeletingEntry, setIsDeletingEntry] = useState(false);
+  const [isNewVehicle, setIsNewVehicle] = useState(false);
 
   const fetchEntries = async (filterParams?: Record<string, string>) => {
     const token = await getToken();
@@ -1151,7 +1152,6 @@ export default function BusinessEntryManager({
       lineOfBusiness: formElements.lineOfBusiness?.value || '',
       product: formElements.product?.value || '',
       subProduct: formElements.subProduct?.value || '',
-      registrationNumber: formElements.registrationNumber?.value || '',
       policyIssueDate: formElements.policyIssueDate?.value || '',
       policyStartDate: formElements.policyStartDate?.value || '',
       policyEndDate: formElements.policyEndDate?.value || '',
@@ -1162,6 +1162,11 @@ export default function BusinessEntryManager({
       reportingFy: formElements.reportingFy?.value || '',
       reportingMonth: formElements.reportingMonth?.value || '',
     };
+
+    // Only add registrationNumber if it's not a new vehicle
+    if (!isNewVehicle) {
+      payload.registrationNumber = formElements.registrationNumber?.value || '';
+    }
 
     // Add payin/payout fields if associate is selected and user is admin
     if (selectedAssociateId && userRole !== 'rm' && userRole !== 'associate') {
@@ -1222,6 +1227,7 @@ export default function BusinessEntryManager({
       setTpPremium("");
       setNetPremium("");
       setGrossPremium("");
+      setIsNewVehicle(false);
       setRmOptions([]);
       setAssociateOptions([]);
       setSelectedFile(null);
@@ -1384,13 +1390,43 @@ export default function BusinessEntryManager({
                     value: option,
                   }))}
                 />
-                <TextField 
-                  id="registrationNumber" 
-                  label="Registration Number" 
-                  placeholder="e.g., MH-47-BH-1645" 
-                  required 
-                  hint="Format: MH-47-BH-1645, MH-04-A-007, or 23BH9646G"
-                />
+                <div className="col-span-full">
+                  <p className="text-sm font-semibold text-slate-700 mb-2">Vehicle Type*</p>
+                  <div className="flex flex-wrap gap-4 text-sm text-slate-600">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="vehicleType"
+                        value="existing"
+                        checked={!isNewVehicle}
+                        onChange={() => setIsNewVehicle(false)}
+                        className="h-4 w-4 text-blue-600"
+                        required
+                      />
+                      Existing Vehicle
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="vehicleType"
+                        value="new"
+                        checked={isNewVehicle}
+                        onChange={() => setIsNewVehicle(true)}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      New Vehicle
+                    </label>
+                  </div>
+                </div>
+                {!isNewVehicle && (
+                  <TextField 
+                    id="registrationNumber" 
+                    label="Registration Number" 
+                    placeholder="e.g., MH-47-BH-1645" 
+                    required 
+                    hint="Format: MH-47-BH-1645, MH-04-A-007, or 23BH9646G"
+                  />
+                )}
                 <TextField id="policyIssueDate" label="Policy Issue Date" type="date" required />
                 <TextField id="policyStartDate" label="Policy Start Date" type="date" required />
                 <TextField id="policyEndDate" label="Policy End Date" type="date" required />
