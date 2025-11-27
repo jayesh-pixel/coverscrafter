@@ -2,7 +2,7 @@
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { FileUploadField, SelectField, TextField } from "@/components/ui/forms";
-import { createBusinessEntry, getBusinessEntries, bulkUpdateBusinessEntries, exportBusinessEntries, updateBusinessEntry, type BusinessEntry, type BulkUpdatePayload } from "@/lib/api/businessentry";
+import { createBusinessEntry, getBusinessEntries, bulkUpdateBusinessEntries, exportBusinessEntries, updateBusinessEntry, deleteBusinessEntry, type BusinessEntry, type BulkUpdatePayload } from "@/lib/api/businessentry";
 import { getBrokerNames, type BrokerName } from "@/lib/api/brokername";
 import { uploadDocument, type UploadResponse } from "@/lib/api/uploads";
 import { ApiError, API_BASE_URL } from "@/lib/api/config";
@@ -390,6 +390,9 @@ export default function BusinessEntryManager({
   const [editingEntry, setEditingEntry] = useState<BusinessEntry | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isUpdatingEntry, setIsUpdatingEntry] = useState(false);
+  const [deletingEntry, setDeletingEntry] = useState<BusinessEntry | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeletingEntry, setIsDeletingEntry] = useState(false);
 
   const fetchEntries = async (filterParams?: Record<string, string>) => {
     const token = await getToken();
@@ -974,6 +977,53 @@ export default function BusinessEntryManager({
     setIsEditModalOpen(false);
   };
 
+  const handleDeleteEntry = (entry: BusinessEntry) => {
+    setDeletingEntry(entry);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setDeletingEntry(null);
+    setIsDeleteModalOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingEntry) return;
+
+    const token = await getToken();
+    if (!token) {
+      setErrorMessage('You must be signed in to delete business entry');
+      return;
+    }
+
+    setIsDeletingEntry(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      await deleteBusinessEntry(deletingEntry._id, token);
+      
+      setSuccessMessage('Business entry deleted successfully');
+      setTimeout(() => setSuccessMessage(null), 3000);
+      
+      // Refresh entries list
+      await fetchEntries();
+      
+      // Close modal
+      handleCloseDeleteModal();
+    } catch (error) {
+      console.error('Delete failed:', error);
+      if (error instanceof ApiError) {
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : error.message;
+        setErrorMessage(fullError);
+      } else {
+        setErrorMessage('Failed to delete business entry. Please try again.');
+      }
+    } finally {
+      setIsDeletingEntry(false);
+    }
+  };
+
   const handleUpdateEntry = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editingEntry) return;
@@ -1449,13 +1499,13 @@ export default function BusinessEntryManager({
 
               {selectedAssociateId && userRole !== 'rm' && userRole !== 'associate' && (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <TextField id="odPremiumPayin" label="OD Premium Payin (%)" type="number" placeholder="0" min="0" max="100" required />
-                <TextField id="tpPremiumPayin" label="TP Premium Payin (%)" type="number" placeholder="0" min="0" max="100" required />
-                <TextField id="netPremiumPayin" label="Net Premium Payin (%)" type="number" placeholder="0" min="0" max="100" required />
+                <TextField id="odPremiumPayin" label="OD  Payin (%)" type="number" placeholder="0" min="0" max="100" required />
+                <TextField id="tpPremiumPayin" label="TP  Payin (%)" type="number" placeholder="0" min="0" max="100" required />
+                <TextField id="netPremiumPayin" label="Net  Payin (%)" type="number" placeholder="0" min="0" max="100" required />
                 <TextField id="extraAmountPayin" label="Extra Amount Payin" type="number" placeholder="0" required />
-                <TextField id="odPremiumPayout" label="OD Premium Payout (%)" type="number" placeholder="0" min="0" max="100" required />
-                <TextField id="tpPremiumPayout" label="TP Premium Payout (%)" type="number" placeholder="0" min="0" max="100" required />
-                <TextField id="netPremiumPayout" label="Net Premium Payout (%)" type="number" placeholder="0" min="0" max="100" required />
+                <TextField id="odPremiumPayout" label="OD  Payout (%)" type="number" placeholder="0" min="0" max="100" required />
+                <TextField id="tpPremiumPayout" label="TP  Payout (%)" type="number" placeholder="0" min="0" max="100" required />
+                <TextField id="netPremiumPayout" label="Net  Payout (%)" type="number" placeholder="0" min="0" max="100" required />
                 <TextField id="extraAmountPayout" label="Extra Amount Payout" type="number" placeholder="0" required />
               </div>
               )}
@@ -1842,13 +1892,13 @@ export default function BusinessEntryManager({
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Reporting Month</th>
                   {userRole !== 'rm' && userRole !== 'associate' && (
                   <>
-                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">OD Premium Payin</th>
-                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">TP Premium Payin</th>
-                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Net Premium Payin</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">OD  Payin</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">TP  Payin</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Net  Payin</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Extra Amount Payin</th>
-                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">OD Premium Payout</th>
-                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">TP Premium Payout</th>
-                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Net Premium Payout</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">OD  Payout</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">TP  Payout</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Net  Payout</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Extra Amount Payout</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Total Payin</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Total Payout</th>
@@ -1946,12 +1996,20 @@ export default function BusinessEntryManager({
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{createdByEmail}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : ''}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white">
-                      <button
-                        onClick={() => handleEditEntry(entry)}
-                        className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
-                      >
-                        Edit
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditEntry(entry)}
+                          className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEntry(entry)}
+                          className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                   );
@@ -2290,6 +2348,63 @@ export default function BusinessEntryManager({
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && deletingEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md rounded-3xl bg-white shadow-2xl">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="rounded-full bg-red-100 p-2">
+                  <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Delete Business Entry</h3>
+                  <p className="text-sm text-slate-500">This action cannot be undone</p>
+                </div>
+              </div>
+              
+              <div className="mb-6 rounded-lg bg-slate-50 p-4">
+                <p className="text-sm text-slate-700">
+                  Are you sure you want to delete this business entry?
+                </p>
+                <div className="mt-2 space-y-1 text-xs text-slate-600">
+                  <p><strong>Policy Number:</strong> {deletingEntry.policyNumber}</p>
+                  <p><strong>Client Name:</strong> {deletingEntry.clientName}</p>
+                  <p><strong>Insurance Company:</strong> {deletingEntry.insuranceCompany}</p>
+                </div>
+              </div>
+
+              {errorMessage && (
+                <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
+                  {errorMessage}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={handleCloseDeleteModal}
+                  disabled={isDeletingEntry}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={isDeletingEntry}
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                >
+                  {isDeletingEntry ? 'Deleting...' : 'Delete Entry'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
