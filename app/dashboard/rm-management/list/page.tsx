@@ -347,7 +347,7 @@ export default function ConsolidationListPage() {
         BranchName: formData.get("branchName") as string,
         BankAddress: formData.get("bankAddress") as string,
         status: formData.get("status") as string,
-        createdBy: selectedRM ? selectedRM.firebaseUid : selectedRmId, // Use firebaseUid if RM found
+        rmId: selectedRM ? selectedRM.firebaseUid : selectedRmId, // Use firebaseUid in rmId field
       };
       
       // Only add PosCode if it has a value
