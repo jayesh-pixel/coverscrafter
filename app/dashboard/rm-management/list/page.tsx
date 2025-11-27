@@ -249,6 +249,12 @@ export default function ConsolidationListPage() {
     event.preventDefault();
     if (!editingRM) return;
 
+    const form = event.currentTarget;
+    if (!form || !(form instanceof HTMLFormElement)) {
+      setError("Form element not found");
+      return;
+    }
+
     const token = await getValidAuthToken();
     if (!token) {
       setError("Please sign in to update RM");
@@ -259,7 +265,7 @@ export default function ConsolidationListPage() {
     setError(null);
 
     try {
-      const formData = new FormData(event.currentTarget);
+      const formData = new FormData(form);
       const data = {
         FirstName: formData.get("firstName") as string,
         MiddleName: formData.get("middleName") as string,
@@ -271,7 +277,10 @@ export default function ConsolidationListPage() {
         status: formData.get("status") as string,
       };
 
-      await updateRMUser(editingRM._id, data, token);
+      console.log('Updating RM with data:', data);
+      const result = await updateRMUser(editingRM._id, data, token);
+      console.log('Update result:', result);
+      
       setSuccessMessage("RM updated successfully");
       setIsEditModalOpen(false);
       setEditingRM(null);
@@ -280,7 +289,8 @@ export default function ConsolidationListPage() {
     } catch (error) {
       console.error("Failed to update RM:", error);
       if (error instanceof ApiError) {
-        setError(error.message);
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : error.message;
+        setError(fullError);
       } else if (error instanceof Error) {
         setError(error.message);
       } else {
@@ -295,6 +305,12 @@ export default function ConsolidationListPage() {
     event.preventDefault();
     if (!editingAssociate) return;
 
+    const form = event.currentTarget;
+    if (!form || !(form instanceof HTMLFormElement)) {
+      setError("Form element not found");
+      return;
+    }
+
     const token = await getValidAuthToken();
     if (!token) {
       setError("Please sign in to update Associate");
@@ -305,8 +321,14 @@ export default function ConsolidationListPage() {
     setError(null);
 
     try {
-      const formData = new FormData(event.currentTarget);
-      const data = {
+      const formData = new FormData(form);
+      const posCode = formData.get("posCode") as string;
+      const selectedRmId = formData.get("createdBy") as string;
+      
+      // Find the selected RM to get firebaseUid
+      const selectedRM = allRMs.find(rm => rm._id === selectedRmId);
+      
+      const data: any = {
         AssociateName: formData.get("name") as string,
         AssociatePanNo: formData.get("panNo") as string,
         AssociateAadharNo: formData.get("aadharNo") as string,
@@ -324,12 +346,19 @@ export default function ConsolidationListPage() {
         StateName: formData.get("bankStateName") as string,
         BranchName: formData.get("branchName") as string,
         BankAddress: formData.get("bankAddress") as string,
-        PosCode: formData.get("posCode") as string || undefined,
         status: formData.get("status") as string,
-        createdBy: formData.get("createdBy") as string,
+        createdBy: selectedRM ? selectedRM.firebaseUid : selectedRmId, // Use firebaseUid if RM found
       };
+      
+      // Only add PosCode if it has a value
+      if (posCode && posCode.trim()) {
+        data.PosCode = posCode.trim();
+      }
 
-      await updateAssociateUser(editingAssociate._id, data, token);
+      console.log('Updating associate with data:', data);
+      const result = await updateAssociateUser(editingAssociate._id, data, token);
+      console.log('Update result:', result);
+      
       setSuccessMessage("Associate updated successfully");
       setIsEditModalOpen(false);
       setEditingAssociate(null);
@@ -338,7 +367,8 @@ export default function ConsolidationListPage() {
     } catch (error) {
       console.error("Failed to update Associate:", error);
       if (error instanceof ApiError) {
-        setError(error.message);
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : error.message;
+        setError(fullError);
       } else if (error instanceof Error) {
         setError(error.message);
       } else {
