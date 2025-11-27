@@ -673,9 +673,7 @@ export default function BusinessEntryManager({
     const od = parseFloat(value) || 0;
     const tp = parseFloat(tpPremium) || 0;
     const net = od + tp;
-    const gross = net * 1.18;
     setNetPremium(net.toFixed(2));
-    setGrossPremium(gross.toFixed(2));
   };
 
   const handleTpPremiumChange = (value: string) => {
@@ -683,9 +681,7 @@ export default function BusinessEntryManager({
     const od = parseFloat(odPremium) || 0;
     const tp = parseFloat(value) || 0;
     const net = od + tp;
-    const gross = net * 1.18;
     setNetPremium(net.toFixed(2));
-    setGrossPremium(gross.toFixed(2));
   };
 
   const handleViewFile = async (fileUrl: string) => {
@@ -1383,7 +1379,7 @@ export default function BusinessEntryManager({
                   placeholder="0" 
                   required 
                   value={grossPremium}
-                  disabled
+                  onChange={(e) => setGrossPremium(e.target.value)}
                 />
               </div>
             </div>
