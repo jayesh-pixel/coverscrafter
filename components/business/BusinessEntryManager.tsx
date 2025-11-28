@@ -1141,7 +1141,7 @@ export default function BusinessEntryManager({
     // Extract values from form elements
     const formElements = form.elements as any;
     
-    const payload: Record<string, string | number> = {
+    const payload: Record<string, string | number | boolean> = {
       brokerid: formElements.brokerid?.value || '',
       insuranceCompany: formElements.insuranceCompany?.value || '',
       policyNumber: formElements.policyNumber?.value || '',
@@ -1163,7 +1163,8 @@ export default function BusinessEntryManager({
       reportingMonth: formElements.reportingMonth?.value || '',
     };
 
-    // Only add registrationNumber if it's not a new vehicle
+    // Add isNewVehicle flag and registrationNumber conditionally
+    payload.isNewVehicle = isNewVehicle;
     if (!isNewVehicle) {
       payload.registrationNumber = formElements.registrationNumber?.value || '';
     }
