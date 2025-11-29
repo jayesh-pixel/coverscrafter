@@ -213,7 +213,8 @@ export async function exportBusinessEntries(
   authToken: string,
   filters?: Record<string, string>
 ): Promise<Blob> {
-  let url = `/api/proxy/v1/businessentry/export`;
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://instapolicy.coverscrafter.com";
+  let url = `${API_BASE_URL}/v1/businessentry/export`;
   
   if (filters) {
     const params = new URLSearchParams();

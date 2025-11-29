@@ -394,6 +394,9 @@ export default function BusinessEntryManager({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeletingEntry, setIsDeletingEntry] = useState(false);
   const [isNewVehicle, setIsNewVehicle] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds default
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
 
   const fetchEntries = async (filterParams?: Record<string, string>) => {
     const token = await getToken();
@@ -569,6 +572,26 @@ export default function BusinessEntryManager({
     fetchUsers();
     autoFillUserData();
   }, []);
+
+  // Auto-refresh effect
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const intervalId = setInterval(() => {
+      // Don't auto-refresh if any modal is open to avoid interrupting user
+      if (!isEditModalOpen && !isDeleteModalOpen && !showBulkUpdateModal && !isFileDialogOpen) {
+        fetchEntries();
+        setLastRefreshTime(new Date());
+      }
+    }, refreshInterval);
+
+    return () => clearInterval(intervalId);
+  }, [autoRefresh, refreshInterval, isEditModalOpen, isDeleteModalOpen, showBulkUpdateModal, isFileDialogOpen]);
+
+  const handleManualRefresh = async () => {
+    await fetchEntries();
+    setLastRefreshTime(new Date());
+  };
 
   const extractUploadMeta = (upload: UploadResponse | null): { id?: string; name?: string; url?: string } => {
     if (!upload) {
@@ -1266,6 +1289,27 @@ export default function BusinessEntryManager({
             <p className="text-sm text-slate-500">{description}</p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+              <button
+                type="button"
+                onClick={handleManualRefresh}
+                disabled={isLoading}
+                className="rounded-lg px-3 py-1 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:opacity-50"
+                title="Refresh now"
+              >
+                🔄 {isLoading ? 'Refreshing...' : 'Refresh'}
+              </button>
+              <div className="h-4 w-px bg-slate-300"></div>
+              <label className="flex items-center gap-2 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={autoRefresh}
+                  onChange={(e) => setAutoRefresh(e.target.checked)}
+                  className="rounded border-slate-300"
+                />
+                Auto ({refreshInterval / 1000}s)
+              </label>
+            </div>
             <button
               type="button"
               onClick={handleExport}
@@ -1944,7 +1988,7 @@ export default function BusinessEntryManager({
                   )}
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Payment Mode</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Cheque Number</th>
-                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Status</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Payment Status</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">UTR Number</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Payment Date</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Policy File</th>
@@ -2262,102 +2306,419 @@ export default function BusinessEntryManager({
 
             <div className="overflow-y-auto p-6 flex-1">
               <form onSubmit={handleUpdateEntry} className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  <TextField
-                    id="policyNumber"
-                    name="policyNumber"
-                    label="Policy Number"
-                    defaultValue={editingEntry.policyNumber}
-                    required
-                  />
-                  <TextField
-                    id="clientName"
-                    name="clientName"
-                    label="Client Name"
-                    defaultValue={editingEntry.clientName}
-                    required
-                  />
-                  <TextField
-                    id="contactNumber"
-                    name="contactNumber"
-                    label="Contact Number"
-                    defaultValue={editingEntry.contactNumber}
-                    type="tel"
-                    required
-                  />
-                  <TextField
-                    id="emailId"
-                    name="emailId"
-                    label="Email ID"
-                    defaultValue={editingEntry.emailId}
-                    type="email"
-                    required
-                  />
-                  <TextField
-                    id="registrationNumber"
-                    name="registrationNumber"
-                    label="Registration Number"
-                    defaultValue={editingEntry.registrationNumber}
-                    required
-                  />
-                  <TextField
-                    id="odPremium"
-                    name="odPremium"
-                    label="OD Premium"
-                    defaultValue={editingEntry.odPremium}
-                    type="number"
-                    required
-                  />
-                  <TextField
-                    id="tpPremium"
-                    name="tpPremium"
-                    label="TP Premium"
-                    defaultValue={editingEntry.tpPremium}
-                    type="number"
-                    required
-                  />
-                  <TextField
-                    id="netPremium"
-                    name="netPremium"
-                    label="Net Premium"
-                    defaultValue={editingEntry.netPremium}
-                    type="number"
-                    required
-                  />
-                  <TextField
-                    id="grossPremium"
-                    name="grossPremium"
-                    label="Gross Premium"
-                    defaultValue={editingEntry.grossPremium}
-                    type="number"
-                    required
-                  />
-                  <SelectField
-                    id="status"
-                    name="status"
-                    label="Status"
-                    defaultValue={editingEntry.status || 'pending'}
-                    options={[
-                      { label: 'Pending', value: 'pending' },
-                      { label: 'Paid', value: 'Paid' },
-                      { label: 'Completed', value: 'completed' },
-                      { label: 'Cancelled', value: 'cancelled' }
-                    ]}
-                    required
-                  />
-                  <TextField
-                    id="utrno"
-                    name="utrno"
-                    label="UTR Number"
-                    defaultValue={editingEntry.utrno || ''}
-                  />
-                  <TextField
-                    id="paymentdate"
-                    name="paymentdate"
-                    label="Payment Date"
-                    defaultValue={editingEntry.paymentdate ? new Date(editingEntry.paymentdate).toISOString().split('T')[0] : ''}
-                    type="date"
-                  />
+                {/* Warning message if payment is completed */}
+                {editingEntry.status === 'Paid' && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">⚠️</span>
+                      <span className="font-semibold">Payment Completed - Editing Disabled</span>
+                    </div>
+                    <p className="mt-1 text-amber-700">This entry cannot be edited because the payment status is marked as "Paid".</p>
+                  </div>
+                )}
+
+                {/* Broker & Insurance Details */}
+                <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+                  <h3 className="mb-4 text-sm font-semibold text-slate-900">Policy Information</h3>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <SelectField
+                      id="brokerid"
+                      name="brokerid"
+                      label="Broker Name"
+                      placeholder="--Select Broker--"
+                      options={brokerOptions.map((broker) => ({
+                        label: broker.brokername,
+                        value: broker._id,
+                      }))}
+                      defaultValue={editingEntry.brokerid}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <SelectField
+                      id="insuranceCompany"
+                      name="insuranceCompany"
+                      label="Insurance Company"
+                      placeholder="--None--"
+                      options={insuranceCompanies.map((option) => ({
+                        label: option,
+                        value: option,
+                      }))}
+                      defaultValue={editingEntry.insuranceCompany}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <TextField 
+                      id="policyNumber"
+                      name="policyNumber"
+                      label="Policy Number" 
+                      placeholder="Policy Number"
+                      defaultValue={editingEntry.policyNumber}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                  </div>
+                </div>
+
+                {/* Client Details */}
+                <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+                  <h3 className="mb-4 text-sm font-semibold text-slate-900">Client Details</h3>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <TextField 
+                      id="clientName"
+                      name="clientName"
+                      label="Client Name" 
+                      placeholder="Client Name"
+                      defaultValue={editingEntry.clientName}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <TextField 
+                      id="contactNumber"
+                      name="contactNumber"
+                      label="Contact Number" 
+                      type="tel" 
+                      placeholder="Contact Number"
+                      defaultValue={editingEntry.contactNumber}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <TextField 
+                      id="emailId"
+                      name="emailId"
+                      label="Email ID" 
+                      type="email" 
+                      placeholder="email id"
+                      defaultValue={editingEntry.emailId}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <SelectField
+                      id="state"
+                      name="state"
+                      label="State"
+                      placeholder="--None--"
+                      options={stateOptions.map((option) => ({
+                        label: option,
+                        value: option,
+                      }))}
+                      defaultValue={editingEntry.state}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                  </div>
+                </div>
+
+                {/* Product Details */}
+                <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+                  <h3 className="mb-4 text-sm font-semibold text-slate-900">Product & Policy Details</h3>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <SelectField
+                      id="lineOfBusiness"
+                      name="lineOfBusiness"
+                      label="Line of Business"
+                      placeholder="--None--"
+                      options={lineOfBusinessOptions.map((option) => ({
+                        label: option,
+                        value: option,
+                      }))}
+                      defaultValue={editingEntry.lineOfBusiness}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <TextField 
+                      id="product"
+                      name="product"
+                      label="Product" 
+                      placeholder="Product"
+                      defaultValue={editingEntry.product}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <TextField 
+                      id="subProduct"
+                      name="subProduct"
+                      label="Sub Product" 
+                      placeholder="Sub Product"
+                      defaultValue={editingEntry.subProduct}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <TextField 
+                      id="registrationNumber"
+                      name="registrationNumber"
+                      label="Registration Number" 
+                      placeholder="Registration Number"
+                      defaultValue={editingEntry.registrationNumber}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <TextField 
+                      id="policyIssueDate"
+                      name="policyIssueDate"
+                      label="Policy Issue Date" 
+                      type="date"
+                      defaultValue={editingEntry.policyIssueDate ? new Date(editingEntry.policyIssueDate).toISOString().split('T')[0] : ''}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <TextField 
+                      id="policyStartDate"
+                      name="policyStartDate"
+                      label="Policy Start Date" 
+                      type="date"
+                      defaultValue={editingEntry.policyStartDate ? new Date(editingEntry.policyStartDate).toISOString().split('T')[0] : ''}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <TextField 
+                      id="policyEndDate"
+                      name="policyEndDate"
+                      label="Policy End Date" 
+                      type="date"
+                      defaultValue={editingEntry.policyEndDate ? new Date(editingEntry.policyEndDate).toISOString().split('T')[0] : ''}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <TextField 
+                      id="policyTpEndDate"
+                      name="policyTpEndDate"
+                      label="Policy TP End Date" 
+                      type="date"
+                      defaultValue={editingEntry.policyTpEndDate ? new Date(editingEntry.policyTpEndDate).toISOString().split('T')[0] : ''}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                  </div>
+                </div>
+
+                {/* Premium Details */}
+                <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+                  <h3 className="mb-4 text-sm font-semibold text-slate-900">Premium Details</h3>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <TextField 
+                      id="odPremium"
+                      name="odPremium"
+                      label="OD Premium" 
+                      type="number" 
+                      placeholder="0"
+                      defaultValue={editingEntry.odPremium}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <TextField 
+                      id="tpPremium"
+                      name="tpPremium"
+                      label="TP Premium" 
+                      type="number" 
+                      placeholder="0"
+                      defaultValue={editingEntry.tpPremium}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <TextField 
+                      id="netPremium"
+                      name="netPremium"
+                      label="Net Premium" 
+                      type="number" 
+                      placeholder="0"
+                      defaultValue={editingEntry.netPremium}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <TextField 
+                      id="grossPremium"
+                      name="grossPremium"
+                      label="Gross Premium" 
+                      type="number" 
+                      placeholder="0"
+                      defaultValue={editingEntry.grossPremium}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                  </div>
+                </div>
+
+                {/* RM & Associate Details */}
+                <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+                  <h3 className="mb-4 text-sm font-semibold text-slate-900">Team Assignment</h3>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <SelectField
+                      id="rmId"
+                      name="rmId"
+                      label="Relationship Manager"
+                      placeholder="--Select RM--"
+                      options={allRMs.map((rm) => ({
+                        label: `${rm.firstName} ${rm.lastName} (${rm.empCode})`,
+                        value: rm._id,
+                      }))}
+                      defaultValue={editingEntry.rmId}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <SelectField
+                      id="rmState"
+                      name="rmState"
+                      label="RM State"
+                      placeholder="--None--"
+                      options={stateOptions.map((option) => ({
+                        label: option,
+                        value: option,
+                      }))}
+                      defaultValue={editingEntry.rmState}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <SelectField
+                      id="associateId"
+                      name="associateId"
+                      label="Associate"
+                      placeholder="--Select Associate--"
+                      options={allAssociates.map((assoc) => ({
+                        label: `${assoc.name} (${assoc.associateCode})`,
+                        value: assoc._id,
+                      }))}
+                      defaultValue={editingEntry.associateId}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                  </div>
+                </div>
+
+                {/* Reporting Details */}
+                <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+                  <h3 className="mb-4 text-sm font-semibold text-slate-900">Reporting Period</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <SelectField
+                      id="reportingFy"
+                      name="reportingFy"
+                      label="Reporting FY"
+                      placeholder="--None--"
+                      options={reportingFyOptions.map((option) => ({
+                        label: option,
+                        value: option,
+                      }))}
+                      defaultValue={editingEntry.reportingFy}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <SelectField
+                      id="reportingMonth"
+                      name="reportingMonth"
+                      label="Reporting Month"
+                      placeholder="--None--"
+                      options={reportingMonthOptions.map((option) => ({
+                        label: option,
+                        value: option,
+                      }))}
+                      defaultValue={editingEntry.reportingMonth}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                  </div>
+                </div>
+
+                {/* Payin/Payout Details - Only show for admin users when associate is selected */}
+                {editingEntry.associateId && userRole !== 'rm' && userRole !== 'associate' && (
+                  <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+                    <h3 className="mb-4 text-sm font-semibold text-slate-900">Commission Structure</h3>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                      <TextField 
+                        id="odPremiumPayin" 
+                        name="odPremiumPayin"
+                        label="OD Payin (%)" 
+                        type="number" 
+                        placeholder="0" 
+                        min="0" 
+                        max="100"
+                        defaultValue={editingEntry.odPremiumPayin}
+                        disabled={editingEntry.status === 'Paid'}
+                      />
+                      <TextField 
+                        id="tpPremiumPayin" 
+                        name="tpPremiumPayin"
+                        label="TP Payin (%)" 
+                        type="number" 
+                        placeholder="0" 
+                        min="0" 
+                        max="100"
+                        defaultValue={editingEntry.tpPremiumPayin}
+                        disabled={editingEntry.status === 'Paid'}
+                      />
+                      <TextField 
+                        id="netPremiumPayin" 
+                        name="netPremiumPayin"
+                        label="Net Payin (%)" 
+                        type="number" 
+                        placeholder="0" 
+                        min="0" 
+                        max="100"
+                        defaultValue={editingEntry.netPremiumPayin}
+                        disabled={editingEntry.status === 'Paid'}
+                      />
+                      <TextField 
+                        id="extraAmountPayin" 
+                        name="extraAmountPayin"
+                        label="Extra Amount Payin" 
+                        type="number" 
+                        placeholder="0"
+                        defaultValue={editingEntry.extraAmountPayin}
+                        disabled={editingEntry.status === 'Paid'}
+                      />
+                      <TextField 
+                        id="odPremiumPayout" 
+                        name="odPremiumPayout"
+                        label="OD Payout (%)" 
+                        type="number" 
+                        placeholder="0" 
+                        min="0" 
+                        max="100"
+                        defaultValue={editingEntry.odPremiumPayout}
+                        disabled={editingEntry.status === 'Paid'}
+                      />
+                      <TextField 
+                        id="tpPremiumPayout" 
+                        name="tpPremiumPayout"
+                        label="TP Payout (%)" 
+                        type="number" 
+                        placeholder="0" 
+                        min="0" 
+                        max="100"
+                        defaultValue={editingEntry.tpPremiumPayout}
+                        disabled={editingEntry.status === 'Paid'}
+                      />
+                      <TextField 
+                        id="netPremiumPayout" 
+                        name="netPremiumPayout"
+                        label="Net Payout (%)" 
+                        type="number" 
+                        placeholder="0" 
+                        min="0" 
+                        max="100"
+                        defaultValue={editingEntry.netPremiumPayout}
+                        disabled={editingEntry.status === 'Paid'}
+                      />
+                      <TextField 
+                        id="extraAmountPayout" 
+                        name="extraAmountPayout"
+                        label="Extra Amount Payout" 
+                        type="number" 
+                        placeholder="0"
+                        defaultValue={editingEntry.extraAmountPayout}
+                        disabled={editingEntry.status === 'Paid'}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Payment Details */}
+                <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+                  <h3 className="mb-4 text-sm font-semibold text-slate-900">Payment Details</h3>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <TextField 
+                      id="utrno"
+                      name="utrno"
+                      label="UTR Number" 
+                      placeholder="UTR Number"
+                      defaultValue={editingEntry.utrno}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <TextField 
+                      id="paymentdate"
+                      name="paymentdate"
+                      label="Payment Date" 
+                      type="date"
+                      defaultValue={editingEntry.paymentdate ? new Date(editingEntry.paymentdate).toISOString().split('T')[0] : ''}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                    <SelectField
+                      id="status"
+                      name="status"
+                      label="Payment Status"
+                      placeholder="--None--"
+                      options={[
+                        { label: 'Paid', value: 'Paid' },
+                        { label: 'Pending', value: 'Pending' },
+                      ]}
+                      defaultValue={editingEntry.status}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
+                  </div>
                 </div>
 
                 {(errorMessage || successMessage) && (
@@ -2374,15 +2735,17 @@ export default function BusinessEntryManager({
                     onClick={handleCloseEditModal}
                     className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
-                    Cancel
+                    {editingEntry.status === 'Paid' ? 'Close' : 'Cancel'}
                   </button>
-                  <button
-                    type="submit"
-                    disabled={isUpdatingEntry}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {isUpdatingEntry ? 'Updating...' : 'Update Entry'}
-                  </button>
+                  {editingEntry.status !== 'Paid' && (
+                    <button
+                      type="submit"
+                      disabled={isUpdatingEntry}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {isUpdatingEntry ? 'Updating...' : 'Update Entry'}
+                    </button>
+                  )}
                 </div>
               </form>
             </div>
