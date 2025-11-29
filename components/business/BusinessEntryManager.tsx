@@ -991,9 +991,26 @@ export default function BusinessEntryManager({
     }
   };
 
-  const handleEditEntry = (entry: BusinessEntry) => {
+  const handleEditEntry = async (entry: BusinessEntry) => {
     setEditingEntry(entry);
     setIsEditModalOpen(true);
+    
+    // Fetch associates for the RM if rmId exists
+    if (entry.rmId) {
+      const token = await getToken();
+      if (!token) return;
+      
+      setIsLoadingUsers(true);
+      try {
+        const associates = await getAssociateUsers(token, undefined, entry.rmId);
+        setAssociateOptions(associates);
+      } catch (error) {
+        console.error("Failed to fetch associates for RM", error);
+        setAssociateOptions([]);
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    }
   };
 
   const handleCloseEditModal = () => {
@@ -2534,6 +2551,27 @@ export default function BusinessEntryManager({
                       }))}
                       defaultValue={editingEntry.rmId}
                       disabled={editingEntry.status === 'Paid'}
+                      onChange={async (e) => {
+                        const selectedRmId = e.target.value;
+                        if (!selectedRmId) {
+                          setAssociateOptions([]);
+                          return;
+                        }
+                        
+                        const token = await getToken();
+                        if (!token) return;
+                        
+                        setIsLoadingUsers(true);
+                        try {
+                          const associates = await getAssociateUsers(token, undefined, selectedRmId);
+                          setAssociateOptions(associates);
+                        } catch (error) {
+                          console.error("Failed to fetch associates for RM", error);
+                          setAssociateOptions([]);
+                        } finally {
+                          setIsLoadingUsers(false);
+                        }
+                      }}
                     />
                     <SelectField
                       id="rmState"
@@ -2551,13 +2589,14 @@ export default function BusinessEntryManager({
                       id="associateId"
                       name="associateId"
                       label="Associate"
-                      placeholder="--Select Associate--"
-                      options={allAssociates.map((assoc) => ({
+                      key={`associate-${associateOptions.length}-${associateOptions.map(a => a._id).join('-')}`}
+                      placeholder={isLoadingUsers ? "Loading..." : associateOptions.length === 0 ? "Select RM first" : "--Select Associate--"}
+                      options={associateOptions.map((assoc) => ({
                         label: `${assoc.name} (${assoc.associateCode})`,
                         value: assoc._id,
                       }))}
                       defaultValue={editingEntry.associateId}
-                      disabled={editingEntry.status === 'Paid'}
+                      disabled={editingEntry.status === 'Paid' || isLoadingUsers || associateOptions.length === 0}
                     />
                   </div>
                 </div>
