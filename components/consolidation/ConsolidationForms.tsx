@@ -93,6 +93,7 @@ const bankNames = [
   "DCB Bank",
   "Dhanlaxmi Bank",
   "Federal Bank",
+  "Fino Payments Bank",
   "HDFC Bank",
   "ICICI Bank",
   "IDBI Bank",
