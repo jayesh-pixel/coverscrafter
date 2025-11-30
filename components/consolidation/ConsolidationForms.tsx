@@ -159,6 +159,7 @@ type AssociateFormState = {
   beneficiaryPan: string;
   beneficiaryName: string;
   accountNumber: string;
+  confirmAccountNumber: string;
   accountType: string;
   ifscCode: string;
   bankName: string;
@@ -183,6 +184,7 @@ const initialAssociateFormState: AssociateFormState = {
   beneficiaryPan: "",
   beneficiaryName: "",
   accountNumber: "",
+  confirmAccountNumber: "",
   accountType: "",
   ifscCode: "",
   bankName: "",
@@ -484,6 +486,12 @@ export function AssociateForm({
       return;
     }
 
+    // Validate account number match
+    if (associateForm.accountNumber !== associateForm.confirmAccountNumber) {
+      setErrorMessage("Account numbers do not match. Please verify and try again.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -590,7 +598,13 @@ export function AssociateForm({
                 placeholder="PAN Number"
                 required
                 value={associateForm.brokerPan}
-                onChange={(event) => updateAssociateForm("brokerPan", event.target.value)}
+                onChange={(event) => {
+                  updateAssociateForm("brokerPan", event.target.value);
+                  // Auto-fill password with PAN number if password is empty
+                  if (!associateForm.password) {
+                    updateAssociateForm("password", event.target.value);
+                  }
+                }}
                 disabled={isSubmitting}
               />
               <TextField
@@ -730,10 +744,27 @@ export function AssociateForm({
                 id="accountNumber"
                 label="Account No"
                 placeholder="Account No"
+                type="password"
                 required
                 value={associateForm.accountNumber}
                 onChange={(event) => updateAssociateForm("accountNumber", event.target.value)}
                 disabled={isSubmitting}
+              />
+              <TextField
+                id="confirmAccountNumber"
+                label="Confirm Account No"
+                placeholder="Re-enter Account No"
+                type="text"
+                required
+                value={associateForm.confirmAccountNumber}
+                onChange={(event) => updateAssociateForm("confirmAccountNumber", event.target.value)}
+                disabled={isSubmitting}
+                error={
+                  associateForm.confirmAccountNumber && 
+                  associateForm.accountNumber !== associateForm.confirmAccountNumber 
+                    ? "Account numbers do not match" 
+                    : undefined
+                }
               />
               <SelectField
                 id="accountType"
