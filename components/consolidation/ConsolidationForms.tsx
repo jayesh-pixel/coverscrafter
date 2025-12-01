@@ -513,16 +513,16 @@ export function AssociateForm({
       if (selectedFiles.gstCertificate) {
         setIsUploadingDoc("gstCertificate");
         const response = await uploadDocument(selectedFiles.gstCertificate, token);
-        gstCertificateUrl = response.downloadUrl || response.url || response.fileId || "";
+        gstCertificateUrl = response.id || response.downloadUrl || response.url || response.fileId || "";
       }
 
       setIsUploadingDoc("pancardDocument");
       const panResponse = await uploadDocument(selectedFiles.pancardDocument, token);
-      pancardDocumentUrl = panResponse.downloadUrl || panResponse.url || panResponse.fileId || "";
+      pancardDocumentUrl = panResponse.id || panResponse.downloadUrl || panResponse.url || panResponse.fileId || "";
 
       setIsUploadingDoc("cancelledCheque");
       const chequeResponse = await uploadDocument(selectedFiles.cancelledCheque, token);
-      cancelledChequeUrl = chequeResponse.downloadUrl || chequeResponse.url || chequeResponse.fileId || "";
+      cancelledChequeUrl = chequeResponse.id || chequeResponse.downloadUrl || chequeResponse.url || chequeResponse.fileId || "";
 
       setIsUploadingDoc(null);
 
@@ -553,9 +553,9 @@ export function AssociateForm({
           PosCode: posStatus === "yes" ? associateForm.posCode || undefined : undefined,
           Password: associateForm.password,
           documents: {
-            gstCertificate: gstCertificateUrl || undefined,
-            pancardDocument: pancardDocumentUrl || undefined,
-            cancelledCheque: cancelledChequeUrl || undefined,
+            gstCertificate: gstCertificateUrl,
+            pancardDocument: pancardDocumentUrl,
+            cancelledCheque: cancelledChequeUrl,
           },
         },
         token,
