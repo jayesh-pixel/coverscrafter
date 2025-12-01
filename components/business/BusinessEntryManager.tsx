@@ -1115,9 +1115,23 @@ export default function BusinessEntryManager({
       
       // Include all fields from form data
       formData.forEach((value, key) => {
+        const stringValue = value.toString().trim();
+        
         // For date fields and numeric fields, send null if empty, otherwise send the value
-        if (value && value.toString().trim() !== '') {
-          updatePayload[key] = value;
+        if (stringValue !== '') {
+          // Special validation for date fields
+          const dateFields = ['policyIssueDate', 'policyStartDate', 'policyEndDate', 'policyTpEndDate', 'chequeDate', 'paymentdate'];
+          if (dateFields.includes(key)) {
+            // Validate that the date is valid and not 1970-01-01 (epoch)
+            const dateValue = new Date(stringValue);
+            if (!isNaN(dateValue.getTime()) && dateValue.getFullYear() > 1970) {
+              updatePayload[key] = stringValue;
+            } else {
+              updatePayload[key] = null;
+            }
+          } else {
+            updatePayload[key] = stringValue;
+          }
         } else {
           // Send null for empty date/numeric fields, empty string for text fields
           const dateFields = ['policyIssueDate', 'policyStartDate', 'policyEndDate', 'policyTpEndDate', 'chequeDate', 'paymentdate'];
@@ -1130,6 +1144,14 @@ export default function BusinessEntryManager({
           }
         }
       });
+
+      // If payment mode is not Cheque, ensure cheque fields are null
+      if (updatePayload.paymentMode && updatePayload.paymentMode !== 'Cheque') {
+        updatePayload.chequeNumber = null;
+        updatePayload.chequeDate = null;
+      }
+
+      console.log('Update Payload:', JSON.stringify(updatePayload, null, 2));
 
       await updateBusinessEntry(editingEntry._id, updatePayload, token);
       
@@ -2502,7 +2524,7 @@ export default function BusinessEntryManager({
                       name="policyIssueDate"
                       label="Policy Issue Date" 
                       type="date"
-                      defaultValue={editingEntry.policyIssueDate ? new Date(editingEntry.policyIssueDate).toISOString().split('T')[0] : ''}
+                      defaultValue={editingEntry.policyIssueDate && editingEntry.policyIssueDate !== 'null' && new Date(editingEntry.policyIssueDate).getTime() > 0 ? new Date(editingEntry.policyIssueDate).toISOString().split('T')[0] : ''}
                       disabled={editingEntry.status === 'Paid'}
                     />
                     <TextField 
@@ -2510,7 +2532,7 @@ export default function BusinessEntryManager({
                       name="policyStartDate"
                       label="Policy Start Date" 
                       type="date"
-                      defaultValue={editingEntry.policyStartDate ? new Date(editingEntry.policyStartDate).toISOString().split('T')[0] : ''}
+                      defaultValue={editingEntry.policyStartDate && editingEntry.policyStartDate !== 'null' && new Date(editingEntry.policyStartDate).getTime() > 0 ? new Date(editingEntry.policyStartDate).toISOString().split('T')[0] : ''}
                       disabled={editingEntry.status === 'Paid'}
                     />
                     <TextField 
@@ -2518,7 +2540,7 @@ export default function BusinessEntryManager({
                       name="policyEndDate"
                       label="Policy End Date" 
                       type="date"
-                      defaultValue={editingEntry.policyEndDate ? new Date(editingEntry.policyEndDate).toISOString().split('T')[0] : ''}
+                      defaultValue={editingEntry.policyEndDate && editingEntry.policyEndDate !== 'null' && new Date(editingEntry.policyEndDate).getTime() > 0 ? new Date(editingEntry.policyEndDate).toISOString().split('T')[0] : ''}
                       disabled={editingEntry.status === 'Paid'}
                     />
                     <TextField 
@@ -2526,7 +2548,7 @@ export default function BusinessEntryManager({
                       name="policyTpEndDate"
                       label="Policy TP End Date" 
                       type="date"
-                      defaultValue={editingEntry.policyTpEndDate ? new Date(editingEntry.policyTpEndDate).toISOString().split('T')[0] : ''}
+                      defaultValue={editingEntry.policyTpEndDate && editingEntry.policyTpEndDate !== 'null' && new Date(editingEntry.policyTpEndDate).getTime() > 0 ? new Date(editingEntry.policyTpEndDate).toISOString().split('T')[0] : ''}
                       disabled={editingEntry.status === 'Paid'}
                     />
                   </div>
@@ -2808,7 +2830,7 @@ export default function BusinessEntryManager({
                           name="chequeDate"
                           label="Cheque Date" 
                           type="date"
-                          defaultValue={editingEntry.chequeDate ? new Date(editingEntry.chequeDate).toISOString().split('T')[0] : ''}
+                          defaultValue={editingEntry.chequeDate && editingEntry.chequeDate !== 'null' && new Date(editingEntry.chequeDate).getTime() > 0 ? new Date(editingEntry.chequeDate).toISOString().split('T')[0] : ''}
                           disabled={editingEntry.status === 'Paid'}
                           required
                         />
@@ -2839,7 +2861,7 @@ export default function BusinessEntryManager({
                       name="paymentdate"
                       label="Payment Date" 
                       type="date"
-                      defaultValue={editingEntry.paymentdate ? new Date(editingEntry.paymentdate).toISOString().split('T')[0] : ''}
+                      defaultValue={editingEntry.paymentdate && editingEntry.paymentdate !== 'null' && new Date(editingEntry.paymentdate).getTime() > 0 ? new Date(editingEntry.paymentdate).toISOString().split('T')[0] : ''}
                       disabled={editingEntry.status === 'Paid'}
                     />
                     <SelectField
