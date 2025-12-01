@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { FormSection, TextField } from "@/components/ui/forms";
-import { BrokerNameManager } from "@/components/broker/BrokerNameManager";
+import BrokerNameManager from "@/components/broker/BrokerNameManager";
 import { BankNameManager } from "@/components/bank/BankNameManager";
 
 interface BrokerRegistryProps {
