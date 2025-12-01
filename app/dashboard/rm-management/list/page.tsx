@@ -65,6 +65,7 @@ type RelationshipManagerRecord = {
   contact: string;
   email: string;
   joiningDate: string;
+  createdAt?: string;
   associates: AssociateRecord[];
 };
 
@@ -74,6 +75,13 @@ const statusStyles: Record<RelationshipManagerRecord["status"] | AssociateRecord
   Resigned: "bg-rose-100 text-rose-700",
   Inactive: "bg-slate-200 text-slate-700",
   Pending: "bg-amber-100 text-amber-700",
+};
+
+const formatDate = (dateString?: string | null) => {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "N/A";
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 };
 
 export default function ConsolidationListPage() {
@@ -204,6 +212,7 @@ export default function ConsolidationListPage() {
           contact: rm.contactNo,
           email: rm.email,
           joiningDate: new Date(rm.joiningDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+          createdAt: rm.createdAt,
           associates: rmAssociates,
         };
       });
@@ -569,6 +578,7 @@ export default function ConsolidationListPage() {
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Reporting Manager</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Contact</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Email</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Created On</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Status</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Actions</th>
               </tr>
@@ -589,6 +599,7 @@ export default function ConsolidationListPage() {
                   <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.reportingManager}</td>
                   <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.contact}</td>
                   <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{rm.email}</td>
+                  <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{formatDate(rm.createdAt)}</td>
                   <td className="border border-slate-300 px-4 py-3 bg-white">
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[rm.status]}`}>
                       {rm.status}
@@ -694,6 +705,7 @@ export default function ConsolidationListPage() {
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Contact</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Email</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">State</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Created On</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Actions</th>
               </tr>
             </thead>
@@ -722,6 +734,7 @@ export default function ConsolidationListPage() {
                     </td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.email}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.associateStateName || 'N/A'}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{formatDate(associate.createdAt)}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white">
                       <div className="flex gap-2">
                         <button

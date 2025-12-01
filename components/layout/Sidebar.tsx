@@ -38,6 +38,7 @@ const defaultNavItems: NavItem[] = [
     children: [
       { label: "Create RM/Associate", href: "/dashboard/admin/rm-management" },
       { label: "RM/Associate List", href: "/dashboard/admin/rm-management/list" },
+      { label: "Dealer List", href: "/dashboard/admin/dealers/list" },
       { label: "Business Entry", href: "/dashboard/admin/rm-management/business" },
       { label: "Broker Registry", href: "/dashboard/admin/rm-management/brokers" },
     ],
