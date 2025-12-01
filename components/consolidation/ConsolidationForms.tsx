@@ -7,6 +7,7 @@ import { ApiError } from "@/lib/api/config";
 import { getValidAuthToken } from "@/lib/utils/storage";
 import { getRMUsers, getAdminUsers, type RMUser } from "@/lib/api/users";
 import { uploadDocument } from "@/lib/api/uploads";
+import { getBankNames, type BankName } from "@/lib/api/bankname";
 
 const workingOffices = [
   "--None--",
@@ -80,44 +81,6 @@ const indianStates = [
 const reportingOffices = indianStates;
 
 const accountTypes = ["Savings", "Current", "Cash Credit"];
-
-const bankNames = [
-  "Axis Bank",
-  "Bandhan Bank",
-  "Bank of Baroda",
-  "Bank of India",
-  "Bank of Maharashtra",
-  "Canara Bank",
-  "Central Bank of India",
-  "City Union Bank",
-  "CSB Bank",
-  "DCB Bank",
-  "Dhanlaxmi Bank",
-  "Federal Bank",
-  "Fino Payments Bank",
-  "HDFC Bank",
-  "ICICI Bank",
-  "IDBI Bank",
-  "IDFC First Bank",
-  "Indian Bank",
-  "Indian Overseas Bank",
-  "IndusInd Bank",
-  "Jammu & Kashmir Bank",
-  "Karnataka Bank",
-  "Karur Vysya Bank",
-  "Kotak Mahindra Bank",
-  "Lakshmi Vilas Bank",
-  "Nainital Bank",
-  "Punjab & Sind Bank",
-  "Punjab National Bank",
-  "RBL Bank",
-  "South Indian Bank",
-  "State Bank of India",
-  "Tamilnad Mercantile Bank",
-  "UCO Bank",
-  "Union Bank of India",
-  "Yes Bank",
-];
 
 type RmFormState = {
   empCode: string;
@@ -447,6 +410,8 @@ export function AssociateForm({
   const [rmOptions, setRmOptions] = useState<RMUser[]>([]);
   const [isLoadingRMs, setIsLoadingRMs] = useState(false);
   const [isUploadingDoc, setIsUploadingDoc] = useState<string | null>(null);
+  const [bankNames, setBankNames] = useState<BankName[]>([]);
+  const [isLoadingBanks, setIsLoadingBanks] = useState(false);
 
   const updateAssociateForm = (field: keyof AssociateFormState, value: string) => {
     setAssociateForm((prev) => ({
@@ -471,8 +436,25 @@ export function AssociateForm({
     }
   };
 
+  const fetchBanks = async () => {
+    const token = await getValidAuthToken();
+    if (!token) return;
+
+    setIsLoadingBanks(true);
+    try {
+      const banks = await getBankNames(token);
+      setBankNames(banks.filter(bank => !bank.isDeleted));
+    } catch (error) {
+      console.error("Failed to fetch bank names", error);
+      setBankNames([]);
+    } finally {
+      setIsLoadingBanks(false);
+    }
+  };
+
   useEffect(() => {
     fetchRMs();
+    fetchBanks();
   }, []);
 
   const handleposStatusChange = (value: "yes" | "no" | "") => {
@@ -815,14 +797,14 @@ export function AssociateForm({
               <SearchableSelectField
                 id="bankName"
                 label="Bank Name"
-                placeholder="Select Bank"
+                placeholder={isLoadingBanks ? "Loading banks..." : "Select Bank"}
                 value={associateForm.bankName}
                 onChange={(event) => updateAssociateForm("bankName", event.target.value)}
                 options={bankNames.map((bank) => ({
-                  label: bank,
-                  value: bank,
+                  label: bank.bankname,
+                  value: bank.bankname,
                 }))}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isLoadingBanks}
               />
               <SearchableSelectField
                 id="bankState"

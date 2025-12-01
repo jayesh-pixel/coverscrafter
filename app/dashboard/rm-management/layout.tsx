@@ -11,6 +11,7 @@ const consolidationNavItems: NavItem[] = [
       { label: "RM/Associate List", href: "/dashboard/rm-management/list" },
       { label: "Business Entry", href: "/dashboard/rm-management/business" },
       { label: "Add Broker", href: "/dashboard/rm-management/brokers" },
+      { label: "Bank Names", href: "/dashboard/rm-management/banks" },
     ],
   },
 ];

@@ -41,6 +41,7 @@ const defaultNavItems: NavItem[] = [
       { label: "Dealer List", href: "/dashboard/admin/dealers/list" },
       { label: "Business Entry", href: "/dashboard/admin/rm-management/business" },
       { label: "Broker Registry", href: "/dashboard/admin/rm-management/brokers" },
+      { label: "Bank Names", href: "/dashboard/admin/rm-management/banks" },
     ],
   },
 ];
