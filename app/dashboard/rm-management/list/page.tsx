@@ -695,12 +695,13 @@ export default function ConsolidationListPage() {
         </div>
         
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-          <table className="min-w-[1000px] border-collapse text-left text-sm">
+          <table className="min-w-[1100px] border-collapse text-left text-sm">
             <thead className="bg-slate-100">
               <tr>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Associate</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Associate Code</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">POS Code</th>
+                <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Relationship Manager</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Status</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Contact</th>
                 <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Email</th>
@@ -710,7 +711,9 @@ export default function ConsolidationListPage() {
               </tr>
             </thead>
             <tbody>
-              {paginatedAssociates.map((associate) => (
+              {paginatedAssociates.map((associate) => {
+                const associateRM = allRMs.find(rm => rm.firebaseUid === associate.createdBy);
+                return (
                   <tr key={associate._id} className="transition hover:bg-blue-50/40">
                     <td className="border border-slate-300 px-4 py-3 bg-white">
                       <div className="flex flex-col">
@@ -720,6 +723,16 @@ export default function ConsolidationListPage() {
                     </td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.associateCode}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{associate.posCode || 'N/A'}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">
+                      {associateRM ? (
+                        <div className="flex flex-col">
+                          <span className="font-medium text-slate-900">{associateRM.firstName} {associateRM.lastName}</span>
+                          <span className="text-xs text-slate-400">{associateRM.empCode}</span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400">Not Assigned</span>
+                      )}
+                    </td>
                     <td className="border border-slate-300 px-4 py-3 bg-white">
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
                         associate.status === "active" ? "bg-emerald-100 text-emerald-700" : 
@@ -759,7 +772,8 @@ export default function ConsolidationListPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -1050,7 +1064,11 @@ export default function ConsolidationListPage() {
                       <label className="block text-sm font-medium text-slate-700">Relationship Manager *</label>
                       <select
                         name="createdBy"
-                        defaultValue={editingAssociate.createdBy || ''}
+                        defaultValue={(() => {
+                          // Find RM by firebaseUid match
+                          const matchingRM = allRMs.find(rm => rm.firebaseUid === editingAssociate.createdBy);
+                          return matchingRM ? matchingRM._id : '';
+                        })()}
                         required
                         className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                       >

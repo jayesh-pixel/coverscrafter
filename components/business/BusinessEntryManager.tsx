@@ -397,6 +397,7 @@ export default function BusinessEntryManager({
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds default
   const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
+  const [editPaymentMode, setEditPaymentMode] = useState<string>("");
 
   const fetchEntries = async (filterParams?: Record<string, string>) => {
     const token = await getToken();
@@ -678,10 +679,19 @@ export default function BusinessEntryManager({
     const token = await getToken();
     if (!token) return;
     
+    // Find the RM to get their firebaseUid
+    const rm = allRMs.find(r => r._id === rmId);
+    if (!rm?.firebaseUid) {
+      console.error("RM firebaseUid not found");
+      setAssociateOptions([]);
+      return;
+    }
+    
     setIsLoadingUsers(true);
     try {
-      // Fetch associates created by the selected RM
-      const associates = await getAssociateUsers(token, undefined, rmId);
+      // Fetch all associates and filter by createdBy (firebaseUid)
+      const allAssocs = await getAssociateUsers(token);
+      const associates = allAssocs.filter(a => a.createdBy === rm.firebaseUid);
       setAssociateOptions(associates);
     } catch (error) {
       console.error("Failed to fetch associates for RM", error);
@@ -993,6 +1003,7 @@ export default function BusinessEntryManager({
 
   const handleEditEntry = async (entry: BusinessEntry) => {
     setEditingEntry(entry);
+    setEditPaymentMode(entry.paymentMode || '');
     setIsEditModalOpen(true);
     
     // Fetch associates for the RM if rmId exists
@@ -1000,9 +1011,19 @@ export default function BusinessEntryManager({
       const token = await getToken();
       if (!token) return;
       
+      // Find the RM to get their firebaseUid
+      const rm = allRMs.find(r => r._id === entry.rmId);
+      if (!rm?.firebaseUid) {
+        console.error("RM firebaseUid not found");
+        setAssociateOptions([]);
+        return;
+      }
+      
       setIsLoadingUsers(true);
       try {
-        const associates = await getAssociateUsers(token, undefined, entry.rmId);
+        // Fetch all associates and filter by createdBy (firebaseUid)
+        const allAssocs = await getAssociateUsers(token);
+        const associates = allAssocs.filter(a => a.createdBy === rm.firebaseUid);
         setAssociateOptions(associates);
       } catch (error) {
         console.error("Failed to fetch associates for RM", error);
@@ -1015,6 +1036,7 @@ export default function BusinessEntryManager({
 
   const handleCloseEditModal = () => {
     setEditingEntry(null);
+    setEditPaymentMode('');
     setIsEditModalOpen(false);
   };
 
@@ -1075,20 +1097,37 @@ export default function BusinessEntryManager({
       return;
     }
 
+    // Get form element - try both target and currentTarget
+    const form = (event.target as HTMLFormElement) || event.currentTarget;
+    if (!form || !(form instanceof HTMLFormElement)) {
+      setErrorMessage("Form element not found");
+      return;
+    }
+
     setIsUpdatingEntry(true);
     setErrorMessage(null);
     setSuccessMessage(null);
 
     try {
-      const form = event.currentTarget;
       const formData = new FormData(form);
       
       const updatePayload: any = {};
       
-      // Only include changed fields
+      // Include all fields from form data
       formData.forEach((value, key) => {
-        if (value && value !== '') {
+        // For date fields and numeric fields, send null if empty, otherwise send the value
+        if (value && value.toString().trim() !== '') {
           updatePayload[key] = value;
+        } else {
+          // Send null for empty date/numeric fields, empty string for text fields
+          const dateFields = ['policyIssueDate', 'policyStartDate', 'policyEndDate', 'policyTpEndDate', 'chequeDate', 'paymentdate'];
+          const numericFields = ['odPremium', 'tpPremium', 'netPremium', 'grossPremium', 'odPremiumPayin', 'tpPremiumPayin', 'netPremiumPayin', 'extraAmountPayin', 'odPremiumPayout', 'tpPremiumPayout', 'netPremiumPayout', 'extraAmountPayout'];
+          
+          if (dateFields.includes(key) || numericFields.includes(key)) {
+            updatePayload[key] = null;
+          } else {
+            updatePayload[key] = '';
+          }
         }
       });
 
@@ -2558,12 +2597,22 @@ export default function BusinessEntryManager({
                           return;
                         }
                         
+                        // Find the RM to get their firebaseUid
+                        const rm = allRMs.find(r => r._id === selectedRmId);
+                        if (!rm?.firebaseUid) {
+                          console.error("RM firebaseUid not found");
+                          setAssociateOptions([]);
+                          return;
+                        }
+                        
                         const token = await getToken();
                         if (!token) return;
                         
                         setIsLoadingUsers(true);
                         try {
-                          const associates = await getAssociateUsers(token, undefined, selectedRmId);
+                          // Fetch all associates and filter by createdBy (firebaseUid)
+                          const allAssocs = await getAssociateUsers(token);
+                          const associates = allAssocs.filter(a => a.createdBy === rm.firebaseUid);
                           setAssociateOptions(associates);
                         } catch (error) {
                           console.error("Failed to fetch associates for RM", error);
@@ -2729,6 +2778,54 @@ export default function BusinessEntryManager({
                 <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
                   <h3 className="mb-4 text-sm font-semibold text-slate-900">Payment Details</h3>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <SelectField
+                      id="paymentMode"
+                      name="paymentMode"
+                      label="Payment Mode"
+                      placeholder="--None--"
+                      options={[
+                        { label: 'Online', value: 'Online' },
+                        { label: 'Cheque', value: 'Cheque' },
+                        { label: 'Cash', value: 'Cash' },
+                      ]}
+                      defaultValue={editingEntry.paymentMode}
+                      disabled={editingEntry.status === 'Paid'}
+                      onChange={(e) => setEditPaymentMode(e.target.value)}
+                    />
+                    {editPaymentMode === 'Cheque' && (
+                      <>
+                        <TextField 
+                          id="chequeNumber"
+                          name="chequeNumber"
+                          label="Cheque Number" 
+                          placeholder="Cheque Number"
+                          defaultValue={editingEntry.chequeNumber}
+                          disabled={editingEntry.status === 'Paid'}
+                          required
+                        />
+                        <TextField 
+                          id="chequeDate"
+                          name="chequeDate"
+                          label="Cheque Date" 
+                          type="date"
+                          defaultValue={editingEntry.chequeDate ? new Date(editingEntry.chequeDate).toISOString().split('T')[0] : ''}
+                          disabled={editingEntry.status === 'Paid'}
+                          required
+                        />
+                      </>
+                    )}
+                    <SelectField
+                      id="payoutMode"
+                      name="payoutMode"
+                      label="Payout Mode"
+                      placeholder="--None--"
+                      options={[
+                        { label: 'Full Pay', value: 'fullpay' },
+                        { label: 'Cut & Pay', value: 'cut&pay' },
+                      ]}
+                      defaultValue={editingEntry.payoutMode}
+                      disabled={editingEntry.status === 'Paid'}
+                    />
                     <TextField 
                       id="utrno"
                       name="utrno"
@@ -2752,7 +2849,7 @@ export default function BusinessEntryManager({
                       placeholder="--None--"
                       options={[
                         { label: 'Paid', value: 'Paid' },
-                        { label: 'Pending', value: 'Pending' },
+                        { label: 'Pending', value: 'pending' },
                       ]}
                       defaultValue={editingEntry.status}
                       disabled={editingEntry.status === 'Paid'}

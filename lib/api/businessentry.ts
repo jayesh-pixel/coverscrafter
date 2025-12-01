@@ -84,7 +84,9 @@ export interface BusinessEntry {
   reportingMonth: string;
   rmState: string;
   rmId: string;
+  isNewVehicle?: boolean;
   paymentMode: string;
+  payoutMode?: string;
   chequeNumber?: string;
   chequeDate?: string;
   policyFile: string;
