@@ -74,6 +74,8 @@ export interface RegisterAssociatePayload {
     gstCertificate?: string;
     pancardDocument?: string;
     cancelledCheque?: string;
+    aadharFront?: string;
+    aadharBack?: string;
   };
 }
 

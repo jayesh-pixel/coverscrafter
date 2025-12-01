@@ -136,6 +136,8 @@ type AssociateFormState = {
   gstCertificate: string;
   pancardDocument: string;
   cancelledCheque: string;
+  aadharFront: string;
+  aadharBack: string;
 };
 
 const initialAssociateFormState: AssociateFormState = {
@@ -164,6 +166,8 @@ const initialAssociateFormState: AssociateFormState = {
   gstCertificate: "",
   pancardDocument: "",
   cancelledCheque: "",
+  aadharFront: "",
+  aadharBack: "",
 };
 
 export function RMForm({
@@ -416,10 +420,14 @@ export function AssociateForm({
     gstCertificate: File | null;
     pancardDocument: File | null;
     cancelledCheque: File | null;
+    aadharFront: File | null;
+    aadharBack: File | null;
   }>({
     gstCertificate: null,
     pancardDocument: null,
     cancelledCheque: null,
+    aadharFront: null,
+    aadharBack: null,
   });
 
   const updateAssociateForm = (field: keyof AssociateFormState, value: string) => {
@@ -509,6 +517,8 @@ export function AssociateForm({
       let gstCertificateUrl = "";
       let pancardDocumentUrl = "";
       let cancelledChequeUrl = "";
+      let aadharFrontUrl = "";
+      let aadharBackUrl = "";
 
       if (selectedFiles.gstCertificate) {
         setIsUploadingDoc("gstCertificate");
@@ -523,6 +533,18 @@ export function AssociateForm({
       setIsUploadingDoc("cancelledCheque");
       const chequeResponse = await uploadDocument(selectedFiles.cancelledCheque, token);
       cancelledChequeUrl = chequeResponse.id || chequeResponse.downloadUrl || chequeResponse.url || chequeResponse.fileId || "";
+
+      if (selectedFiles.aadharFront) {
+        setIsUploadingDoc("aadharFront");
+        const aadharFrontResponse = await uploadDocument(selectedFiles.aadharFront, token);
+        aadharFrontUrl = aadharFrontResponse.id || aadharFrontResponse.downloadUrl || aadharFrontResponse.url || aadharFrontResponse.fileId || "";
+      }
+
+      if (selectedFiles.aadharBack) {
+        setIsUploadingDoc("aadharBack");
+        const aadharBackResponse = await uploadDocument(selectedFiles.aadharBack, token);
+        aadharBackUrl = aadharBackResponse.id || aadharBackResponse.downloadUrl || aadharBackResponse.url || aadharBackResponse.fileId || "";
+      }
 
       setIsUploadingDoc(null);
 
@@ -556,6 +578,8 @@ export function AssociateForm({
             gstCertificate: gstCertificateUrl,
             pancardDocument: pancardDocumentUrl,
             cancelledCheque: cancelledChequeUrl,
+            aadharFront: aadharFrontUrl,
+            aadharBack: aadharBackUrl,
           },
         },
         token,
@@ -568,6 +592,8 @@ export function AssociateForm({
         gstCertificate: null,
         pancardDocument: null,
         cancelledCheque: null,
+        aadharFront: null,
+        aadharBack: null,
       });
       setposStatus("");
       setIsDefaultBank(true);
@@ -981,6 +1007,46 @@ export function AssociateForm({
               />
               {selectedFiles.cancelledCheque && (
                 <span className="text-xs text-emerald-600">✓ {selectedFiles.cancelledCheque.name} selected</span>
+              )}
+            </label>
+
+            <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
+              <span>Aadhar Front</span>
+              <input
+                type="file"
+                id="aadharFront"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:shadow-md focus:ring-2 focus:ring-blue-100 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-1 file:text-xs file:font-semibold file:text-blue-600 hover:file:bg-blue-100"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    setSelectedFiles(prev => ({ ...prev, aadharFront: file }));
+                  }
+                }}
+                disabled={isSubmitting}
+              />
+              {selectedFiles.aadharFront && (
+                <span className="text-xs text-emerald-600">✓ {selectedFiles.aadharFront.name} selected</span>
+              )}
+            </label>
+
+            <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
+              <span>Aadhar Back</span>
+              <input
+                type="file"
+                id="aadharBack"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:shadow-md focus:ring-2 focus:ring-blue-100 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-1 file:text-xs file:font-semibold file:text-blue-600 hover:file:bg-blue-100"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    setSelectedFiles(prev => ({ ...prev, aadharBack: file }));
+                  }
+                }}
+                disabled={isSubmitting}
+              />
+              {selectedFiles.aadharBack && (
+                <span className="text-xs text-emerald-600">✓ {selectedFiles.aadharBack.name} selected</span>
               )}
             </label>
           </div>
