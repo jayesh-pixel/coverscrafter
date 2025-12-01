@@ -70,6 +70,11 @@ export interface RegisterAssociatePayload {
   isPos: boolean;
   PosCode?: string;
   Password: string;
+  documents?: {
+    gstCertificate?: string;
+    pancardDocument?: string;
+    cancelledCheque?: string;
+  };
 }
 
 export async function registerRM(payload: RegisterRmPayload, authToken: string) {
