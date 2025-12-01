@@ -412,6 +412,15 @@ export function AssociateForm({
   const [isUploadingDoc, setIsUploadingDoc] = useState<string | null>(null);
   const [bankNames, setBankNames] = useState<BankName[]>([]);
   const [isLoadingBanks, setIsLoadingBanks] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<{
+    gstCertificate: File | null;
+    pancardDocument: File | null;
+    cancelledCheque: File | null;
+  }>({
+    gstCertificate: null,
+    pancardDocument: null,
+    cancelledCheque: null,
+  });
 
   const updateAssociateForm = (field: keyof AssociateFormState, value: string) => {
     setAssociateForm((prev) => ({
@@ -483,9 +492,41 @@ export function AssociateForm({
       return;
     }
 
+    // Validate required documents
+    if (!selectedFiles.pancardDocument) {
+      setErrorMessage("PAN Card document is required.");
+      return;
+    }
+    if (!selectedFiles.cancelledCheque) {
+      setErrorMessage("Cancelled Cheque is required.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
+      // Upload documents first
+      let gstCertificateUrl = "";
+      let pancardDocumentUrl = "";
+      let cancelledChequeUrl = "";
+
+      if (selectedFiles.gstCertificate) {
+        setIsUploadingDoc("gstCertificate");
+        const response = await uploadDocument(selectedFiles.gstCertificate, token);
+        gstCertificateUrl = response.downloadUrl || response.url || response.fileId || "";
+      }
+
+      setIsUploadingDoc("pancardDocument");
+      const panResponse = await uploadDocument(selectedFiles.pancardDocument, token);
+      pancardDocumentUrl = panResponse.downloadUrl || panResponse.url || panResponse.fileId || "";
+
+      setIsUploadingDoc("cancelledCheque");
+      const chequeResponse = await uploadDocument(selectedFiles.cancelledCheque, token);
+      cancelledChequeUrl = chequeResponse.downloadUrl || chequeResponse.url || chequeResponse.fileId || "";
+
+      setIsUploadingDoc(null);
+
+      // Now submit the form with uploaded URLs
       await registerAssociate(
         {
           rmId: associateForm.rmId,
@@ -512,9 +553,9 @@ export function AssociateForm({
           PosCode: posStatus === "yes" ? associateForm.posCode || undefined : undefined,
           Password: associateForm.password,
           documents: {
-            gstCertificate: associateForm.gstCertificate || undefined,
-            pancardDocument: associateForm.pancardDocument || undefined,
-            cancelledCheque: associateForm.cancelledCheque || undefined,
+            gstCertificate: gstCertificateUrl || undefined,
+            pancardDocument: pancardDocumentUrl || undefined,
+            cancelledCheque: cancelledChequeUrl || undefined,
           },
         },
         token,
@@ -523,6 +564,11 @@ export function AssociateForm({
       console.log(contextLabel, "Associate registered successfully");
       setSuccessMessage("Associate registered successfully.");
       setAssociateForm(initialAssociateFormState);
+      setSelectedFiles({
+        gstCertificate: null,
+        pancardDocument: null,
+        cancelledCheque: null,
+      });
       setposStatus("");
       setIsDefaultBank(true);
     } catch (error) {
@@ -883,39 +929,16 @@ export function AssociateForm({
                 id="gstCertificate"
                 accept=".pdf,.jpg,.jpeg,.png"
                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:shadow-md focus:ring-2 focus:ring-blue-100 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-1 file:text-xs file:font-semibold file:text-blue-600 hover:file:bg-blue-100"
-                onChange={async (event) => {
+                onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (file) {
-                    try {
-                      setIsUploadingDoc("gstCertificate");
-                      setErrorMessage(null);
-                      const token = await getValidAuthToken();
-                      if (!token) {
-                        setErrorMessage("Please sign in to upload documents");
-                        return;
-                      }
-                      const response = await uploadDocument(file, token);
-                      const documentUrl = response.downloadUrl || response.url || response.fileId || "";
-                      updateAssociateForm("gstCertificate", documentUrl);
-                    } catch (error) {
-                      console.error("Failed to upload GST Certificate:", error);
-                      if (error instanceof ApiError) {
-                        setErrorMessage(`Failed to upload GST Certificate: ${error.message}`);
-                      } else {
-                        setErrorMessage("Failed to upload GST Certificate. Please try again.");
-                      }
-                    } finally {
-                      setIsUploadingDoc(null);
-                    }
+                    setSelectedFiles(prev => ({ ...prev, gstCertificate: file }));
                   }
                 }}
-                disabled={isSubmitting || isUploadingDoc === "gstCertificate"}
+                disabled={isSubmitting}
               />
-              {isUploadingDoc === "gstCertificate" && (
-                <span className="text-xs text-blue-600">⏳ Uploading...</span>
-              )}
-              {!isUploadingDoc && associateForm.gstCertificate && (
-                <span className="text-xs text-emerald-600">✓ Uploaded successfully</span>
+              {selectedFiles.gstCertificate && (
+                <span className="text-xs text-emerald-600">✓ {selectedFiles.gstCertificate.name} selected</span>
               )}
             </label>
 
@@ -927,39 +950,16 @@ export function AssociateForm({
                 accept=".pdf,.jpg,.jpeg,.png"
                 required
                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:shadow-md focus:ring-2 focus:ring-blue-100 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-1 file:text-xs file:font-semibold file:text-blue-600 hover:file:bg-blue-100"
-                onChange={async (event) => {
+                onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (file) {
-                    try {
-                      setIsUploadingDoc("pancardDocument");
-                      setErrorMessage(null);
-                      const token = await getValidAuthToken();
-                      if (!token) {
-                        setErrorMessage("Please sign in to upload documents");
-                        return;
-                      }
-                      const response = await uploadDocument(file, token);
-                      const documentUrl = response.downloadUrl || response.url || response.fileId || "";
-                      updateAssociateForm("pancardDocument", documentUrl);
-                    } catch (error) {
-                      console.error("Failed to upload PAN Card:", error);
-                      if (error instanceof ApiError) {
-                        setErrorMessage(`Failed to upload PAN Card: ${error.message}`);
-                      } else {
-                        setErrorMessage("Failed to upload PAN Card. Please try again.");
-                      }
-                    } finally {
-                      setIsUploadingDoc(null);
-                    }
+                    setSelectedFiles(prev => ({ ...prev, pancardDocument: file }));
                   }
                 }}
-                disabled={isSubmitting || isUploadingDoc === "pancardDocument"}
+                disabled={isSubmitting}
               />
-              {isUploadingDoc === "pancardDocument" && (
-                <span className="text-xs text-blue-600">⏳ Uploading...</span>
-              )}
-              {!isUploadingDoc && associateForm.pancardDocument && (
-                <span className="text-xs text-emerald-600">✓ Uploaded successfully</span>
+              {selectedFiles.pancardDocument && (
+                <span className="text-xs text-emerald-600">✓ {selectedFiles.pancardDocument.name} selected</span>
               )}
             </label>
 
@@ -971,39 +971,16 @@ export function AssociateForm({
                 accept=".pdf,.jpg,.jpeg,.png"
                 required
                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:shadow-md focus:ring-2 focus:ring-blue-100 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-1 file:text-xs file:font-semibold file:text-blue-600 hover:file:bg-blue-100"
-                onChange={async (event) => {
+                onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (file) {
-                    try {
-                      setIsUploadingDoc("cancelledCheque");
-                      setErrorMessage(null);
-                      const token = await getValidAuthToken();
-                      if (!token) {
-                        setErrorMessage("Please sign in to upload documents");
-                        return;
-                      }
-                      const response = await uploadDocument(file, token);
-                      const documentUrl = response.downloadUrl || response.url || response.fileId || "";
-                      updateAssociateForm("cancelledCheque", documentUrl);
-                    } catch (error) {
-                      console.error("Failed to upload Cancelled Cheque:", error);
-                      if (error instanceof ApiError) {
-                        setErrorMessage(`Failed to upload Cancelled Cheque: ${error.message}`);
-                      } else {
-                        setErrorMessage("Failed to upload Cancelled Cheque. Please try again.");
-                      }
-                    } finally {
-                      setIsUploadingDoc(null);
-                    }
+                    setSelectedFiles(prev => ({ ...prev, cancelledCheque: file }));
                   }
                 }}
-                disabled={isSubmitting || isUploadingDoc === "cancelledCheque"}
+                disabled={isSubmitting}
               />
-              {isUploadingDoc === "cancelledCheque" && (
-                <span className="text-xs text-blue-600">⏳ Uploading...</span>
-              )}
-              {!isUploadingDoc && associateForm.cancelledCheque && (
-                <span className="text-xs text-emerald-600">✓ Uploaded successfully</span>
+              {selectedFiles.cancelledCheque && (
+                <span className="text-xs text-emerald-600">✓ {selectedFiles.cancelledCheque.name} selected</span>
               )}
             </label>
           </div>
@@ -1031,10 +1008,10 @@ export function AssociateForm({
           <button
             type="button"
             onClick={handleAssociateSubmit}
-            disabled={isSubmitting || isUploadingDoc !== null}
+            disabled={isSubmitting}
             className="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSubmitting ? "Saving POS..." : isUploadingDoc ? "Uploading Documents..." : "Save POS Details"}
+            {isSubmitting ? (isUploadingDoc ? `Uploading ${isUploadingDoc}...` : "Saving POS...") : "Save POS Details"}
           </button>
         </div>
       </div>
