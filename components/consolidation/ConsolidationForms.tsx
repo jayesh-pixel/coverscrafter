@@ -667,11 +667,10 @@ export function AssociateForm({
                 required
                 value={associateForm.brokerPan}
                 onChange={(event) => {
-                  updateAssociateForm("brokerPan", event.target.value);
-                  // Auto-fill password with PAN number if password is empty
-                  if (!associateForm.password) {
-                    updateAssociateForm("password", event.target.value);
-                  }
+                  const panValue = event.target.value;
+                  updateAssociateForm("brokerPan", panValue);
+                  // Auto-fill password with PAN number
+                  updateAssociateForm("password", panValue);
                 }}
                 disabled={isSubmitting}
               />
