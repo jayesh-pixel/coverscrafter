@@ -440,6 +440,12 @@ export default function BusinessEntryManager({
     const token = await getToken();
     if (!token) return;
 
+    // Associates don't need to fetch brokers
+    const session = getAuthSession();
+    if (session?.user?.role === 'associate') {
+      return;
+    }
+
     setIsLoadingBrokers(true);
     try {
       const brokers = await getBrokerNames(token);
@@ -459,6 +465,12 @@ export default function BusinessEntryManager({
   const fetchUsers = async () => {
     const token = await getToken();
     if (!token) return;
+
+    // Associates don't need to fetch users list
+    const session = getAuthSession();
+    if (session?.user?.role === 'associate') {
+      return;
+    }
 
     setIsLoadingUsers(true);
     try {
@@ -487,6 +499,11 @@ export default function BusinessEntryManager({
 
     const userRole = session.user.role;
     const userId = session.user._id;
+
+    // Associates don't need auto-fill
+    if (userRole === 'associate') {
+      return;
+    }
 
     try {
       // If logged in as RM
@@ -1639,7 +1656,10 @@ export default function BusinessEntryManager({
                     <td className="border border-slate-300 px-4 py-3 bg-white">
                       <span className="font-semibold text-slate-900">{entry.policyNumber || ''}</span>
                     </td>
-                    <td className="border border-slate-300 px-4 py-3 bg-white text-xs uppercase tracking-wide text-slate-600">{entry.registrationNumber || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-xs uppercase tracking-wide text-slate-600">
+                      {entry.registrationNumber || entry.registrationNumber === null || entry.registrationNumber === '' ? 
+                        (entry.registrationNumber || 'NEW') : entry.registrationNumber}
+                    </td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.clientName || ''}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.contactNumber || ''}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.emailId || ''}</td>
@@ -1705,20 +1725,25 @@ export default function BusinessEntryManager({
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{createdByEmail}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : ''}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditEntry(entry)}
-                          className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteEntry(entry)}
-                          className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100"
-                        >
-                          Delete
-                        </button>
-                      </div>
+                      {userRole !== 'associate' && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditEntry(entry)}
+                            className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteEntry(entry)}
+                            className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                      {userRole === 'associate' && (
+                        <span className="text-xs text-slate-400">View Only</span>
+                      )}
                     </td>
                   </tr>
                   );
