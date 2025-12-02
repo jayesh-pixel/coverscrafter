@@ -400,6 +400,7 @@ export default function BusinessEntryManager({
   const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds default
   const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
   const [editPaymentMode, setEditPaymentMode] = useState<string>("");
+  const [formKey, setFormKey] = useState(0);
 
   const fetchEntries = async (filterParams?: Record<string, string>) => {
     const token = await getToken();
@@ -1250,6 +1251,9 @@ export default function BusinessEntryManager({
       
       setSuccessMessage("Business entry created successfully.");
       
+      // Reset form by changing key
+      setFormKey(prev => prev + 1);
+      
       // Clear success message after 3 seconds
       setTimeout(() => {
         setSuccessMessage(null);
@@ -1366,6 +1370,7 @@ export default function BusinessEntryManager({
         {showForm && userRole !== 'associate' && (
           <div className="space-y-6">
             <BusinessEntryForm
+              key={formKey}
               mode="create"
               brokerOptions={brokerOptions}
               isLoadingBrokers={isLoadingBrokers}
