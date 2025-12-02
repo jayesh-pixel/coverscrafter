@@ -249,7 +249,6 @@ export function RMForm({
               id="empCode"
               label="EmpCode"
               placeholder="EmpCode"
-              required
               value={rmForm.empCode}
               onChange={(event) => updateRmForm("empCode", event.target.value)}
               disabled={isSubmitting}
@@ -258,7 +257,7 @@ export function RMForm({
               id="joiningDate"
               label="Joining Date"
               type="date"
-              required
+              
               value={rmForm.joiningDate}
               onChange={(event) => updateRmForm("joiningDate", event.target.value)}
               disabled={isSubmitting}
@@ -272,7 +271,6 @@ export function RMForm({
               id="firstName"
               label="First Name"
               placeholder="First Name"
-              required
               value={rmForm.firstName}
               onChange={(event) => updateRmForm("firstName", event.target.value)}
               disabled={isSubmitting}
@@ -289,7 +287,7 @@ export function RMForm({
               id="lastName"
               label="Last Name"
               placeholder="Last Name"
-              required
+              
               value={rmForm.lastName}
               onChange={(event) => updateRmForm("lastName", event.target.value)}
               disabled={isSubmitting}
@@ -298,7 +296,6 @@ export function RMForm({
               id="dateOfBirth"
               label="Date of Birth"
               type="date"
-              required
               value={rmForm.dateOfBirth}
               onChange={(event) => updateRmForm("dateOfBirth", event.target.value)}
               disabled={isSubmitting}
@@ -307,7 +304,7 @@ export function RMForm({
               id="contactNumber"
               label="Contact No"
               placeholder="Contact Number"
-              required
+              
               value={rmForm.contactNumber}
               onChange={(event) => updateRmForm("contactNumber", event.target.value)}
               disabled={isSubmitting}
@@ -317,7 +314,6 @@ export function RMForm({
               label="Email ID"
               type="email"
               placeholder="email id"
-              required
               value={rmForm.emailId}
               onChange={(event) => updateRmForm("emailId", event.target.value)}
               disabled={isSubmitting}
@@ -328,7 +324,6 @@ export function RMForm({
               label="Password"
               type="password"
               placeholder="Temporary password"
-              required
               value={rmForm.password}
               onChange={(event) => updateRmForm("password", event.target.value)}
               disabled={isSubmitting}
@@ -343,7 +338,6 @@ export function RMForm({
               id="state"
               label="State"
               placeholder="--None--"
-              required
               value={rmForm.state}
               onChange={(event) => updateRmForm("state", event.target.value)}
               disabled={isSubmitting}
@@ -633,7 +627,7 @@ export function AssociateForm({
                 id="rmId"
                 label="Relationship Manager"
                 placeholder={isLoadingRMs ? "Loading RMs..." : "--Select RM--"}
-                required
+                
                 value={associateForm.rmId}
                 onChange={(event) => updateAssociateForm("rmId", event.target.value)}
                 options={rmOptions.map((rm) => ({
@@ -655,7 +649,7 @@ export function AssociateForm({
                 id="associateName"
                 label="Associate Name"
                 placeholder="Associate Name"
-                required
+                
                 value={associateForm.brokerName}
                 onChange={(event) => updateAssociateForm("brokerName", event.target.value)}
                 disabled={isSubmitting}
@@ -664,7 +658,6 @@ export function AssociateForm({
                 id="brokerPan"
                 label="PAN Number"
                 placeholder="PAN Number"
-                required
                 value={associateForm.brokerPan}
                 onChange={(event) => {
                   const panValue = event.target.value;
@@ -678,7 +671,7 @@ export function AssociateForm({
                 id="aadhaarNumber"
                 label="AADHAR No"
                 placeholder="AADHAR No"
-                required
+                
                 value={associateForm.aadhaarNumber}
                 onChange={(event) => updateAssociateForm("aadhaarNumber", event.target.value)}
                 disabled={isSubmitting}
@@ -687,7 +680,6 @@ export function AssociateForm({
                 id="contactPerson"
                 label="Contact Person"
                 placeholder="Contact Person"
-                required
                 value={associateForm.contactPerson}
                 onChange={(event) => updateAssociateForm("contactPerson", event.target.value)}
                 disabled={isSubmitting}
@@ -696,7 +688,6 @@ export function AssociateForm({
                 id="contactNumber"
                 label="Contact Number"
                 placeholder="Contact Number"
-                required
                 value={associateForm.contactNumber}
                 onChange={(event) => updateAssociateForm("contactNumber", event.target.value)}
                 disabled={isSubmitting}
@@ -706,7 +697,7 @@ export function AssociateForm({
                 label="Email ID"
                 type="email"
                 placeholder="Email ID"
-                required
+                
                 value={associateForm.contactEmail}
                 onChange={(event) => updateAssociateForm("contactEmail", event.target.value)}
                 autoComplete="email"
@@ -716,7 +707,7 @@ export function AssociateForm({
                 id="posStatus"
                 label="Pos"
                 placeholder="Select"
-                required
+                
                 value={posStatus}
                 onChange={(event) => handleposStatusChange(event.target.value as "yes" | "no" | "")}
                 options={[
@@ -730,7 +721,7 @@ export function AssociateForm({
                   id="posCode"
                   label="pos Code"
                   placeholder="pos Code"
-                  required
+                  
                   value={associateForm.posCode}
                   onChange={(event) => updateAssociateForm("posCode", event.target.value)}
                   disabled={isSubmitting}
@@ -753,7 +744,6 @@ export function AssociateForm({
                 label="Password"
                 type="password"
                 placeholder="Temporary password"
-                required
                 value={associateForm.password}
                 onChange={(event) => updateAssociateForm("password", event.target.value)}
                 autoComplete="new-password"
@@ -794,7 +784,6 @@ export function AssociateForm({
                 id="beneficiaryPan"
                 label="Beneficiary PAN Number"
                 placeholder="Beneficiary PAN Number"
-                required
                 value={associateForm.beneficiaryPan}
                 onChange={(event) => updateAssociateForm("beneficiaryPan", event.target.value)}
                 disabled={isSubmitting}
@@ -803,7 +792,6 @@ export function AssociateForm({
                 id="beneficiaryName"
                 label="Name as in Bank Account"
                 placeholder="Name as in Bank Account"
-                required
                 value={associateForm.beneficiaryName}
                 onChange={(event) => updateAssociateForm("beneficiaryName", event.target.value)}
                 disabled={isSubmitting}
@@ -813,7 +801,6 @@ export function AssociateForm({
                 label="Account No"
                 placeholder="Account No"
                 type="password"
-                required
                 value={associateForm.accountNumber}
                 onChange={(event) => updateAssociateForm("accountNumber", event.target.value)}
                 disabled={isSubmitting}
@@ -823,7 +810,6 @@ export function AssociateForm({
                 label="Confirm Account No"
                 placeholder="Re-enter Account No"
                 type="text"
-                required
                 value={associateForm.confirmAccountNumber}
                 onChange={(event) => updateAssociateForm("confirmAccountNumber", event.target.value)}
                 disabled={isSubmitting}
@@ -860,7 +846,6 @@ export function AssociateForm({
                 id="ifscCode"
                 label="IFSC Code"
                 placeholder="IFSC Code"
-                required
                 value={associateForm.ifscCode}
                 onChange={(event) => updateAssociateForm("ifscCode", event.target.value)}
                 disabled={isSubmitting}
@@ -893,7 +878,7 @@ export function AssociateForm({
                 id="branchName"
                 label="Branch Name"
                 placeholder="Branch Name"
-                required
+                
                 value={associateForm.branchName}
                 onChange={(event) => updateAssociateForm("branchName", event.target.value)}
                 disabled={isSubmitting}
@@ -973,7 +958,7 @@ export function AssociateForm({
                 type="file"
                 id="pancardDocument"
                 accept=".pdf,.jpg,.jpeg,.png"
-                required
+                
                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:shadow-md focus:ring-2 focus:ring-blue-100 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-1 file:text-xs file:font-semibold file:text-blue-600 hover:file:bg-blue-100"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
@@ -994,7 +979,7 @@ export function AssociateForm({
                 type="file"
                 id="cancelledCheque"
                 accept=".pdf,.jpg,.jpeg,.png"
-                required
+                
                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:shadow-md focus:ring-2 focus:ring-blue-100 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-1 file:text-xs file:font-semibold file:text-blue-600 hover:file:bg-blue-100"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
