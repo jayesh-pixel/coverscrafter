@@ -394,6 +394,7 @@ export default function BusinessEntryManager({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeletingEntry, setIsDeletingEntry] = useState(false);
   const [isNewVehicle, setIsNewVehicle] = useState(false);
+  const [editIsNewVehicle, setEditIsNewVehicle] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds default
   const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
@@ -1004,6 +1005,7 @@ export default function BusinessEntryManager({
   const handleEditEntry = async (entry: BusinessEntry) => {
     setEditingEntry(entry);
     setEditPaymentMode(entry.paymentMode || '');
+    setEditIsNewVehicle(entry.isNewVehicle || false);
     setIsEditModalOpen(true);
     
     // Fetch associates for the RM if rmId exists
@@ -1037,6 +1039,7 @@ export default function BusinessEntryManager({
   const handleCloseEditModal = () => {
     setEditingEntry(null);
     setEditPaymentMode('');
+    setEditIsNewVehicle(false);
     setIsEditModalOpen(false);
   };
 
@@ -1113,35 +1116,52 @@ export default function BusinessEntryManager({
       
       const updatePayload: any = {};
       
+      // Handle isNewVehicle and registrationNumber
+      if (editIsNewVehicle) {
+        updatePayload.isNewVehicle = true;
+        updatePayload.registrationNumber = 'NEW';
+      } else {
+        updatePayload.isNewVehicle = false;
+      }
+      
       // Include all fields from form data
       formData.forEach((value, key) => {
         const stringValue = value.toString().trim();
         
-        // For date fields and numeric fields, send null if empty, otherwise send the value
-        if (stringValue !== '') {
-          // Special validation for date fields
-          const dateFields = ['policyIssueDate', 'policyStartDate', 'policyEndDate', 'policyTpEndDate', 'chequeDate', 'paymentdate'];
-          if (dateFields.includes(key)) {
-            // Validate that the date is valid and not 1970-01-01 (epoch)
+        const dateFields = ['policyIssueDate', 'policyStartDate', 'policyEndDate', 'policyTpEndDate', 'chequeDate', 'paymentdate'];
+        const numericFields = ['odPremium', 'tpPremium', 'netPremium', 'grossPremium', 'odPremiumPayin', 'tpPremiumPayin', 'netPremiumPayin', 'extraAmountPayin', 'odPremiumPayout', 'tpPremiumPayout', 'netPremiumPayout', 'extraAmountPayout'];
+        
+        // Handle date fields specially
+        if (dateFields.includes(key)) {
+          // If empty string, set to null
+          if (!stringValue || stringValue === '') {
+            updatePayload[key] = null;
+          } else {
+            // Validate that the date is valid and not epoch (1970)
             const dateValue = new Date(stringValue);
             if (!isNaN(dateValue.getTime()) && dateValue.getFullYear() > 1970) {
               updatePayload[key] = stringValue;
             } else {
+              // Invalid date or 1970 date, send null
               updatePayload[key] = null;
             }
+          }
+        }
+        // Handle numeric fields
+        else if (numericFields.includes(key)) {
+          if (!stringValue || stringValue === '') {
+            updatePayload[key] = null;
           } else {
             updatePayload[key] = stringValue;
           }
-        } else {
-          // Send null for empty date/numeric fields, empty string for text fields
-          const dateFields = ['policyIssueDate', 'policyStartDate', 'policyEndDate', 'policyTpEndDate', 'chequeDate', 'paymentdate'];
-          const numericFields = ['odPremium', 'tpPremium', 'netPremium', 'grossPremium', 'odPremiumPayin', 'tpPremiumPayin', 'netPremiumPayin', 'extraAmountPayin', 'odPremiumPayout', 'tpPremiumPayout', 'netPremiumPayout', 'extraAmountPayout'];
-          
-          if (dateFields.includes(key) || numericFields.includes(key)) {
-            updatePayload[key] = null;
-          } else {
-            updatePayload[key] = '';
+        }
+        // Handle text fields
+        else {
+          // Skip registrationNumber if it's a new vehicle (already handled above)
+          if (key === 'registrationNumber' && editIsNewVehicle) {
+            return;
           }
+          updatePayload[key] = stringValue || '';
         }
       });
 
@@ -1266,7 +1286,9 @@ export default function BusinessEntryManager({
 
     // Add isNewVehicle flag and registrationNumber conditionally
     payload.isNewVehicle = isNewVehicle;
-    if (!isNewVehicle) {
+    if (isNewVehicle) {
+      payload.registrationNumber = 'NEW';
+    } else {
       payload.registrationNumber = formElements.registrationNumber?.value || '';
     }
 
@@ -2524,7 +2546,15 @@ export default function BusinessEntryManager({
                       name="policyIssueDate"
                       label="Policy Issue Date" 
                       type="date"
-                      defaultValue={editingEntry.policyIssueDate && editingEntry.policyIssueDate !== 'null' && new Date(editingEntry.policyIssueDate).getTime() > 0 ? new Date(editingEntry.policyIssueDate).toISOString().split('T')[0] : ''}
+                      defaultValue={
+                        editingEntry.policyIssueDate && 
+                        editingEntry.policyIssueDate !== 'null' && 
+                        editingEntry.policyIssueDate !== '1970-01-01' &&
+                        new Date(editingEntry.policyIssueDate).getTime() > 0 && 
+                        new Date(editingEntry.policyIssueDate).getFullYear() > 1970
+                          ? new Date(editingEntry.policyIssueDate).toISOString().split('T')[0] 
+                          : ''
+                      }
                       disabled={editingEntry.status === 'Paid'}
                     />
                     <TextField 
@@ -2532,7 +2562,15 @@ export default function BusinessEntryManager({
                       name="policyStartDate"
                       label="Policy Start Date" 
                       type="date"
-                      defaultValue={editingEntry.policyStartDate && editingEntry.policyStartDate !== 'null' && new Date(editingEntry.policyStartDate).getTime() > 0 ? new Date(editingEntry.policyStartDate).toISOString().split('T')[0] : ''}
+                      defaultValue={
+                        editingEntry.policyStartDate && 
+                        editingEntry.policyStartDate !== 'null' && 
+                        editingEntry.policyStartDate !== '1970-01-01' &&
+                        new Date(editingEntry.policyStartDate).getTime() > 0 && 
+                        new Date(editingEntry.policyStartDate).getFullYear() > 1970
+                          ? new Date(editingEntry.policyStartDate).toISOString().split('T')[0] 
+                          : ''
+                      }
                       disabled={editingEntry.status === 'Paid'}
                     />
                     <TextField 
@@ -2540,7 +2578,15 @@ export default function BusinessEntryManager({
                       name="policyEndDate"
                       label="Policy End Date" 
                       type="date"
-                      defaultValue={editingEntry.policyEndDate && editingEntry.policyEndDate !== 'null' && new Date(editingEntry.policyEndDate).getTime() > 0 ? new Date(editingEntry.policyEndDate).toISOString().split('T')[0] : ''}
+                      defaultValue={
+                        editingEntry.policyEndDate && 
+                        editingEntry.policyEndDate !== 'null' && 
+                        editingEntry.policyEndDate !== '1970-01-01' &&
+                        new Date(editingEntry.policyEndDate).getTime() > 0 && 
+                        new Date(editingEntry.policyEndDate).getFullYear() > 1970
+                          ? new Date(editingEntry.policyEndDate).toISOString().split('T')[0] 
+                          : ''
+                      }
                       disabled={editingEntry.status === 'Paid'}
                     />
                     <TextField 
@@ -2548,7 +2594,15 @@ export default function BusinessEntryManager({
                       name="policyTpEndDate"
                       label="Policy TP End Date" 
                       type="date"
-                      defaultValue={editingEntry.policyTpEndDate && editingEntry.policyTpEndDate !== 'null' && new Date(editingEntry.policyTpEndDate).getTime() > 0 ? new Date(editingEntry.policyTpEndDate).toISOString().split('T')[0] : ''}
+                      defaultValue={
+                        editingEntry.policyTpEndDate && 
+                        editingEntry.policyTpEndDate !== 'null' && 
+                        editingEntry.policyTpEndDate !== '1970-01-01' &&
+                        new Date(editingEntry.policyTpEndDate).getTime() > 0 && 
+                        new Date(editingEntry.policyTpEndDate).getFullYear() > 1970
+                          ? new Date(editingEntry.policyTpEndDate).toISOString().split('T')[0] 
+                          : ''
+                      }
                       disabled={editingEntry.status === 'Paid'}
                     />
                   </div>
@@ -2830,7 +2884,15 @@ export default function BusinessEntryManager({
                           name="chequeDate"
                           label="Cheque Date" 
                           type="date"
-                          defaultValue={editingEntry.chequeDate && editingEntry.chequeDate !== 'null' && new Date(editingEntry.chequeDate).getTime() > 0 ? new Date(editingEntry.chequeDate).toISOString().split('T')[0] : ''}
+                          defaultValue={
+                            editingEntry.chequeDate && 
+                            editingEntry.chequeDate !== 'null' && 
+                            editingEntry.chequeDate !== 'null' &&
+                            new Date(editingEntry.chequeDate).getTime() > 0 && 
+                            new Date(editingEntry.chequeDate).getFullYear() > 1970
+                              ? new Date(editingEntry.chequeDate).toISOString().split('T')[0] 
+                              : ''
+                          }
                           disabled={editingEntry.status === 'Paid'}
                           required
                         />
@@ -2861,7 +2923,15 @@ export default function BusinessEntryManager({
                       name="paymentdate"
                       label="Payment Date" 
                       type="date"
-                      defaultValue={editingEntry.paymentdate && editingEntry.paymentdate !== 'null' && new Date(editingEntry.paymentdate).getTime() > 0 ? new Date(editingEntry.paymentdate).toISOString().split('T')[0] : ''}
+                      defaultValue={
+                        editingEntry.paymentdate && 
+                        editingEntry.paymentdate !== 'null' && 
+                        editingEntry.paymentdate !== 'null' &&
+                        new Date(editingEntry.paymentdate).getTime() > 0 && 
+                        new Date(editingEntry.paymentdate).getFullYear() > 1970
+                          ? new Date(editingEntry.paymentdate).toISOString().split('T')[0] 
+                          : ''
+                      }
                       disabled={editingEntry.status === 'Paid'}
                     />
                     <SelectField
