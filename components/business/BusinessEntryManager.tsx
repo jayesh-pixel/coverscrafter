@@ -1706,16 +1706,16 @@ export default function BusinessEntryManager({
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.chequeNumber || ''}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white">
                       <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                        entry.status === 'completed' 
+                        entry.status?.toLowerCase() === 'paid' 
                           ? 'bg-emerald-100 text-emerald-700' 
-                          : entry.status === 'pending'
+                          : entry.status?.toLowerCase() === 'pending'
                           ? 'bg-amber-100 text-amber-700'
                           : 'bg-slate-100 text-slate-700'
                       }`}>
-                        {entry.status || 'pending'}
+                        {entry.status ? (entry.status.toLowerCase() === 'paid' ? 'Paid' : entry.status.toLowerCase() === 'pending' ? 'Pending' : entry.status) : 'Pending'}
                       </span>
                     </td>
-                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.utrno || ''}</td>
+                    <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.utrno === 'cut&pay' ? 'Cut&Pay' : (entry.utrno || '')}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.paymentdate ? new Date(entry.paymentdate).toLocaleDateString() : ''}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">
                       {entry.policyFileUrl ? (
