@@ -8,6 +8,7 @@ import { uploadDocument, type UploadResponse } from "@/lib/api/uploads";
 import { ApiError, API_BASE_URL } from "@/lib/api/config";
 import { getAuthSession, getValidAuthToken } from "@/lib/utils/storage";
 import { getRMUsers, getAssociateUsers, getUserProfile, type RMUser, type AssociateUser } from "@/lib/api/users";
+import BusinessEntryForm from "@/components/business/BusinessEntryForm";
 
 const insuranceCompanies = [
   "Acko General Insurance",
@@ -1206,165 +1207,33 @@ export default function BusinessEntryManager({
     fetchRMsByState(state);
   };
 
-  const handleBusinessSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    
-    // Capture form element immediately before any async operations
-    const form = event.currentTarget;
-    if (!form) {
-      setErrorMessage("Form element not found.");
-      return;
-    }
-    
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
+  const handleCreateSubmit = async (payload: any, uploadedFileData: UploadResponse | null) => {
     const token = await getToken();
     if (!token) {
       setErrorMessage("You must be signed in to create a business entry.");
       return;
     }
 
-    // Check if file is selected
-    if (!selectedFile) {
-      setErrorMessage("Please select a policy document before saving.");
-      return;
-    }
-
-    // Upload the file now
-    setIsUploadingFile(true);
-    let uploadResponse: UploadResponse;
-    
-    try {
-      uploadResponse = await uploadDocument(selectedFile, token);
-      setUploadedFile(uploadResponse);
-    } catch (error) {
-      console.error("Failed to upload file", error);
-      if (error instanceof ApiError) {
-        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : (error.message || "Unable to upload document. Please try again.");
-        setErrorMessage(fullError);
-      } else {
-        setErrorMessage("Something went wrong while uploading. Please try again.");
-      }
-      setIsUploadingFile(false);
-      return;
-    } finally {
-      setIsUploadingFile(false);
-    }
-
-    // Extract upload metadata
-    const uploadMeta = extractUploadMeta(uploadResponse);
-    if (!uploadMeta.id) {
-      setErrorMessage("File upload failed. Please try again.");
-      return;
-    }
-
-    // Extract values from form elements
-    const formElements = form.elements as any;
-    
-    const payload: Record<string, string | number | boolean> = {
-      brokerid: formElements.brokerid?.value || '',
-      insuranceCompany: formElements.insuranceCompany?.value || '',
-      policyNumber: formElements.policyNumber?.value || '',
-      clientName: formElements.clientName?.value || '',
-      contactNumber: formElements.contactNumber?.value || '',
-      emailId: formElements.emailId?.value || '',
-      state: formElements.state?.value || '',
-      lineOfBusiness: formElements.lineOfBusiness?.value || '',
-      product: formElements.product?.value || '',
-      subProduct: formElements.subProduct?.value || '',
-      policyIssueDate: formElements.policyIssueDate?.value || '',
-      policyStartDate: formElements.policyStartDate?.value || '',
-      policyEndDate: formElements.policyEndDate?.value || '',
-      policyTpEndDate: formElements.policyTpEndDate?.value || '',
-      rmId: formElements.rmId?.value || '',
-      rmState: formElements.rmState?.value || '',
-      associateId: formElements.associateId?.value || '',
-      reportingFy: formElements.reportingFy?.value || '',
-      reportingMonth: formElements.reportingMonth?.value || '',
-    };
-
-    // Add isNewVehicle flag and registrationNumber conditionally
-    payload.isNewVehicle = isNewVehicle;
-    if (isNewVehicle) {
-      payload.registrationNumber = 'NEW';
-    } else {
-      payload.registrationNumber = formElements.registrationNumber?.value || '';
-    }
-
-    // Add payin/payout fields if associate is selected and user is admin
-    if (selectedAssociateId && userRole !== 'rm' && userRole !== 'associate') {
-      payload.odPremiumPayin = formElements.odPremiumPayin?.value || '0';
-      payload.tpPremiumPayin = formElements.tpPremiumPayin?.value || '0';
-      payload.netPremiumPayin = formElements.netPremiumPayin?.value || '0';
-      payload.extraAmountPayin = formElements.extraAmountPayin?.value || '0';
-      payload.odPremiumPayout = formElements.odPremiumPayout?.value || '0';
-      payload.tpPremiumPayout = formElements.tpPremiumPayout?.value || '0';
-      payload.netPremiumPayout = formElements.netPremiumPayout?.value || '0';
-      payload.extraAmountPayout = formElements.extraAmountPayout?.value || '0';
-    }
-
-    // Add cheque details if payment mode is Cheque
-    if (paymentMode === "Cheque") {
-      payload.chequeNumber = formElements.chequeNumber?.value || '';
-      payload.chequeDate = formElements.chequeDate?.value || '';
-    }
-
-    payload.paymentMode = paymentMode;
-    payload.payoutMode = payoutMode;
-    
-    // Add payment details if cut&pay is selected
-    if (payoutMode === "cut&pay") {
-      payload.status = "Paid";
-      payload.utrno = "cut&pay";
-      payload.paymentdate = new Date().toISOString().split('T')[0]; // Today's date in YYYY-MM-DD format
-    }
-    
-    payload.odPremium = odPremium || "0";
-    payload.tpPremium = tpPremium || "0";
-    payload.netPremium = netPremium || "0";
-    payload.grossPremium = grossPremium || "0";
-
-    if (uploadMeta.id) {
-      payload.policyFile = uploadMeta.id;
-    } else {
-      payload.policyFile = "";
-    }
-
-    setIsSubmitting(true);
     setErrorMessage(null);
     setSuccessMessage(null);
 
+    // Extract upload metadata
+    const uploadMeta = extractUploadMeta(uploadedFileData);
+    if (uploadMeta.id) {
+      payload.policyFile = uploadMeta.id;
+    }
+
+    setIsSubmitting(true);
+
     try {
       await createBusinessEntry(payload as any, token);
-      
-      // Reset form
-      form.reset();
-      setPaymentMode("Online");
-      setPayoutMode("fullpay");
-      setSelectedState("");
-      setSelectedRmId("");
-      setSelectedAssociateId("");
-      setSelectedLineOfBusiness("");
-      setSelectedProduct("");
-      setOdPremium("");
-      setTpPremium("");
-      setNetPremium("");
-      setGrossPremium("");
-      setIsNewVehicle(false);
-      setRmOptions([]);
-      setAssociateOptions([]);
-      setSelectedFile(null);
-      setUploadedFile(null);
-      setUploadError(null);
-      setFileInputKey((previous) => previous + 1);
       
       // Refresh entries list
       await fetchEntries();
       
       setSuccessMessage("Business entry created successfully.");
       
-      // Keep form open so user can see success message
+      // Clear success message after 3 seconds
       setTimeout(() => {
         setSuccessMessage(null);
       }, 3000);
@@ -1377,6 +1246,43 @@ export default function BusinessEntryManager({
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEditSubmit = async (payload: any, uploadedFileData: UploadResponse | null) => {
+    if (!editingEntry) return;
+
+    const token = await getToken();
+    if (!token) {
+      setErrorMessage('You must be signed in to update business entry');
+      return;
+    }
+
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setIsUpdatingEntry(true);
+
+    try {
+      await updateBusinessEntry(editingEntry._id, payload, token);
+      
+      setSuccessMessage('Business entry updated successfully');
+      setTimeout(() => setSuccessMessage(null), 3000);
+      
+      // Refresh entries list
+      await fetchEntries();
+      
+      // Close modal
+      handleCloseEditModal();
+    } catch (error) {
+      console.error('Update failed:', error);
+      if (error instanceof ApiError) {
+        const fullError = error.serverMsg ? `${error.message}: ${error.serverMsg}` : error.message;
+        setErrorMessage(fullError);
+      } else {
+        setErrorMessage('Failed to update business entry. Please try again.');
+      }
+    } finally {
+      setIsUpdatingEntry(false);
     }
   };
 
@@ -1441,411 +1347,33 @@ export default function BusinessEntryManager({
         </header>
 
         {showForm && userRole !== 'associate' && (
-          <form className="space-y-6" onSubmit={handleBusinessSubmit}>
-            <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <SelectField
-                  id="brokerid"
-                  label="Broker Name"
-                  required
-                  placeholder={
-                    isLoadingBrokers
-                      ? "Loading brokers..."
-                      : brokerOptions.length === 0
-                      ? "No brokers found"
-                      : "--Select Broker--"
-                  }
-                  options={brokerOptions.map((broker) => ({
-                    label: broker.brokername,
-                    value: broker._id,
-                  }))}
-                  disabled={isLoadingBrokers || brokerOptions.length === 0}
-                  hint={
-                    !isLoadingBrokers && brokerOptions.length === 0
-                      ? "Add brokers in the Broker Directory before creating entries."
-                      : undefined
-                  }
-                />
-                <SelectField
-                  id="insuranceCompany"
-                  label="Insurance Company"
-                  required
-                  placeholder="--None--"
-                  options={insuranceCompanies.map((option) => ({
-                    label: option,
-                    value: option,
-                  }))}
-                />
-                <TextField id="policyNumber" label="Policy Number" placeholder="Policy Number" required />
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <TextField id="clientName" label="Client Name" placeholder="Client Name" required />
-                <TextField id="contactNumber" label="Contact Number" type="tel" placeholder="Contact Number" required />
-                <TextField id="emailId" label="Email ID" type="email" placeholder="email id" required />
-                <SelectField
-                  id="state"
-                  label="State"
-                  required
-                  placeholder="--None--"
-                  options={stateOptions.map((option) => ({
-                    label: option,
-                    value: option,
-                  }))}
-                />
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SelectField
-                  id="lineOfBusiness"
-                  label="Line of Business"
-                  required
-                  placeholder="--None--"
-                  options={lineOfBusinessOptions.map((option) => ({
-                    label: option,
-                    value: option,
-                  }))}
-                  onChange={(e) => setSelectedLineOfBusiness(e.target.value)}
-                  value={selectedLineOfBusiness}
-                />
-                <SelectField
-                  id="product"
-                  label="Product"
-                  required
-                  placeholder={!selectedLineOfBusiness ? "Select Line of Business first" : "--None--"}
-                  options={(selectedLineOfBusiness ? productsByLineOfBusiness[selectedLineOfBusiness] || [] : []).map((option) => ({
-                    label: option,
-                    value: option,
-                  }))}
-                  disabled={!selectedLineOfBusiness}
-                  onChange={(e) => setSelectedProduct(e.target.value)}
-                  value={selectedProduct}
-                />
-                <SelectField
-                  id="subProduct"
-                  label="Sub Product"
-                  required
-                  placeholder="--None--"
-                  options={(subProductByProduct[selectedProduct] || []).map((option) => ({
-                    label: option,
-                    value: option,
-                  }))}
-                />
-                <div className="col-span-full">
-                  <p className="text-sm font-semibold text-slate-700 mb-2">Vehicle Type*</p>
-                  <div className="flex flex-wrap gap-4 text-sm text-slate-600">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="vehicleType"
-                        value="existing"
-                        checked={!isNewVehicle}
-                        onChange={() => setIsNewVehicle(false)}
-                        className="h-4 w-4 text-blue-600"
-                        required
-                      />
-                      Existing Vehicle
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="vehicleType"
-                        value="new"
-                        checked={isNewVehicle}
-                        onChange={() => setIsNewVehicle(true)}
-                        className="h-4 w-4 text-blue-600"
-                      />
-                      New Vehicle
-                    </label>
-                  </div>
-                </div>
-                {!isNewVehicle && (
-                  <TextField 
-                    id="registrationNumber" 
-                    label="Registration Number" 
-                    placeholder="e.g., MH-47-BH-1645" 
-                    required 
-                    hint="Format: MH-47-BH-1645, MH-04-A-007, or 23BH9646G"
-                  />
+          <div className="space-y-6">
+            <BusinessEntryForm
+              mode="create"
+              brokerOptions={brokerOptions}
+              isLoadingBrokers={isLoadingBrokers}
+              allRMs={allRMs}
+              allAssociates={allAssociates}
+              onSubmit={handleCreateSubmit}
+              isSubmitting={isSubmitting}
+              userRole={userRole}
+            />
+            
+            {(errorMessage || successMessage) && (
+              <div className="space-y-2">
+                {errorMessage && (
+                  <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+                    {errorMessage}
+                  </p>
                 )}
-                <TextField id="policyIssueDate" label="Policy Issue Date" type="date" required />
-                <TextField id="policyStartDate" label="Policy Start Date" type="date" required />
-                <TextField id="policyEndDate" label="Policy End Date" type="date" required />
-                <TextField id="policyTpEndDate" label="Policy TP End Date" type="date" required />
-                <TextField 
-                  id="odPremium" 
-                  label="OD Premium" 
-                  type="number" 
-                  placeholder="0" 
-                  required 
-                  value={odPremium}
-                  onChange={(e) => handleOdPremiumChange(e.target.value)}
-                />
-                <TextField 
-                  id="tpPremium" 
-                  label="TP Premium" 
-                  type="number" 
-                  placeholder="0" 
-                  required 
-                  value={tpPremium}
-                  onChange={(e) => handleTpPremiumChange(e.target.value)}
-                />
-                <TextField 
-                  id="netPremium" 
-                  label="Net Premium" 
-                  type="number" 
-                  placeholder="0" 
-                  required 
-                  value={netPremium}
-                  disabled
-                />
-                <TextField 
-                  id="grossPremium" 
-                  label="Gross Premium" 
-                  type="number" 
-                  placeholder="0" 
-                  required 
-                  value={grossPremium}
-                  onChange={(e) => setGrossPremium(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <SelectField
-                  id="rmId"
-                  label="Relationship Manager"
-                  required
-                  placeholder={isLoadingUsers ? "Loading..." : "--Select RM--"}
-                  options={allRMs.map((rm) => ({
-                    label: `${rm.firstName} ${rm.lastName} (${rm.empCode})`,
-                    value: rm._id,
-                  }))}
-                  onChange={(e) => handleRmChange(e.target.value)}
-                  value={selectedRmId}
-                  disabled={isRmAutoFilled}
-                />
-                <SelectField
-                  id="rmState"
-                  label="RM State"
-                  required
-                  placeholder="--Select RM first--"
-                  options={stateOptions.map((option) => ({
-                    label: option,
-                    value: option,
-                  }))}
-                  value={selectedState}
-                  onChange={(e) => handleStateChange(e.target.value)}
-                  disabled={isRmAutoFilled}
-                />
-                <SelectField
-                  id="associateId"
-                  label="Associate"
-                  required
-                  placeholder={!selectedRmId ? "Select RM first" : isLoadingUsers ? "Loading..." : "--Select Associate--"}
-                  options={associateOptions.map((assoc) => ({
-                    label: `${assoc.name} (${assoc.associateCode})`,
-                    value: assoc._id,
-                  }))}
-                  onChange={(e) => handleAssociateChange(e.target.value)}
-                  value={selectedAssociateId}
-                  disabled={!selectedRmId || isAssociateAutoFilled}
-                />
-                <SelectField
-                  id="reportingFy"
-                  label="Reporting FY"
-                  required
-                  placeholder="--None--"
-                  options={reportingFyOptions.map((option) => ({
-                    label: option,
-                    value: option,
-                  }))}
-                />
-                <SelectField
-                  id="reportingMonth"
-                  label="Reporting Month"
-                  required
-                  placeholder="--None--"
-                  options={reportingMonthOptions.map((option) => ({
-                    label: option,
-                    value: option,
-                  }))}
-                />
-              </div>
-
-              {selectedAssociateId && userRole !== 'rm' && userRole !== 'associate' && (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <TextField id="odPremiumPayin" label="OD  Payin (%)" type="number" placeholder="0" min="0" max="100" required />
-                <TextField id="tpPremiumPayin" label="TP  Payin (%)" type="number" placeholder="0" min="0" max="100" required />
-                <TextField id="netPremiumPayin" label="Net  Payin (%)" type="number" placeholder="0" min="0" max="100" required />
-                <TextField id="extraAmountPayin" label="Extra Amount Payin" type="number" placeholder="0" required />
-                <TextField id="odPremiumPayout" label="OD  Payout (%)" type="number" placeholder="0" min="0" max="100" required />
-                <TextField id="tpPremiumPayout" label="TP  Payout (%)" type="number" placeholder="0" min="0" max="100" required />
-                <TextField id="netPremiumPayout" label="Net  Payout (%)" type="number" placeholder="0" min="0" max="100" required />
-                <TextField id="extraAmountPayout" label="Extra Amount Payout" type="number" placeholder="0" required />
-              </div>
-              )}
-            </div>
-
-            <div className="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-              <div className="grid gap-6 md:grid-cols-2">
-                <div>
-                  <p className="text-sm font-semibold text-slate-700">Payment Mode*</p>
-                  <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-600">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="paymentMode"
-                        value="Online"
-                        checked={paymentMode === "Online"}
-                        onChange={() => setPaymentMode("Online")}
-                        className="h-4 w-4 text-blue-600"
-                        required
-                      />
-                      Online
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="paymentMode"
-                        value="Cheque"
-                        checked={paymentMode === "Cheque"}
-                        onChange={() => setPaymentMode("Cheque")}
-                        className="h-4 w-4 text-blue-600"
-                      />
-                      Cheque
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="paymentMode"
-                        value="Cash"
-                        checked={paymentMode === "Cash"}
-                        onChange={() => setPaymentMode("Cash")}
-                        className="h-4 w-4 text-blue-600"
-                      />
-                      Cash
-                    </label>
-                  </div>
-                </div>
-                
-                <div>
-                  <p className="text-sm font-semibold text-slate-700">Payout Mode*</p>
-                  <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-600">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="payoutMode"
-                        value="fullpay"
-                        checked={payoutMode === "fullpay"}
-                        onChange={() => setPayoutMode("fullpay")}
-                        className="h-4 w-4 text-blue-600"
-                        required
-                      />
-                      Full Pay
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="payoutMode"
-                        value="cut&pay"
-                        checked={payoutMode === "cut&pay"}
-                        onChange={() => setPayoutMode("cut&pay")}
-                        className="h-4 w-4 text-blue-600"
-                      />
-                      Cut & Pay
-                    </label>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {paymentMode === "Cheque" && (
-                  <>
-                    <TextField id="chequeNumber" label="Cheque Number" placeholder="Enter cheque number" required />
-                    <TextField id="chequeDate" label="Cheque Date" type="date" required />
-                  </>
-                )}
-                
-                {payoutMode === "cut&pay" && (
-                  <>
-                    <TextField 
-                      id="utrno" 
-                      label="UTR Number" 
-                      placeholder="cut&pay" 
-                      value="cut&pay"
-                      disabled
-                      required 
-                    />
-                    <div className="md:col-span-2 lg:col-span-1">
-                      <p className="text-sm text-slate-600">
-                        <span className="font-semibold">Payment Status:</span> Paid<br />
-                        <span className="font-semibold">Payment Date:</span> {new Date().toLocaleDateString('en-GB')}
-                      </p>
-                    </div>
-                  </>
+                {successMessage && (
+                  <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                    {successMessage}
+                  </p>
                 )}
               </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <FileUploadField
-                  key={fileInputKey}
-                  id="supportingFile"
-                  name="supportingFile"
-                  label="Policy Upload*"
-                  hint="File will be uploaded when you submit the form (max 10 MB)."
-                  onChange={handleFileChange}
-                  disabled={isUploadingFile}
-                  error={uploadError || undefined}
-                />
-                <div className="col-span-full space-y-2 text-xs text-slate-600">
-                  {isUploadingFile && <p className="rounded-xl bg-slate-100 px-3 py-2 text-slate-500">Uploading document...</p>}
-                  {selectedFile && !isUploadingFile && !uploadError && (
-                    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700">
-                      <span className="font-semibold">{selectedFile.name}</span>
-                      <button
-                        type="button"
-                        onClick={handleRemoveUploadedFile}
-                        className="text-xs font-semibold text-rose-600 transition hover:text-rose-700"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {(errorMessage || successMessage) && (
-                <div className="space-y-2">
-                  {errorMessage && (
-                    <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
-                      {errorMessage}
-                    </p>
-                  )}
-                  {successMessage && (
-                    <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                      {successMessage}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={isSubmitting || isUploadingFile}
-                  className="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isSubmitting ? "Saving..." : isUploadingFile ? "Uploading..." : "Save Business"}
-                </button>
-              </div>
-            </div>
-          </form>
+            )}
+          </div>
         )}
       </section>
 
@@ -2405,577 +1933,33 @@ export default function BusinessEntryManager({
             </div>
 
             <div className="overflow-y-auto p-6 flex-1">
-              <form onSubmit={handleUpdateEntry} className="space-y-6">
-                {/* Warning message if payment is completed */}
-                {editingEntry.status === 'Paid' && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">⚠️</span>
-                      <span className="font-semibold">Payment Completed - Editing Disabled</span>
-                    </div>
-                    <p className="mt-1 text-amber-700">This entry cannot be edited because the payment status is marked as "Paid".</p>
-                  </div>
-                )}
-
-                {/* Broker & Insurance Details */}
-                <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-                  <h3 className="mb-4 text-sm font-semibold text-slate-900">Policy Information</h3>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <SelectField
-                      id="brokerid"
-                      name="brokerid"
-                      label="Broker Name"
-                      placeholder="--Select Broker--"
-                      options={brokerOptions.map((broker) => ({
-                        label: broker.brokername,
-                        value: broker._id,
-                      }))}
-                      defaultValue={editingEntry.brokerid}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <SelectField
-                      id="insuranceCompany"
-                      name="insuranceCompany"
-                      label="Insurance Company"
-                      placeholder="--None--"
-                      options={insuranceCompanies.map((option) => ({
-                        label: option,
-                        value: option,
-                      }))}
-                      defaultValue={editingEntry.insuranceCompany}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="policyNumber"
-                      name="policyNumber"
-                      label="Policy Number" 
-                      placeholder="Policy Number"
-                      defaultValue={editingEntry.policyNumber}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                  </div>
-                </div>
-
-                {/* Client Details */}
-                <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-                  <h3 className="mb-4 text-sm font-semibold text-slate-900">Client Details</h3>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <TextField 
-                      id="clientName"
-                      name="clientName"
-                      label="Client Name" 
-                      placeholder="Client Name"
-                      defaultValue={editingEntry.clientName}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="contactNumber"
-                      name="contactNumber"
-                      label="Contact Number" 
-                      type="tel" 
-                      placeholder="Contact Number"
-                      defaultValue={editingEntry.contactNumber}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="emailId"
-                      name="emailId"
-                      label="Email ID" 
-                      type="email" 
-                      placeholder="email id"
-                      defaultValue={editingEntry.emailId}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <SelectField
-                      id="state"
-                      name="state"
-                      label="State"
-                      placeholder="--None--"
-                      options={stateOptions.map((option) => ({
-                        label: option,
-                        value: option,
-                      }))}
-                      defaultValue={editingEntry.state}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                  </div>
-                </div>
-
-                {/* Product Details */}
-                <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-                  <h3 className="mb-4 text-sm font-semibold text-slate-900">Product & Policy Details</h3>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <SelectField
-                      id="lineOfBusiness"
-                      name="lineOfBusiness"
-                      label="Line of Business"
-                      placeholder="--None--"
-                      options={lineOfBusinessOptions.map((option) => ({
-                        label: option,
-                        value: option,
-                      }))}
-                      defaultValue={editingEntry.lineOfBusiness}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="product"
-                      name="product"
-                      label="Product" 
-                      placeholder="Product"
-                      defaultValue={editingEntry.product}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="subProduct"
-                      name="subProduct"
-                      label="Sub Product" 
-                      placeholder="Sub Product"
-                      defaultValue={editingEntry.subProduct}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="registrationNumber"
-                      name="registrationNumber"
-                      label="Registration Number" 
-                      placeholder="Registration Number"
-                      defaultValue={editingEntry.registrationNumber}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="policyIssueDate"
-                      name="policyIssueDate"
-                      label="Policy Issue Date" 
-                      type="date"
-                      defaultValue={
-                        editingEntry.policyIssueDate && 
-                        editingEntry.policyIssueDate !== 'null' && 
-                        editingEntry.policyIssueDate !== '1970-01-01' &&
-                        new Date(editingEntry.policyIssueDate).getTime() > 0 && 
-                        new Date(editingEntry.policyIssueDate).getFullYear() > 1970
-                          ? new Date(editingEntry.policyIssueDate).toISOString().split('T')[0] 
-                          : ''
-                      }
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="policyStartDate"
-                      name="policyStartDate"
-                      label="Policy Start Date" 
-                      type="date"
-                      defaultValue={
-                        editingEntry.policyStartDate && 
-                        editingEntry.policyStartDate !== 'null' && 
-                        editingEntry.policyStartDate !== '1970-01-01' &&
-                        new Date(editingEntry.policyStartDate).getTime() > 0 && 
-                        new Date(editingEntry.policyStartDate).getFullYear() > 1970
-                          ? new Date(editingEntry.policyStartDate).toISOString().split('T')[0] 
-                          : ''
-                      }
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="policyEndDate"
-                      name="policyEndDate"
-                      label="Policy End Date" 
-                      type="date"
-                      defaultValue={
-                        editingEntry.policyEndDate && 
-                        editingEntry.policyEndDate !== 'null' && 
-                        editingEntry.policyEndDate !== '1970-01-01' &&
-                        new Date(editingEntry.policyEndDate).getTime() > 0 && 
-                        new Date(editingEntry.policyEndDate).getFullYear() > 1970
-                          ? new Date(editingEntry.policyEndDate).toISOString().split('T')[0] 
-                          : ''
-                      }
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="policyTpEndDate"
-                      name="policyTpEndDate"
-                      label="Policy TP End Date" 
-                      type="date"
-                      defaultValue={
-                        editingEntry.policyTpEndDate && 
-                        editingEntry.policyTpEndDate !== 'null' && 
-                        editingEntry.policyTpEndDate !== '1970-01-01' &&
-                        new Date(editingEntry.policyTpEndDate).getTime() > 0 && 
-                        new Date(editingEntry.policyTpEndDate).getFullYear() > 1970
-                          ? new Date(editingEntry.policyTpEndDate).toISOString().split('T')[0] 
-                          : ''
-                      }
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                  </div>
-                </div>
-
-                {/* Premium Details */}
-                <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-                  <h3 className="mb-4 text-sm font-semibold text-slate-900">Premium Details</h3>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <TextField 
-                      id="odPremium"
-                      name="odPremium"
-                      label="OD Premium" 
-                      type="number" 
-                      placeholder="0"
-                      defaultValue={editingEntry.odPremium}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="tpPremium"
-                      name="tpPremium"
-                      label="TP Premium" 
-                      type="number" 
-                      placeholder="0"
-                      defaultValue={editingEntry.tpPremium}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="netPremium"
-                      name="netPremium"
-                      label="Net Premium" 
-                      type="number" 
-                      placeholder="0"
-                      defaultValue={editingEntry.netPremium}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="grossPremium"
-                      name="grossPremium"
-                      label="Gross Premium" 
-                      type="number" 
-                      placeholder="0"
-                      defaultValue={editingEntry.grossPremium}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                  </div>
-                </div>
-
-                {/* RM & Associate Details */}
-                <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-                  <h3 className="mb-4 text-sm font-semibold text-slate-900">Team Assignment</h3>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <SelectField
-                      id="rmId"
-                      name="rmId"
-                      label="Relationship Manager"
-                      placeholder="--Select RM--"
-                      options={allRMs.map((rm) => ({
-                        label: `${rm.firstName} ${rm.lastName} (${rm.empCode})`,
-                        value: rm._id,
-                      }))}
-                      defaultValue={editingEntry.rmId}
-                      disabled={editingEntry.status === 'Paid'}
-                      onChange={async (e) => {
-                        const selectedRmId = e.target.value;
-                        if (!selectedRmId) {
-                          setAssociateOptions([]);
-                          return;
-                        }
-                        
-                        // Find the RM to get their firebaseUid
-                        const rm = allRMs.find(r => r._id === selectedRmId);
-                        if (!rm?.firebaseUid) {
-                          console.error("RM firebaseUid not found");
-                          setAssociateOptions([]);
-                          return;
-                        }
-                        
-                        const token = await getToken();
-                        if (!token) return;
-                        
-                        setIsLoadingUsers(true);
-                        try {
-                          // Fetch all associates and filter by createdBy (firebaseUid)
-                          const allAssocs = await getAssociateUsers(token);
-                          const associates = allAssocs.filter(a => a.createdBy === rm.firebaseUid);
-                          setAssociateOptions(associates);
-                        } catch (error) {
-                          console.error("Failed to fetch associates for RM", error);
-                          setAssociateOptions([]);
-                        } finally {
-                          setIsLoadingUsers(false);
-                        }
-                      }}
-                    />
-                    <SelectField
-                      id="rmState"
-                      name="rmState"
-                      label="RM State"
-                      placeholder="--None--"
-                      options={stateOptions.map((option) => ({
-                        label: option,
-                        value: option,
-                      }))}
-                      defaultValue={editingEntry.rmState}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <SelectField
-                      id="associateId"
-                      name="associateId"
-                      label="Associate"
-                      key={`associate-${associateOptions.length}-${associateOptions.map(a => a._id).join('-')}`}
-                      placeholder={isLoadingUsers ? "Loading..." : associateOptions.length === 0 ? "Select RM first" : "--Select Associate--"}
-                      options={associateOptions.map((assoc) => ({
-                        label: `${assoc.name} (${assoc.associateCode})`,
-                        value: assoc._id,
-                      }))}
-                      defaultValue={editingEntry.associateId}
-                      disabled={editingEntry.status === 'Paid' || isLoadingUsers || associateOptions.length === 0}
-                    />
-                  </div>
-                </div>
-
-                {/* Reporting Details */}
-                <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-                  <h3 className="mb-4 text-sm font-semibold text-slate-900">Reporting Period</h3>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <SelectField
-                      id="reportingFy"
-                      name="reportingFy"
-                      label="Reporting FY"
-                      placeholder="--None--"
-                      options={reportingFyOptions.map((option) => ({
-                        label: option,
-                        value: option,
-                      }))}
-                      defaultValue={editingEntry.reportingFy}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <SelectField
-                      id="reportingMonth"
-                      name="reportingMonth"
-                      label="Reporting Month"
-                      placeholder="--None--"
-                      options={reportingMonthOptions.map((option) => ({
-                        label: option,
-                        value: option,
-                      }))}
-                      defaultValue={editingEntry.reportingMonth}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                  </div>
-                </div>
-
-                {/* Payin/Payout Details - Only show for admin users when associate is selected */}
-                {editingEntry.associateId && userRole !== 'rm' && userRole !== 'associate' && (
-                  <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-                    <h3 className="mb-4 text-sm font-semibold text-slate-900">Commission Structure</h3>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                      <TextField 
-                        id="odPremiumPayin" 
-                        name="odPremiumPayin"
-                        label="OD Payin (%)" 
-                        type="number" 
-                        placeholder="0" 
-                        min="0" 
-                        max="100"
-                        defaultValue={editingEntry.odPremiumPayin}
-                        disabled={editingEntry.status === 'Paid'}
-                      />
-                      <TextField 
-                        id="tpPremiumPayin" 
-                        name="tpPremiumPayin"
-                        label="TP Payin (%)" 
-                        type="number" 
-                        placeholder="0" 
-                        min="0" 
-                        max="100"
-                        defaultValue={editingEntry.tpPremiumPayin}
-                        disabled={editingEntry.status === 'Paid'}
-                      />
-                      <TextField 
-                        id="netPremiumPayin" 
-                        name="netPremiumPayin"
-                        label="Net Payin (%)" 
-                        type="number" 
-                        placeholder="0" 
-                        min="0" 
-                        max="100"
-                        defaultValue={editingEntry.netPremiumPayin}
-                        disabled={editingEntry.status === 'Paid'}
-                      />
-                      <TextField 
-                        id="extraAmountPayin" 
-                        name="extraAmountPayin"
-                        label="Extra Amount Payin" 
-                        type="number" 
-                        placeholder="0"
-                        defaultValue={editingEntry.extraAmountPayin}
-                        disabled={editingEntry.status === 'Paid'}
-                      />
-                      <TextField 
-                        id="odPremiumPayout" 
-                        name="odPremiumPayout"
-                        label="OD Payout (%)" 
-                        type="number" 
-                        placeholder="0" 
-                        min="0" 
-                        max="100"
-                        defaultValue={editingEntry.odPremiumPayout}
-                        disabled={editingEntry.status === 'Paid'}
-                      />
-                      <TextField 
-                        id="tpPremiumPayout" 
-                        name="tpPremiumPayout"
-                        label="TP Payout (%)" 
-                        type="number" 
-                        placeholder="0" 
-                        min="0" 
-                        max="100"
-                        defaultValue={editingEntry.tpPremiumPayout}
-                        disabled={editingEntry.status === 'Paid'}
-                      />
-                      <TextField 
-                        id="netPremiumPayout" 
-                        name="netPremiumPayout"
-                        label="Net Payout (%)" 
-                        type="number" 
-                        placeholder="0" 
-                        min="0" 
-                        max="100"
-                        defaultValue={editingEntry.netPremiumPayout}
-                        disabled={editingEntry.status === 'Paid'}
-                      />
-                      <TextField 
-                        id="extraAmountPayout" 
-                        name="extraAmountPayout"
-                        label="Extra Amount Payout" 
-                        type="number" 
-                        placeholder="0"
-                        defaultValue={editingEntry.extraAmountPayout}
-                        disabled={editingEntry.status === 'Paid'}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Payment Details */}
-                <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-                  <h3 className="mb-4 text-sm font-semibold text-slate-900">Payment Details</h3>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <SelectField
-                      id="paymentMode"
-                      name="paymentMode"
-                      label="Payment Mode"
-                      placeholder="--None--"
-                      options={[
-                        { label: 'Online', value: 'Online' },
-                        { label: 'Cheque', value: 'Cheque' },
-                        { label: 'Cash', value: 'Cash' },
-                      ]}
-                      defaultValue={editingEntry.paymentMode}
-                      disabled={editingEntry.status === 'Paid'}
-                      onChange={(e) => setEditPaymentMode(e.target.value)}
-                    />
-                    {editPaymentMode === 'Cheque' && (
-                      <>
-                        <TextField 
-                          id="chequeNumber"
-                          name="chequeNumber"
-                          label="Cheque Number" 
-                          placeholder="Cheque Number"
-                          defaultValue={editingEntry.chequeNumber}
-                          disabled={editingEntry.status === 'Paid'}
-                          required
-                        />
-                        <TextField 
-                          id="chequeDate"
-                          name="chequeDate"
-                          label="Cheque Date" 
-                          type="date"
-                          defaultValue={
-                            editingEntry.chequeDate && 
-                            editingEntry.chequeDate !== 'null' && 
-                            editingEntry.chequeDate !== 'null' &&
-                            new Date(editingEntry.chequeDate).getTime() > 0 && 
-                            new Date(editingEntry.chequeDate).getFullYear() > 1970
-                              ? new Date(editingEntry.chequeDate).toISOString().split('T')[0] 
-                              : ''
-                          }
-                          disabled={editingEntry.status === 'Paid'}
-                          required
-                        />
-                      </>
-                    )}
-                    <SelectField
-                      id="payoutMode"
-                      name="payoutMode"
-                      label="Payout Mode"
-                      placeholder="--None--"
-                      options={[
-                        { label: 'Full Pay', value: 'fullpay' },
-                        { label: 'Cut & Pay', value: 'cut&pay' },
-                      ]}
-                      defaultValue={editingEntry.payoutMode}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="utrno"
-                      name="utrno"
-                      label="UTR Number" 
-                      placeholder="UTR Number"
-                      defaultValue={editingEntry.utrno}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <TextField 
-                      id="paymentdate"
-                      name="paymentdate"
-                      label="Payment Date" 
-                      type="date"
-                      defaultValue={
-                        editingEntry.paymentdate && 
-                        editingEntry.paymentdate !== 'null' && 
-                        editingEntry.paymentdate !== 'null' &&
-                        new Date(editingEntry.paymentdate).getTime() > 0 && 
-                        new Date(editingEntry.paymentdate).getFullYear() > 1970
-                          ? new Date(editingEntry.paymentdate).toISOString().split('T')[0] 
-                          : ''
-                      }
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                    <SelectField
-                      id="status"
-                      name="status"
-                      label="Payment Status"
-                      placeholder="--None--"
-                      options={[
-                        { label: 'Paid', value: 'Paid' },
-                        { label: 'Pending', value: 'pending' },
-                      ]}
-                      defaultValue={editingEntry.status}
-                      disabled={editingEntry.status === 'Paid'}
-                    />
-                  </div>
-                </div>
-
-                {(errorMessage || successMessage) && (
-                  <div className={`rounded-xl p-4 text-sm ${
-                    errorMessage ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                  }`}>
-                    {errorMessage || successMessage}
-                  </div>
-                )}
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-                  <button
-                    type="button"
-                    onClick={handleCloseEditModal}
-                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    {editingEntry.status === 'Paid' ? 'Close' : 'Cancel'}
-                  </button>
-                  {editingEntry.status !== 'Paid' && (
-                    <button
-                      type="submit"
-                      disabled={isUpdatingEntry}
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {isUpdatingEntry ? 'Updating...' : 'Update Entry'}
-                    </button>
+              <BusinessEntryForm
+                mode="edit"
+                editEntry={editingEntry}
+                brokerOptions={brokerOptions}
+                isLoadingBrokers={isLoadingBrokers}
+                allRMs={allRMs}
+                allAssociates={allAssociates}
+                onSubmit={handleEditSubmit}
+                onCancel={handleCloseEditModal}
+                isSubmitting={isUpdatingEntry}
+                userRole={userRole}
+              />
+              
+              {(errorMessage || successMessage) && (
+                <div className="space-y-2 mt-6">
+                  {errorMessage && (
+                    <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+                      {errorMessage}
+                    </p>
+                  )}
+                  {successMessage && (
+                    <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                      {successMessage}
+                    </p>
                   )}
                 </div>
-              </form>
+              )}
             </div>
           </div>
         </div>
