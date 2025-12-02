@@ -339,6 +339,7 @@ export default function BusinessEntryForm({
   const [payoutMode, setPayoutMode] = useState<"cut&pay" | "fullpay">("fullpay");
   const [selectedLineOfBusiness, setSelectedLineOfBusiness] = useState<string>("");
   const [selectedProduct, setSelectedProduct] = useState<string>("");
+  const [selectedSubProduct, setSelectedSubProduct] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<UploadResponse | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
@@ -390,6 +391,7 @@ export default function BusinessEntryForm({
       setPayoutMode((editEntry.payoutMode as any) || "fullpay");
       setSelectedLineOfBusiness(editEntry.lineOfBusiness || "");
       setSelectedProduct(editEntry.product || "");
+      setSelectedSubProduct(editEntry.subProduct || "");
       setSelectedState(editEntry.state || "");
       setSelectedRmId(editEntry.rmId || "");
       setSelectedAssociateId(editEntry.associateId || "");
@@ -773,7 +775,10 @@ export default function BusinessEntryForm({
             label="Product"
             required
             value={selectedProduct}
-            onChange={(e) => setSelectedProduct(e.target.value)}
+            onChange={(e) => {
+              setSelectedProduct(e.target.value);
+              setSelectedSubProduct("");
+            }}
             placeholder="--None--"
             options={
               selectedLineOfBusiness && productsByLineOfBusiness[selectedLineOfBusiness]
@@ -789,7 +794,8 @@ export default function BusinessEntryForm({
             id="subProduct"
             label="Sub Product"
             placeholder="--None--"
-            defaultValue={mode === "edit" ? editEntry?.subProduct : undefined}
+            value={selectedSubProduct}
+            onChange={(e) => setSelectedSubProduct(e.target.value)}
             options={
               selectedProduct && subProductByProduct[selectedProduct]
                 ? subProductByProduct[selectedProduct].map((option) => ({
