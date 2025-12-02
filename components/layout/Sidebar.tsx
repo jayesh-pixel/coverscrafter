@@ -117,7 +117,7 @@ export default function Sidebar({ navItems = defaultNavItems, userName = "Jayesh
       >
       <div className="flex h-full flex-col gap-6 overflow-y-auto scrollbar-hide">
         <div className={`flex items-center transition-all duration-300 ${isExpanded ? "flex-row justify-between px-1" : "flex-col justify-center gap-4"}`}>
-          <Link href="/" className="transition-transform hover:scale-105">
+          <Link href={navItems[0]?.href ?? "/dashboard"} className="transition-transform hover:scale-105">
             <Image src="/brand/coverscrafter-logo.png" alt="CoversCrafter" width={isExpanded ? 56 : 48} height={isExpanded ? 56 : 48} />
           </Link>
           <button
