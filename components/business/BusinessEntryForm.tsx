@@ -1032,6 +1032,18 @@ export default function BusinessEntryForm({
         <h3 className="text-base font-semibold text-slate-900">RM & Associate Assignment</h3>
         <div className="grid gap-4 md:grid-cols-3">
           <SelectField
+            id="rmId"
+            label="RM Name"
+            value={selectedRmId}
+            onChange={(e) => handleRmChange(e.target.value)}
+            placeholder={isLoadingUsers ? "Loading RMs..." : "--Select RM--"}
+            options={allRMs.map((rm) => ({
+              label: rm.name,
+              value: rm._id,
+            }))}
+            disabled={isLoadingUsers}
+          />
+          <SelectField
             id="rmState"
             label="RM State"
             value={selectedState}
@@ -1041,18 +1053,7 @@ export default function BusinessEntryForm({
               label: option,
               value: option,
             }))}
-          />
-          <SelectField
-            id="rmId"
-            label="RM Name"
-            value={selectedRmId}
-            onChange={(e) => handleRmChange(e.target.value)}
-            placeholder={isLoadingUsers ? "Loading RMs..." : "--Select RM--"}
-            options={rmOptions.map((rm) => ({
-              label: rm.name,
-              value: rm._id,
-            }))}
-            disabled={!selectedState || isLoadingUsers}
+            disabled
           />
           <SelectField
             id="associateId"
