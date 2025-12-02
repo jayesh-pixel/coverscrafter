@@ -300,7 +300,9 @@ const getCurrentAndFutureMonths = () => {
     "July", "August", "September", "October", "November", "December"
   ];
   const currentMonth = new Date().getMonth();
-  return months.slice(currentMonth);
+  // Include previous month if not January
+  const startMonth = currentMonth > 0 ? currentMonth - 1 : 0;
+  return months.slice(startMonth);
 };
 
 const reportingFyOptions = getCurrentFY();
@@ -608,7 +610,7 @@ export default function BusinessEntryForm({
       payload.registrationNumber = formElements.registrationNumber?.value || '';
     }
 
-    if (selectedAssociateId && userRole !== 'rm' && userRole !== 'associate') {
+    if (selectedAssociateId && userRole !== 'associate') {
       payload.odPremiumPayin = formElements.odPremiumPayin?.value || '0';
       payload.tpPremiumPayin = formElements.tpPremiumPayin?.value || '0';
       payload.netPremiumPayin = formElements.netPremiumPayin?.value || '0';
@@ -1066,7 +1068,7 @@ export default function BusinessEntryForm({
           />
         </div>
 
-        {selectedAssociateId && userRole !== 'rm' && userRole !== 'associate' && (
+        {selectedAssociateId && userRole !== 'associate' && (
           <>
             <h4 className="mt-6 text-sm font-semibold text-slate-900">Pay-In Details</h4>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
