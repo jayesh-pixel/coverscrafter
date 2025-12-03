@@ -1730,7 +1730,7 @@ export default function BusinessEntryManager({
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{createdByEmail}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : ''}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white">
-                      {userRole !== 'associate' && (
+                      {userRole !== 'associate' && userRole !== 'rm' && (
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleEditEntry(entry)}
@@ -1743,6 +1743,16 @@ export default function BusinessEntryManager({
                             className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100"
                           >
                             Delete
+                          </button>
+                        </div>
+                      )}
+                      {userRole === 'rm' && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditEntry(entry)}
+                            className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
+                          >
+                            Edit
                           </button>
                         </div>
                       )}
