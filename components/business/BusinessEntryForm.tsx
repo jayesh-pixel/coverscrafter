@@ -632,7 +632,7 @@ export default function BusinessEntryForm({
     payload.payoutMode = payoutMode;
     
     if (payoutMode === "cut&pay") {
-      payload.status = "Paid";
+      payload.status = "paid";
       payload.utrno = "cut&pay";
       payload.paymentdate = new Date().toISOString().split('T')[0];
     } else if (mode === "edit") {
@@ -1012,11 +1012,14 @@ export default function BusinessEntryForm({
 
         {mode === "edit" && payoutMode !== "cut&pay" && (
           <div className="grid gap-4 md:grid-cols-3">
-            <TextField
+            <SelectField
               id="status"
               label="Payment Status"
-              placeholder="Status"
-              defaultValue={editEntry?.status}
+              defaultValue={editEntry?.status?.toLowerCase()}
+              options={[
+                { label: "Pending", value: "pending" },
+                { label: "Paid", value: "paid" }
+              ]}
             />
             <TextField
               id="utrno"
