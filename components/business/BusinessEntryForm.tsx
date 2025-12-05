@@ -1002,7 +1002,7 @@ export default function BusinessEntryForm({
             <div className="md:col-span-2 lg:col-span-1">
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
                 <p className="text-sm text-slate-700">
-                  <span className="font-semibold">Payment Status:</span> Paid<br />
+                  <span className="font-semibold">Payout Status:</span> Paid<br />
                   <span className="font-semibold">Payment Date:</span> {new Date().toLocaleDateString('en-GB')}
                 </p>
               </div>
@@ -1014,7 +1014,7 @@ export default function BusinessEntryForm({
           <div className="grid gap-4 md:grid-cols-3">
             <SelectField
               id="status"
-              label="Payment Status"
+              label="Payout Status"
               defaultValue={editEntry?.status?.toLowerCase()}
               options={[
                 { label: "Pending", value: "pending" },

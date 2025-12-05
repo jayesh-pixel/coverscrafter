@@ -823,7 +823,7 @@ export default function BusinessEntryManager({
 
     const token = await getToken();
     if (!token) {
-      setErrorMessage('You must be signed in to update payment status');
+      setErrorMessage('You must be signed in to update payout status');
       return;
     }
 
@@ -943,7 +943,7 @@ export default function BusinessEntryManager({
       } else if (error instanceof Error) {
         setErrorMessage(error.message);
       } else {
-        setErrorMessage('Failed to update payment status');
+        setErrorMessage('Failed to update payout status');
       }
     } finally {
       setIsBulkUpdating(false);
@@ -1351,7 +1351,7 @@ export default function BusinessEntryManager({
                 onClick={() => setShowBulkUpdateModal(true)}
                 className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2 text-sm font-semibold text-emerald-600 shadow-sm transition hover:bg-emerald-100"
               >
-                Import Payment Status
+                Import Payout Status
               </button>
             )}
             {userRole !== 'associate' && (
@@ -1638,7 +1638,7 @@ export default function BusinessEntryManager({
                   )}
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Payment Mode</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Cheque Number</th>
-                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Payment Status</th>
+                  <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Payout Status</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">UTR Number</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Payment Date</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Policy File</th>
@@ -1840,7 +1840,7 @@ export default function BusinessEntryManager({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="relative w-full max-w-3xl max-h-[90vh] rounded-3xl bg-white shadow-2xl flex flex-col">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 shrink-0">
-              <h2 className="text-xl font-semibold text-slate-900">Import Payment Status</h2>
+              <h2 className="text-xl font-semibold text-slate-900">Import Payout Status</h2>
               <button
                 onClick={() => {
                   setShowBulkUpdateModal(false);
@@ -1951,7 +1951,7 @@ export default function BusinessEntryManager({
                 disabled={!bulkUpdateFile || isBulkUpdating}
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
               >
-                {isBulkUpdating ? 'Updating...' : 'Update Payment Status'}
+                {isBulkUpdating ? 'Updating...' : 'Update Payout Status'}
               </button>
             </div>
           </div>
