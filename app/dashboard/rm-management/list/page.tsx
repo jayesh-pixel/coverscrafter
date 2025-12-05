@@ -100,6 +100,8 @@ export default function ConsolidationListPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [viewingAssociate, setViewingAssociate] = useState<AssociateUser | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewingAssociateDocuments, setViewingAssociateDocuments] = useState<AssociateUser | null>(null);
+  const [isViewDocumentsModalOpen, setIsViewDocumentsModalOpen] = useState(false);
   const [rmCurrentPage, setRmCurrentPage] = useState(1);
   const [associateCurrentPage, setAssociateCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -252,6 +254,67 @@ export default function ConsolidationListPage() {
   const handleCloseViewModal = () => {
     setIsViewModalOpen(false);
     setViewingAssociate(null);
+  };
+
+  const handleViewDocuments = (associate: AssociateUser) => {
+    setViewingAssociateDocuments(associate);
+    setIsViewDocumentsModalOpen(true);
+    setSelectedDocumentId(null);
+    setDocumentUrl(null);
+    setDocumentError(null);
+  };
+
+  const handleCloseDocumentsModal = () => {
+    setIsViewDocumentsModalOpen(false);
+    setViewingAssociateDocuments(null);
+    setSelectedDocumentId(null);
+    if (documentUrl) {
+      URL.revokeObjectURL(documentUrl);
+    }
+    setDocumentUrl(null);
+    setDocumentError(null);
+  };
+
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+  const [documentUrl, setDocumentUrl] = useState<string | null>(null);
+  const [isLoadingDocument, setIsLoadingDocument] = useState(false);
+  const [documentError, setDocumentError] = useState<string | null>(null);
+
+  const loadDocument = async (documentId: string) => {
+    setIsLoadingDocument(true);
+    setDocumentError(null);
+    
+    try {
+      const token = await getValidAuthToken();
+      const response = await fetch(`https://instapolicy.coverscrafter.com/v1/uploads/${documentId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to load document');
+      }
+      
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setDocumentUrl(url);
+    } catch (error) {
+      console.error('Error loading document:', error);
+      setDocumentError('Failed to load document');
+    } finally {
+      setIsLoadingDocument(false);
+    }
+  };
+
+  const handleSelectDocument = (documentId: string) => {
+    // Clean up previous URL
+    if (documentUrl) {
+      URL.revokeObjectURL(documentUrl);
+    }
+    setSelectedDocumentId(documentId);
+    setDocumentUrl(null);
+    loadDocument(documentId);
   };
 
   const handleSaveRM = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -750,6 +813,12 @@ export default function ConsolidationListPage() {
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{formatDate(associate.createdAt)}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white">
                       <div className="flex gap-2">
+                        <button
+                          onClick={() => handleViewDocuments(associate)}
+                          className="rounded-lg bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-600 transition hover:bg-purple-100"
+                        >
+                          View Documents
+                        </button>
                         <button
                           onClick={() => handleViewAssociate(associate)}
                           className="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-100"
@@ -1378,6 +1447,238 @@ export default function ConsolidationListPage() {
             <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4 shrink-0">
               <button
                 onClick={handleCloseViewModal}
+                className="rounded-xl border border-slate-300 px-6 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Documents Modal */}
+      {isViewDocumentsModalOpen && viewingAssociateDocuments && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-6xl max-h-[90vh] rounded-3xl bg-white shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 shrink-0">
+              <h2 className="text-xl font-semibold text-slate-900">Associate Documents - {viewingAssociateDocuments.name}</h2>
+              <button
+                onClick={handleCloseDocumentsModal}
+                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-6 flex-1">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Panel - Document List */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-3">Available Documents</h3>
+                  
+                  {/* GST Certificate */}
+                  <div 
+                    onClick={() => viewingAssociateDocuments.documents?.gstCertificate && handleSelectDocument(viewingAssociateDocuments.documents.gstCertificate)}
+                    className={`cursor-pointer rounded-xl border p-4 transition ${
+                      selectedDocumentId === viewingAssociateDocuments.documents?.gstCertificate
+                        ? 'border-blue-400 bg-blue-50'
+                        : viewingAssociateDocuments.documents?.gstCertificate
+                        ? 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/50'
+                        : 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-sm font-medium text-slate-700">GST Certificate</label>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {viewingAssociateDocuments.documents?.gstCertificate 
+                            ? 'Click to view'
+                            : 'Not uploaded'}
+                        </p>
+                      </div>
+                      {viewingAssociateDocuments.documents?.gstCertificate && (
+                        <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* PAN Card */}
+                  <div 
+                    onClick={() => viewingAssociateDocuments.documents?.pancardDocument && handleSelectDocument(viewingAssociateDocuments.documents.pancardDocument)}
+                    className={`cursor-pointer rounded-xl border p-4 transition ${
+                      selectedDocumentId === viewingAssociateDocuments.documents?.pancardDocument
+                        ? 'border-blue-400 bg-blue-50'
+                        : viewingAssociateDocuments.documents?.pancardDocument
+                        ? 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/50'
+                        : 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-sm font-medium text-slate-700">PAN Card</label>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {viewingAssociateDocuments.documents?.pancardDocument 
+                            ? 'Click to view'
+                            : 'Not uploaded'}
+                        </p>
+                      </div>
+                      {viewingAssociateDocuments.documents?.pancardDocument && (
+                        <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Cancelled Cheque */}
+                  <div 
+                    onClick={() => viewingAssociateDocuments.documents?.cancelledCheque && handleSelectDocument(viewingAssociateDocuments.documents.cancelledCheque)}
+                    className={`cursor-pointer rounded-xl border p-4 transition ${
+                      selectedDocumentId === viewingAssociateDocuments.documents?.cancelledCheque
+                        ? 'border-blue-400 bg-blue-50'
+                        : viewingAssociateDocuments.documents?.cancelledCheque
+                        ? 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/50'
+                        : 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-sm font-medium text-slate-700">Cancelled Cheque</label>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {viewingAssociateDocuments.documents?.cancelledCheque 
+                            ? 'Click to view'
+                            : 'Not uploaded'}
+                        </p>
+                      </div>
+                      {viewingAssociateDocuments.documents?.cancelledCheque && (
+                        <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Aadhar Front */}
+                  <div 
+                    onClick={() => viewingAssociateDocuments.documents?.aadharFront && handleSelectDocument(viewingAssociateDocuments.documents.aadharFront)}
+                    className={`cursor-pointer rounded-xl border p-4 transition ${
+                      selectedDocumentId === viewingAssociateDocuments.documents?.aadharFront
+                        ? 'border-blue-400 bg-blue-50'
+                        : viewingAssociateDocuments.documents?.aadharFront
+                        ? 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/50'
+                        : 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-sm font-medium text-slate-700">Aadhar Card (Front)</label>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {viewingAssociateDocuments.documents?.aadharFront 
+                            ? 'Click to view'
+                            : 'Not uploaded'}
+                        </p>
+                      </div>
+                      {viewingAssociateDocuments.documents?.aadharFront && (
+                        <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Aadhar Back */}
+                  <div 
+                    onClick={() => viewingAssociateDocuments.documents?.aadharBack && handleSelectDocument(viewingAssociateDocuments.documents.aadharBack)}
+                    className={`cursor-pointer rounded-xl border p-4 transition ${
+                      selectedDocumentId === viewingAssociateDocuments.documents?.aadharBack
+                        ? 'border-blue-400 bg-blue-50'
+                        : viewingAssociateDocuments.documents?.aadharBack
+                        ? 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/50'
+                        : 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-sm font-medium text-slate-700">Aadhar Card (Back)</label>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {viewingAssociateDocuments.documents?.aadharBack 
+                            ? 'Click to view'
+                            : 'Not uploaded'}
+                        </p>
+                      </div>
+                      {viewingAssociateDocuments.documents?.aadharBack && (
+                        <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Panel - Document Viewer */}
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  {selectedDocumentId ? (
+                    <div className="h-full flex flex-col">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-semibold text-slate-700">Document Preview</h3>
+                        <div className="flex gap-2">
+                          <a
+                            href={`https://instapolicy.coverscrafter.com/v1/uploads/${selectedDocumentId}`}
+                            download
+                            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                          >
+                            Download
+                          </a>
+                        </div>
+                      </div>
+                      <div className="flex-1 rounded-xl overflow-hidden bg-white border border-slate-200">
+                        {isLoadingDocument ? (
+                          <div className="flex items-center justify-center h-full min-h-[500px]">
+                            <div className="text-center">
+                              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                              <p className="mt-4 text-sm text-slate-500">Loading document...</p>
+                            </div>
+                          </div>
+                        ) : documentError ? (
+                          <div className="flex items-center justify-center h-full min-h-[500px]">
+                            <div className="text-center">
+                              <svg className="mx-auto h-12 w-12 text-rose-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <p className="mt-2 text-sm text-rose-600">{documentError}</p>
+                              <p className="mt-1 text-xs text-slate-400">Please try downloading the file</p>
+                            </div>
+                          </div>
+                        ) : documentUrl ? (
+                          <iframe
+                            src={documentUrl}
+                            className="w-full h-full min-h-[500px]"
+                            title="Document Preview"
+                          />
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-full min-h-[500px]">
+                      <div className="text-center">
+                        <svg className="mx-auto h-12 w-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <p className="mt-2 text-sm text-slate-500">Select a document to preview</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4 shrink-0">
+              <button
+                onClick={handleCloseDocumentsModal}
                 className="rounded-xl border border-slate-300 px-6 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 Close

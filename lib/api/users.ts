@@ -54,6 +54,13 @@ export interface AssociateUser extends UserProfile {
   isPos: boolean;
   posCode?: string;
   createdBy?: string;
+  documents?: {
+    gstCertificate?: string;
+    pancardDocument?: string;
+    cancelledCheque?: string;
+    aadharFront?: string;
+    aadharBack?: string;
+  };
 }
 
 /**
