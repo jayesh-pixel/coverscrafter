@@ -1122,7 +1122,7 @@ export default function BusinessEntryForm({
               value={selectedAssociateId}
             />
             {showAssociateDropdown && !isLoadingUsers && selectedRmId && (
-              <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-300 bg-white shadow-lg">
+              <div className="absolute z-999 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-300 bg-white shadow-lg">
                 {filteredAssociates.length === 0 ? (
                   <div className="px-3 py-2 text-sm text-slate-500">No associates found</div>
                 ) : (
