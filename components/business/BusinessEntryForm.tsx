@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, ChangeEvent, FormEvent } from "react";
+import { useState, useEffect, ChangeEvent, FormEvent, useRef } from "react";
 import { SelectField, TextField } from "@/components/ui/forms";
 import { getAssociateUsers, getRMUsers, getUserProfile, type AssociateUser, type RMUser } from "@/lib/api/users";
 import { getValidAuthToken, getAuthSession } from "@/lib/utils/storage";
@@ -357,10 +357,27 @@ export default function BusinessEntryForm({
   const [grossPremium, setGrossPremium] = useState<string>("");
   const [isNewVehicle, setIsNewVehicle] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [associateSearchTerm, setAssociateSearchTerm] = useState<string>("");
+  const [showAssociateDropdown, setShowAssociateDropdown] = useState(false);
+  const associateDropdownRef = useRef<HTMLDivElement>(null);
 
   const getToken = async (): Promise<string | null> => {
     return await getValidAuthToken();
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (associateDropdownRef.current && !associateDropdownRef.current.contains(event.target as Node)) {
+        setShowAssociateDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const fetchRMsByState = async (state: string) => {
     const token = await getToken();
@@ -412,6 +429,12 @@ export default function BusinessEntryForm({
         if (rm?.firebaseUid) {
           const associates = allAssociates.filter(a => a.createdBy === rm.firebaseUid);
           setAssociateOptions(associates);
+          
+          // Set associate search term to display name
+          const selectedAssoc = associates.find(a => a._id === editEntry.associateId);
+          if (selectedAssoc) {
+            setAssociateSearchTerm(selectedAssoc.name);
+          }
         }
       }
     }
@@ -445,6 +468,7 @@ export default function BusinessEntryForm({
     setSelectedRmId(rmId);
     setSelectedAssociateId("");
     setAssociateOptions([]);
+    setAssociateSearchTerm("");
     
     if (!rmId) {
       setSelectedState("");
@@ -530,6 +554,19 @@ export default function BusinessEntryForm({
 
     return { id, name, url };
   };
+
+  const filteredAssociates = associateOptions.filter((assoc) => {
+    if (!associateSearchTerm) return true;
+    const searchLower = associateSearchTerm.toLowerCase();
+    return (
+      assoc.name.toLowerCase().includes(searchLower) ||
+      assoc.associateCode.toLowerCase().includes(searchLower) ||
+      (assoc.posCode && assoc.posCode.toLowerCase().includes(searchLower))
+    );
+  });
+
+  const selectedAssociate = associateOptions.find((a) => a._id === selectedAssociateId);
+  const associateDisplayValue = selectedAssociate ? selectedAssociate.name : "";
 
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1064,18 +1101,68 @@ export default function BusinessEntryForm({
             }))}
             disabled
           />
-          <SelectField
-            id="associateId"
-            label="Associate Name"
-            value={selectedAssociateId}
-            onChange={(e) => setSelectedAssociateId(e.target.value)}
-            placeholder={isLoadingUsers ? "Loading Associates..." : "--Select Associate--"}
-            options={associateOptions.map((assoc) => ({
-              label: assoc.name,
-              value: assoc._id,
-            }))}
-            disabled={!selectedRmId || isLoadingUsers}
-          />
+          <div className="relative" ref={associateDropdownRef}>
+            <label htmlFor="associateId" className="mb-1.5 block text-sm font-medium text-slate-700">
+              Associate Name
+            </label>
+            <input
+              type="text"
+              id="associateSearch"
+              value={associateSearchTerm}
+              onChange={(e) => setAssociateSearchTerm(e.target.value)}
+              onFocus={() => setShowAssociateDropdown(true)}
+              placeholder={isLoadingUsers ? "Loading Associates..." : "--Select Associate--"}
+              disabled={!selectedRmId || isLoadingUsers}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+            />
+            <input
+              type="hidden"
+              id="associateId"
+              name="associateId"
+              value={selectedAssociateId}
+            />
+            {showAssociateDropdown && !isLoadingUsers && selectedRmId && (
+              <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-300 bg-white shadow-lg">
+                {filteredAssociates.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-slate-500">No associates found</div>
+                ) : (
+                  filteredAssociates.map((assoc) => (
+                    <button
+                      key={assoc._id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedAssociateId(assoc._id);
+                        setAssociateSearchTerm(assoc.name);
+                        setShowAssociateDropdown(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-sm transition hover:bg-blue-50 ${
+                        selectedAssociateId === assoc._id ? 'bg-blue-100 font-medium' : ''
+                      }`}
+                    >
+                      <div className="font-medium text-slate-900">{assoc.name}</div>
+                      <div className="text-xs text-slate-500">
+                        Code: {assoc.associateCode} {assoc.posCode ? `| POS: ${assoc.posCode}` : ''}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+            {selectedAssociateId && associateDisplayValue && !showAssociateDropdown && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedAssociateId("");
+                  setAssociateSearchTerm("");
+                }}
+                className="absolute right-2 top-9 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
 
         {selectedAssociateId && userRole !== 'associate' && (
