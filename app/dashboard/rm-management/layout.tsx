@@ -1,4 +1,4 @@
-import Sidebar, { ConsolidationIcon, NavItem } from "@/components/layout/Sidebar";
+import Sidebar, { ConsolidationIcon, ChartIcon, NavItem } from "@/components/layout/Sidebar";
 import { ReactNode } from "react";
 
 const consolidationNavItems: NavItem[] = [
@@ -13,6 +13,11 @@ const consolidationNavItems: NavItem[] = [
       { label: "Add Broker", href: "/dashboard/rm-management/brokers" },
       { label: "Bank Names", href: "/dashboard/rm-management/banks" },
     ],
+  },
+  {
+    label: "Business Overview",
+    href: "/dashboard/rm-management/business-overview",
+    icon: ChartIcon,
   },
 ];
 

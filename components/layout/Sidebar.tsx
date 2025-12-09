@@ -22,6 +22,7 @@ type SidebarProps = {
 
 const defaultNavItems: NavItem[] = [
   { label: "Overview", href: "/dashboard/admin", icon: DashboardIcon },
+  { label: "Business Overview", href: "/dashboard/admin/business-overview", icon: ChartIcon },
   {
     label: "Dealers",
     href: "/dashboard/admin/dealers",
@@ -309,6 +310,21 @@ export function DashboardIcon({ active }: { active: boolean }) {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
         d="M5 4H10V11H5V4ZM14 4H19V8H14V4ZM14 12H19V20H14V12ZM5 15H10V20H5V15Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={active ? 1 : 0.8}
+      />
+    </svg>
+  );
+}
+
+export function ChartIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M3 3V21H21M7 16L12 11L16 15L21 10M21 10V14M21 10H17"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
