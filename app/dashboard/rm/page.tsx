@@ -7,7 +7,7 @@ export default function RMOverviewPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/dashboard/rm/business");
+    router.replace("/dashboard/rm/business-overview");
   }, [router]);
 
   return null;

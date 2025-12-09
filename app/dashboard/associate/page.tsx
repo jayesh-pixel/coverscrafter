@@ -7,7 +7,7 @@ export default function AssociateOverviewPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/dashboard/associate/business");
+    router.replace("/dashboard/associate/business-overview");
   }, [router]);
 
   return null;
