@@ -604,11 +604,17 @@ export default function BusinessOverviewPage() {
                       else if (breakdownTab === "broker") distribution = brokerDistribution;
                       else if (breakdownTab === "state") distribution = stateDistribution;
                       else if (breakdownTab === "rm") {
-                        distribution = buildDistribution(filteredEntries, (entry) => entry.rmData?.name || entry.rmid || "Unmapped RM");
+                        distribution = buildDistribution(filteredEntries, (entry) => {
+                          const rmData = entry.rmData as any;
+                          return rmData?.firstName ? `${rmData.firstName} ${rmData.lastName || ""}`.trim() : entry.rmId || "Unmapped RM";
+                        });
                       } else if (breakdownTab === "associate") {
-                        distribution = buildDistribution(filteredEntries, (entry) => entry.associateData?.name || entry.associateid || "Unmapped Associate");
+                        distribution = buildDistribution(filteredEntries, (entry) => {
+                          const associateData = entry.associateData as any;
+                          return associateData?.contactPerson || entry.associateId || "Unmapped Associate";
+                        });
                       } else if (breakdownTab === "product") {
-                        distribution = buildDistribution(filteredEntries, (entry) => entry.productType || entry.insuranceType || "Unmapped Product");
+                        distribution = buildDistribution(filteredEntries, (entry) => entry.product || entry.insuranceCompany|| "Unmapped Product");
                       }
 
                       const totalRevenue = distribution.reduce((sum, item) => sum + item.value, 0);
@@ -621,9 +627,17 @@ export default function BusinessOverviewPage() {
                             if (breakdownTab === "insurer") return (entry.insuranceCompany || "Unmapped Insurer") === item.label;
                             if (breakdownTab === "broker") return (entry.brokerData?.brokername || entry.brokerid || "Unmapped Broker") === item.label;
                             if (breakdownTab === "state") return (entry.state || "Unknown State") === item.label;
-                            if (breakdownTab === "rm") return (entry.rmData?.name || entry.rmid || "Unmapped RM") === item.label;
-                            if (breakdownTab === "associate") return (entry.associateData?.name || entry.associateid || "Unmapped Associate") === item.label;
-                            if (breakdownTab === "product") return (entry.productType || entry.insuranceType || "Unmapped Product") === item.label;
+                            if (breakdownTab === "rm") {
+                              const rmData = entry.rmData as any;
+                              const rmName = rmData?.firstName ? `${rmData.firstName} ${rmData.lastName || ""}`.trim() : entry.rmId || "Unmapped RM";
+                              return rmName === item.label;
+                            }
+                            if (breakdownTab === "associate") {
+                              const associateData = entry.associateData as any;
+                              const associateName = associateData?.contactPerson || entry.associateId || "Unmapped Associate";
+                              return associateName === item.label;
+                            }
+                            if (breakdownTab === "product") return (entry.subProduct || entry.insuranceCompany || "Unmapped Product") === item.label;
                             return false;
                           })
                           .reduce((sum, entry) => sum + derivePremium(entry), 0);
