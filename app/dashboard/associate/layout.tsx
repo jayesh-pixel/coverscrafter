@@ -31,8 +31,11 @@ function ProfileIcon({ active }: { active: boolean }) {
 
 const navItems = [
   // { label: "Overview", href: "/dashboard/associate", icon: DashboardIcon },
+      { label: "Business-Overview", href: "/dashboard/associate/business-overview", icon: DashboardIcon },
+
   { label: "Business", href: "/dashboard/associate/business", icon: BriefcaseIcon },
   { label: "Profile", href: "/dashboard/associate/profile", icon: ProfileIcon },
+
 ];
 
 export default function AssociateLayout({ children }: { children: ReactNode }) {
