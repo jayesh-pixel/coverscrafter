@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { HiChartBar, HiUserGroup } from "react-icons/hi2";
 import { SectionCard, MetricCard, PieChart, MiniBarChart, palette, numberFormatter, currencyFormatter, IndiaHeatMap } from "@/components/dashboard/overview";
 import { getBusinessEntries, type BusinessEntry } from "@/lib/api/businessentry";
+import { getRMUsers, getAssociateUsers, type RMUser, type AssociateUser } from "@/lib/api/users";
 import { getValidAuthToken } from "@/lib/utils/storage";
 
 type DistributionItem = {
@@ -91,6 +92,8 @@ export default function BusinessOverviewPage() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [rmUsers, setRmUsers] = useState<RMUser[]>([]);
+  const [associateUsers, setAssociateUsers] = useState<AssociateUser[]>([]);
 
   const loadEntries = async (withSpinner = true) => {
     try {
@@ -100,8 +103,14 @@ export default function BusinessOverviewPage() {
       if (!token) {
         throw new Error("Session expired. Please sign in again.");
       }
-      const data = await getBusinessEntries(token);
-      setEntries(data ?? []);
+      const [businessData, rmsData, associatesData] = await Promise.all([
+        getBusinessEntries(token),
+        getRMUsers(token),
+        getAssociateUsers(token),
+      ]);
+      setEntries(businessData ?? []);
+      setRmUsers(rmsData ?? []);
+      setAssociateUsers(associatesData ?? []);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load business data.";
       setError(message);
@@ -205,6 +214,64 @@ export default function BusinessOverviewPage() {
       count: item.count,
     }));
   }, [stateDistribution, businessMetric]);
+
+  const topRMs = useMemo(() => {
+    const rmPerformance = new Map<string, { rm: RMUser; policies: number; revenue: number }>();
+    
+    filteredEntries.forEach((entry) => {
+      if (entry.rmId && entry.rmData) {
+        const rmData = entry.rmData as any;
+        const rmName = rmData?.firstName ? `${rmData.firstName} ${rmData.lastName || ""}`.trim() : entry.rmId;
+        const current = rmPerformance.get(entry.rmId) || { 
+          rm: rmUsers.find(r => r._id === entry.rmId) || rmData as RMUser, 
+          policies: 0, 
+          revenue: 0 
+        };
+        current.policies += 1;
+        current.revenue += deriveRevenue(entry);
+        rmPerformance.set(entry.rmId, current);
+      }
+    });
+
+    return Array.from(rmPerformance.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+  }, [filteredEntries, rmUsers]);
+
+  const topAssociates = useMemo(() => {
+    const associatePerformance = new Map<string, { associate: AssociateUser; policies: number; revenue: number }>();
+    
+    filteredEntries.forEach((entry) => {
+      if (entry.associateId && entry.associateData) {
+        const associateData = entry.associateData as any;
+        const current = associatePerformance.get(entry.associateId) || { 
+          associate: associateUsers.find(a => a._id === entry.associateId) || associateData as AssociateUser, 
+          policies: 0, 
+          revenue: 0 
+        };
+        current.policies += 1;
+        current.revenue += deriveRevenue(entry);
+        associatePerformance.set(entry.associateId, current);
+      }
+    });
+
+    return Array.from(associatePerformance.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+  }, [filteredEntries, associateUsers]);
+
+  const recentAssociates = useMemo(() => {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    return associateUsers
+      .filter((associate) => {
+        const createdDate = new Date(associate.createdAt);
+        return createdDate >= thirtyDaysAgo;
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 10);
+  }, [associateUsers]);
 
   const refresh = async () => {
     setIsRefreshing(true);
@@ -614,7 +681,7 @@ export default function BusinessOverviewPage() {
                           return associateData?.contactPerson || entry.associateId || "Unmapped Associate";
                         });
                       } else if (breakdownTab === "product") {
-                        distribution = buildDistribution(filteredEntries, (entry) => entry.product || entry.insuranceCompany|| "Unmapped Product");
+                        distribution = buildDistribution(filteredEntries, (entry) => entry.product || "Unmapped Product");
                       }
 
                       const totalRevenue = distribution.reduce((sum, item) => sum + item.value, 0);
@@ -637,7 +704,7 @@ export default function BusinessOverviewPage() {
                               const associateName = associateData?.contactPerson || entry.associateId || "Unmapped Associate";
                               return associateName === item.label;
                             }
-                            if (breakdownTab === "product") return (entry.subProduct || entry.insuranceCompany || "Unmapped Product") === item.label;
+                            if (breakdownTab === "product") return (entry.product || "Unmapped Product") === item.label;
                             return false;
                           })
                           .reduce((sum, entry) => sum + derivePremium(entry), 0);
@@ -712,30 +779,139 @@ export default function BusinessOverviewPage() {
           {/* Top RMs */}
           <SectionCard title="Top RMs" description="Highest performing Relationship Managers">
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-              <div className="text-center py-12 text-slate-500">
-                <p className="text-sm">RM performance data will appear here</p>
-                <p className="text-xs mt-1">Based on business entries and team performance</p>
-              </div>
+              {topRMs.length === 0 ? (
+                <div className="text-center py-12 text-slate-500">
+                  <p className="text-sm">No RM performance data available</p>
+                  <p className="text-xs mt-1">Data will appear as business entries are recorded</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-200">
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Rank</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">RM Name</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">State</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Policies</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Revenue</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {topRMs.map((item, index) => (
+                        <tr key={item.rm._id} className="transition-colors hover:bg-white">
+                          <td className="px-4 py-3">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700">
+                              {index + 1}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 font-medium text-slate-900">
+                            {item.rm.firstName} {item.rm.lastName}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-slate-600">{item.rm.state}</td>
+                          <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">
+                            {numberFormatter.format(item.policies)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm font-semibold text-emerald-600">
+                            {currencyFormatter.format(item.revenue)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </SectionCard>
 
           {/* Top Associates */}
           <SectionCard title="Top Associates" description="Highest performing Associates">
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-              <div className="text-center py-12 text-slate-500">
-                <p className="text-sm">Associate performance data will appear here</p>
-                <p className="text-xs mt-1">Based on business entries and individual contributions</p>
-              </div>
+              {topAssociates.length === 0 ? (
+                <div className="text-center py-12 text-slate-500">
+                  <p className="text-sm">No associate performance data available</p>
+                  <p className="text-xs mt-1">Data will appear as business entries are recorded</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-200">
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Rank</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Associate Name</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Code</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Policies</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Revenue</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {topAssociates.map((item, index) => (
+                        <tr key={item.associate._id} className="transition-colors hover:bg-white">
+                          <td className="px-4 py-3">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700">
+                              {index + 1}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 font-medium text-slate-900">
+                            {item.associate.name || item.associate.contactPerson}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-slate-600">{item.associate.associateCode}</td>
+                          <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">
+                            {numberFormatter.format(item.policies)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm font-semibold text-emerald-600">
+                            {currencyFormatter.format(item.revenue)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </SectionCard>
 
           {/* Onboarding Associates */}
           <SectionCard title="Onboarding Associates" description="Recently joined team members">
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-              <div className="text-center py-12 text-slate-500">
-                <p className="text-sm">Recent associate onboarding data will appear here</p>
-                <p className="text-xs mt-1">Showing last 30 days of new associates</p>
-              </div>
+              {recentAssociates.length === 0 ? (
+                <div className="text-center py-12 text-slate-500">
+                  <p className="text-sm">No recent onboarding data available</p>
+                  <p className="text-xs mt-1">Showing associates who joined in the last 30 days</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-200">
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Associate Name</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Code</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">State</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Contact</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Joined On</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {recentAssociates.map((associate) => (
+                        <tr key={associate._id} className="transition-colors hover:bg-white">
+                          <td className="px-4 py-3 font-medium text-slate-900">
+                            {associate.name || associate.contactPerson}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-slate-600">{associate.associateCode}</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">{associate.associateStateName}</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">{associate.contactNo}</td>
+                          <td className="px-4 py-3 text-right text-sm text-slate-600">
+                            {new Date(associate.createdAt).toLocaleDateString("en-US", { 
+                              month: "short", 
+                              day: "numeric", 
+                              year: "numeric" 
+                            })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </SectionCard>
         </div>

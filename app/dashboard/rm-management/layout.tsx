@@ -7,7 +7,7 @@ const consolidationNavItems: NavItem[] = [
     href: "/dashboard/rm-management",
     icon: ConsolidationIcon,
     children: [
-      { label: "Create RM/Associate", href: "/dashboard/rm-management" },
+      { label: "Create RM/Associate", href: "/dashboard/rm-management/create" },
       { label: "RM/Associate List", href: "/dashboard/rm-management/list" },
       { label: "Business Entry", href: "/dashboard/rm-management/business" },
       { label: "Add Broker", href: "/dashboard/rm-management/brokers" },

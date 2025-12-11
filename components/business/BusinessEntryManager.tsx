@@ -1604,7 +1604,9 @@ export default function BusinessEntryManager({
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Email</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">State</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Insurance Company</th>
+                  {userRole !== 'associate' && (
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Broker</th>
+                  )}
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Line of Business</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Product</th>
                   <th className="border border-slate-300 px-4 py-3 font-semibold text-slate-700 bg-slate-50">Sub Product</th>
@@ -1670,7 +1672,9 @@ export default function BusinessEntryManager({
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.emailId || ''}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.state || ''}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.insuranceCompany || ''}</td>
+                    {userRole !== 'associate' && (
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{broker?.brokername || entry.brokerData?.brokername || ''}</td>
+                    )}
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.lineOfBusiness || ''}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.product || ''}</td>
                     <td className="border border-slate-300 px-4 py-3 bg-white text-slate-600">{entry.subProduct || ''}</td>

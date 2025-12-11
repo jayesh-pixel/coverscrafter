@@ -359,6 +359,7 @@ export default function BusinessEntryForm({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [associateSearchTerm, setAssociateSearchTerm] = useState<string>("");
   const [showAssociateDropdown, setShowAssociateDropdown] = useState(false);
+  const [policyEndDate, setPolicyEndDate] = useState<string>("");
   const associateDropdownRef = useRef<HTMLDivElement>(null);
 
   const getToken = async (): Promise<string | null> => {
@@ -417,6 +418,7 @@ export default function BusinessEntryForm({
       setNetPremium(editEntry.netPremium?.toString() || "");
       setGrossPremium(editEntry.grossPremium?.toString() || "");
       setIsNewVehicle(editEntry.isNewVehicle || false);
+      setPolicyEndDate(editEntry.policyEndDate || "");
 
       // Fetch RMs for the state
       if (editEntry.state) {
@@ -525,6 +527,27 @@ export default function BusinessEntryForm({
     const tp = parseFloat(value) || 0;
     const net = od + tp;
     setNetPremium(net.toFixed(2));
+  };
+
+  const handlePolicyStartDateChange = (value: string) => {
+    if (!value) {
+      setPolicyEndDate("");
+      return;
+    }
+
+    // Create a date object from the start date
+    const startDate = new Date(value);
+    
+    // Add 1 year
+    const endDate = new Date(startDate);
+    endDate.setFullYear(endDate.getFullYear() + 1);
+    
+    // Subtract 1 day to get the expiry date
+    endDate.setDate(endDate.getDate() - 1);
+    
+    // Format as YYYY-MM-DD for the date input
+    const formattedEndDate = endDate.toISOString().split('T')[0];
+    setPolicyEndDate(formattedEndDate);
   };
 
   const extractUploadMeta = (upload: UploadResponse | null): { id?: string; name?: string; url?: string } => {
@@ -882,13 +905,15 @@ export default function BusinessEntryForm({
             type="date"
             required
             defaultValue={mode === "edit" && editEntry?.policyStartDate ? new Date(editEntry.policyStartDate).toISOString().split('T')[0] : undefined}
+            onChange={(e) => handlePolicyStartDateChange(e.target.value)}
           />
           <TextField
             id="policyEndDate"
             label="Policy End Date"
             type="date"
             required
-            defaultValue={mode === "edit" && editEntry?.policyEndDate ? new Date(editEntry.policyEndDate).toISOString().split('T')[0] : undefined}
+            value={policyEndDate}
+            onChange={(e) => setPolicyEndDate(e.target.value)}
           />
           <TextField
             id="policyTpEndDate"
@@ -1074,7 +1099,7 @@ export default function BusinessEntryForm({
         )}
       </div>
 
-      <div className="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+      <div className="relative z-10 space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
         <h3 className="text-base font-semibold text-slate-900">RM & Associate Assignment</h3>
         <div className="grid gap-4 md:grid-cols-3">
           <SelectField
@@ -1122,7 +1147,7 @@ export default function BusinessEntryForm({
               value={selectedAssociateId}
             />
             {showAssociateDropdown && !isLoadingUsers && selectedRmId && (
-              <div className="absolute z-999 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-300 bg-white shadow-lg">
+              <div className="absolute z-[999] mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-300 bg-white shadow-lg">
                 {filteredAssociates.length === 0 ? (
                   <div className="px-3 py-2 text-sm text-slate-500">No associates found</div>
                 ) : (
@@ -1171,7 +1196,7 @@ export default function BusinessEntryForm({
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <TextField
                 id="odPremiumPayin"
-                label="OD Premium (Pay-In)"
+                label="OD  (Pay-In)"
                 type="number"
                 step="0.01"
                 placeholder="0.00"
@@ -1179,7 +1204,7 @@ export default function BusinessEntryForm({
               />
               <TextField
                 id="tpPremiumPayin"
-                label="TP Premium (Pay-In)"
+                label="TP  (Pay-In)"
                 type="number"
                 step="0.01"
                 placeholder="0.00"
@@ -1187,7 +1212,7 @@ export default function BusinessEntryForm({
               />
               <TextField
                 id="netPremiumPayin"
-                label="Net Premium (Pay-In)"
+                label="Net  (Pay-In)"
                 type="number"
                 step="0.01"
                 placeholder="0.00"
@@ -1207,7 +1232,7 @@ export default function BusinessEntryForm({
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <TextField
                 id="odPremiumPayout"
-                label="OD Premium (Pay-Out)"
+                label="OD  (Pay-Out)"
                 type="number"
                 step="0.01"
                 placeholder="0.00"
@@ -1215,7 +1240,7 @@ export default function BusinessEntryForm({
               />
               <TextField
                 id="tpPremiumPayout"
-                label="TP Premium (Pay-Out)"
+                label="TP  (Pay-Out)"
                 type="number"
                 step="0.01"
                 placeholder="0.00"
@@ -1223,7 +1248,7 @@ export default function BusinessEntryForm({
               />
               <TextField
                 id="netPremiumPayout"
-                label="Net Premium (Pay-Out)"
+                label="Net  (Pay-Out)"
                 type="number"
                 step="0.01"
                 placeholder="0.00"
@@ -1268,7 +1293,7 @@ export default function BusinessEntryForm({
       </div>
 
       {mode === "create" && (
-        <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+        <div className="relative z-0 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
           <h3 className="mb-4 text-base font-semibold text-slate-900">Policy Document Upload</h3>
           
           <div className="space-y-3">

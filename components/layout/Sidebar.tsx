@@ -37,7 +37,7 @@ const defaultNavItems: NavItem[] = [
     href: "/dashboard/admin/rm-management",
     icon: ConsolidationIcon,
     children: [
-      { label: "Create RM/Associate", href: "/dashboard/admin/rm-management" },
+      { label: "Create RM/Associate", href: "/dashboard/admin/rm-management/create" },
       { label: "RM/Associate List", href: "/dashboard/admin/rm-management/list" },
       { label: "Dealer List", href: "/dashboard/admin/dealers/list" },
       { label: "Business Entry", href: "/dashboard/admin/rm-management/business" },
