@@ -147,12 +147,21 @@ export default function BusinessOverviewPage() {
     const totalPremium = filteredEntries.reduce((sum, entry) => sum + derivePremium(entry), 0);
     const totalRevenue = filteredEntries.reduce((sum, entry) => sum + deriveRevenue(entry), 0);
     const avgTicket = totalPolicies ? totalPremium / totalPolicies : 0;
+    
+    // Calculate active associates (those with at least one business entry)
+    const activeAssociatesSet = new Set(
+      filteredEntries
+        .filter(entry => entry.associateId)
+        .map(entry => entry.associateId)
+    );
+    const activeAssociates = activeAssociatesSet.size;
 
     return {
       totalPolicies,
       totalPremium,
       totalRevenue,
       avgTicket,
+      activeAssociates,
     };
   }, [filteredEntries]);
 
@@ -164,18 +173,18 @@ export default function BusinessOverviewPage() {
       const month = date.getMonth();
       const day = date.getDate();
       if (timeline === "day") {
-        return { key: `${year}-${month + 1}-${day}`, label: date.toLocaleDateString("en-US", { day: "2-digit", month: "short" }) };
+        return { key: `${year}-${month + 1}-${day}`, label: date.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" }) };
       }
       if (timeline === "week") {
         const weekStart = new Date(date);
         const dayOfWeek = (weekStart.getDay() + 6) % 7;
         weekStart.setDate(weekStart.getDate() - dayOfWeek);
-        const label = `${weekStart.toLocaleDateString("en-US", { day: "2-digit", month: "short" })}`;
+        const label = `${weekStart.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}`;
         return { key: `W-${weekStart.getFullYear()}-${weekStart.getMonth()}-${weekStart.getDate()}`, label: `Week of ${label}` };
       }
       return {
         key: `${year}-${month + 1}`,
-        label: date.toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+        label: date.toLocaleDateString("en-US", { month: "short", year: "numeric" }),
       };
     };
 
@@ -190,10 +199,46 @@ export default function BusinessOverviewPage() {
       map.set(bucket.key, current);
     }
 
-    return Array.from(map.entries())
+    // Get all entries sorted
+    let result = Array.from(map.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([, value]) => value)
-      .slice(-6);
+      .map(([, value]) => value);
+
+    // Fill gaps with zero values for daily timeline
+    if (timeline === "day" && result.length > 0) {
+      const filled: MonthlyStat[] = [];
+      const firstEntry = result[0];
+      const lastEntry = result[result.length - 1];
+      
+      // Parse dates from keys
+      const startDateStr = firstEntry.label;
+      const endDate = new Date();
+
+      // Create a map for quick lookup
+      const resultMap = new Map(map);
+
+      // Generate all dates from start to end
+      const current = new Date(startDateStr);
+      while (current <= endDate) {
+        const year = current.getFullYear();
+        const month = current.getMonth() + 1;
+        const day = current.getDate();
+        const key = `${year}-${month}-${day}`;
+        const label = current.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
+
+        if (resultMap.has(key)) {
+          filled.push(resultMap.get(key)!);
+        } else {
+          filled.push({ label, count: 0, premium: 0, revenue: 0 });
+        }
+
+        current.setDate(current.getDate() + 1);
+      }
+
+      result = filled;
+    }
+
+    return result.slice(-30); // Show last 30 periods
   }, [filteredEntries, timeline]);
 
   const brokerDistribution = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.brokerData?.brokername || entry.brokerid || "Unmapped Broker"), [filteredEntries]);
@@ -298,8 +343,8 @@ export default function BusinessOverviewPage() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Total Policies" value={numberFormatter.format(totals.totalPolicies)} helper="Count of policies in the period" />
         <MetricCard label="Total Premium" value={currencyFormatter.format(totals.totalPremium)} helper="Summed net premium" />
-        <MetricCard label="Net Revenue" value={currencyFormatter.format(totals.totalRevenue)} helper="Net of pay-in and pay-out" />
         <MetricCard label="Avg Ticket" value={currencyFormatter.format(totals.avgTicket || 0)} helper="Premium per policy" />
+        <MetricCard label="Active Associates" value={numberFormatter.format(totals.activeAssociates)} helper="Total Active Associates" />
       </div>
 
       {/* Tab Navigation */}
@@ -330,17 +375,6 @@ export default function BusinessOverviewPage() {
         <>
           <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="grid gap-4 md:grid-cols-4">
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-semibold text-blue-600">Business in</label>
-            <select
-              value={businessMetric}
-              onChange={(e) => setBusinessMetric(e.target.value as "revenue" | "count")}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            >
-              <option value="count">Numbers</option>
-              <option value="revenue">Revenue</option>
-            </select>
-          </div>
           <div className="flex flex-col gap-1 md:col-span-2">
             <label className="text-sm font-semibold text-blue-600">Date Range</label>
             <div className="relative">
@@ -427,127 +461,174 @@ export default function BusinessOverviewPage() {
       )}
 
       <SectionCard title="Overview" description="Activity metrics and business distribution.">
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Left Column - Bar Chart and Pie Charts */}
-          <div className="space-y-6">
-            {/* Bar Chart */}
-            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-              <h3 className="text-sm font-semibold text-slate-900">
-                {businessMetric === "count" ? "Number of Policies" : "Revenue"}
-              </h3>
-              <p className="mb-4 text-xs text-slate-500">Based on selected timeline and filters</p>
-              <MiniBarChart
-                data={timelineStats.map((item) => ({
-                  label: item.label,
-                  value: businessMetric === "count" ? item.count : item.revenue,
-                }))}
-                color={businessMetric === "count" ? "#2563eb" : "#10b981"}
-                valueFormatter={businessMetric === "count" ? (v) => numberFormatter.format(v) : (v) => currencyFormatter.format(v)}
-                emptyMessage={businessMetric === "count" ? "No policy activity captured yet." : "Revenue data will appear as soon as business entries arrive."}
-              />
-            </div>
-
-            {/* Pie Charts */}
-            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-slate-900">Business Distribution</h3>
-                <p className="text-xs text-slate-500">By Broker and Insurer</p>
-              </div>
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">Broker</p>
-                    <span className="text-[10px] text-slate-500">Top 5 + Others</span>
+        <div className="space-y-6">
+          {/* Combined Grouped Bar Chart - Policies and Premium */}
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <h3 className="text-sm font-semibold text-slate-900">Policies & Net Premium</h3>
+            <p className="mb-4 text-xs text-slate-500">Based on selected timeline and filters</p>
+            <div className="overflow-x-auto">
+              <div className="min-w-full" style={{ height: "400px", display: "flex", alignItems: "flex-end", justifyContent: "space-around", gap: "12px", paddingBottom: "40px", borderBottom: "1px solid #e2e8f0" }}>
+                {timelineStats.length === 0 ? (
+                  <div className="flex w-full items-center justify-center text-slate-500">
+                    <p>No data available for the selected period</p>
                   </div>
-                  <div className="flex flex-col items-center gap-3">
-                    <PieChart
-                      data={brokerPie.map((item, index) => ({
-                        label: item.label,
-                        value: businessMetric === "count" ? item.count : item.value,
-                        color: palette[index % palette.length],
-                      }))}
-                    />
-                    <div className="w-full space-y-1">
-                      {brokerPie.map((item, index) => {
-                        const totalValue = brokerPie.reduce((sum, i) => sum + (businessMetric === "count" ? i.count : i.value), 0);
-                        const itemValue = businessMetric === "count" ? item.count : item.value;
-                        const share = totalValue > 0 ? ((itemValue / totalValue) * 100).toFixed(1) : "0.0";
-                        return (
-                          <div
-                            key={item.label}
-                            className="group relative flex items-center gap-2 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-slate-100"
-                          >
-                            <span
-                              className="inline-flex h-2.5 w-2.5 shrink-0 rounded-full"
-                              style={{ backgroundColor: palette[index % palette.length] }}
-                            />
-                            <span className="flex-1 truncate text-slate-700" title={item.label}>
-                              {item.label}
-                            </span>
-                            <div className="pointer-events-none absolute left-0 top-full z-10 mt-1 hidden w-48 rounded-lg border border-slate-200 bg-white p-2 shadow-lg group-hover:block">
-                              <p className="mb-1 text-xs font-semibold text-slate-900">{item.label}</p>
-                              <div className="space-y-0.5 text-[11px] text-slate-600">
-                                <p>Policies: <span className="font-semibold text-slate-900">{numberFormatter.format(item.count)}</span></p>
-                                <p>Value: <span className="font-semibold text-slate-900">{currencyFormatter.format(item.value)}</span></p>
-                                <p>Share: <span className="font-semibold text-slate-900">{share}%</span></p>
-                              </div>
+                ) : (
+                  timelineStats.map((item, index) => (
+                    <div key={index} className="flex flex-col items-center gap-2" style={{ flex: 1 }}>
+                      {/* Grouped Bars Container */}
+                      <div className="flex items-end gap-1.5" style={{ height: "300px", alignItems: "flex-end" }}>
+                        {/* Policies Bar - Blue */}
+                        <div
+                          className="rounded-t bg-blue-500 transition-all hover:bg-blue-600"
+                          style={{
+                            width: "20px",
+                            height: `${Math.max(10, (item.count / Math.max(...timelineStats.map(s => s.count))) * 280)}px`,
+                            position: "relative",
+                          }}
+                          title={`Policies: ${numberFormatter.format(item.count)}`}
+                        >
+                          <span className="text-[9px] font-semibold text-slate-900 absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                            {numberFormatter.format(item.count)}
+                          </span>
+                        </div>
+
+                        {/* Premium Bar - Amber */}
+                        <div
+                          className="rounded-t bg-amber-500 transition-all hover:bg-amber-600"
+                          style={{
+                            width: "20px",
+                            height: `${Math.max(10, (item.premium / Math.max(...timelineStats.map(s => s.premium))) * 280)}px`,
+                            position: "relative",
+                          }}
+                          title={`Premium: ${currencyFormatter.format(item.premium)}`}
+                        >
+                          <span className="text-[9px] font-semibold text-slate-900 absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                            {currencyFormatter.format(item.premium)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* X-axis Label */}
+                      <div className="text-center">
+                        <p className="text-[11px] font-medium text-slate-700 mt-2">{item.label}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Legend */}
+              <div className="mt-6 flex items-center justify-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded bg-blue-500"></div>
+                  <span className="text-xs font-medium text-slate-600">Number of Policies</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded bg-amber-500"></div>
+                  <span className="text-xs font-medium text-slate-600">Net Premium</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Pie Charts */}
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-slate-900">Business Distribution</h3>
+              <p className="text-xs text-slate-500">By Broker and Insurer</p>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">Broker</p>
+                  <span className="text-[10px] text-slate-500">Top 5 + Others</span>
+                </div>
+                <div className="flex flex-col items-center gap-3">
+                  <PieChart
+                    data={brokerPie.map((item, index) => ({
+                      label: item.label,
+                      value: item.value,
+                      color: palette[index % palette.length],
+                    }))}
+                  />
+                  <div className="w-full space-y-1">
+                    {brokerPie.map((item, index) => {
+                      const totalValue = brokerPie.reduce((sum, i) => sum + i.value, 0);
+                      const share = totalValue > 0 ? ((item.value / totalValue) * 100).toFixed(1) : "0.0";
+                      return (
+                        <div
+                          key={item.label}
+                          className="group relative flex items-center gap-2 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-slate-100"
+                        >
+                          <span
+                            className="inline-flex h-2.5 w-2.5 shrink-0 rounded-full"
+                            style={{ backgroundColor: palette[index % palette.length] }}
+                          />
+                          <span className="flex-1 truncate text-slate-700" title={item.label}>
+                            {item.label}
+                          </span>
+                          <div className="pointer-events-none absolute left-0 top-full z-10 mt-1 hidden w-48 rounded-lg border border-slate-200 bg-white p-2 shadow-lg group-hover:block">
+                            <p className="mb-1 text-xs font-semibold text-slate-900">{item.label}</p>
+                            <div className="space-y-0.5 text-[11px] text-slate-600">
+                              <p>Policies: <span className="font-semibold text-slate-900">{numberFormatter.format(item.count)}</span></p>
+                              <p>Value: <span className="font-semibold text-slate-900">{currencyFormatter.format(item.value)}</span></p>
+                              <p>Share: <span className="font-semibold text-slate-900">{share}%</span></p>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
+              </div>
 
-                <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">Insurer</p>
-                    <span className="text-[10px] text-slate-500">Top 5 + Others</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-3">
-                    <PieChart
-                      data={insurerPie.map((item, index) => ({
-                        label: item.label,
-                        value: businessMetric === "count" ? item.count : item.value,
-                        color: palette[index % palette.length],
-                      }))}
-                    />
-                    <div className="w-full space-y-1">
-                      {insurerPie.map((item, index) => {
-                        const totalValue = insurerPie.reduce((sum, i) => sum + (businessMetric === "count" ? i.count : i.value), 0);
-                        const itemValue = businessMetric === "count" ? item.count : item.value;
-                        const share = totalValue > 0 ? ((itemValue / totalValue) * 100).toFixed(1) : "0.0";
-                        return (
-                          <div
-                            key={item.label}
-                            className="group relative flex items-center gap-2 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-slate-100"
-                          >
-                            <span
-                              className="inline-flex h-2.5 w-2.5 shrink-0 rounded-full"
-                              style={{ backgroundColor: palette[index % palette.length] }}
-                            />
-                            <span className="flex-1 truncate text-slate-700" title={item.label}>
-                              {item.label}
-                            </span>
-                            <div className="pointer-events-none absolute left-0 top-full z-10 mt-1 hidden w-48 rounded-lg border border-slate-200 bg-white p-2 shadow-lg group-hover:block">
-                              <p className="mb-1 text-xs font-semibold text-slate-900">{item.label}</p>
-                              <div className="space-y-0.5 text-[11px] text-slate-600">
-                                <p>Policies: <span className="font-semibold text-slate-900">{numberFormatter.format(item.count)}</span></p>
-                                <p>Value: <span className="font-semibold text-slate-900">{currencyFormatter.format(item.value)}</span></p>
-                                <p>Share: <span className="font-semibold text-slate-900">{share}%</span></p>
-                              </div>
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">Insurer</p>
+                  <span className="text-[10px] text-slate-500">Top 5 + Others</span>
+                </div>
+                <div className="flex flex-col items-center gap-3">
+                  <PieChart
+                    data={insurerPie.map((item, index) => ({
+                      label: item.label,
+                      value: item.value,
+                      color: palette[index % palette.length],
+                    }))}
+                  />
+                  <div className="w-full space-y-1">
+                    {insurerPie.map((item, index) => {
+                      const totalValue = insurerPie.reduce((sum, i) => sum + i.value, 0);
+                      const share = totalValue > 0 ? ((item.value / totalValue) * 100).toFixed(1) : "0.0";
+                      return (
+                        <div
+                          key={item.label}
+                          className="group relative flex items-center gap-2 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-slate-100"
+                        >
+                          <span
+                            className="inline-flex h-2.5 w-2.5 shrink-0 rounded-full"
+                            style={{ backgroundColor: palette[index % palette.length] }}
+                          />
+                          <span className="flex-1 truncate text-slate-700" title={item.label}>
+                            {item.label}
+                          </span>
+                          <div className="pointer-events-none absolute left-0 top-full z-10 mt-1 hidden w-48 rounded-lg border border-slate-200 bg-white p-2 shadow-lg group-hover:block">
+                            <p className="mb-1 text-xs font-semibold text-slate-900">{item.label}</p>
+                            <div className="space-y-0.5 text-[11px] text-slate-600">
+                              <p>Policies: <span className="font-semibold text-slate-900">{numberFormatter.format(item.count)}</span></p>
+                              <p>Value: <span className="font-semibold text-slate-900">{currencyFormatter.format(item.value)}</span></p>
+                              <p>Share: <span className="font-semibold text-slate-900">{share}%</span></p>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column - Map */}
+          {/* Map */}
           <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
             <h3 className="text-sm font-semibold text-slate-900">Business by State</h3>
             <p className="mb-4 text-xs text-slate-500">Geographic distribution across India</p>
