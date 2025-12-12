@@ -401,6 +401,14 @@ export default function BusinessEntryManager({
   const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
   const [editPaymentMode, setEditPaymentMode] = useState<string>("");
   const [formKey, setFormKey] = useState(0);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportSheets, setExportSheets] = useState({
+    businessReport: true,
+    payoutSummary: true,
+    brokerSheets: true,
+  });
+  const [exportBrokerIds, setExportBrokerIds] = useState<string[]>([]);
+  const [exportAllBrokers, setExportAllBrokers] = useState(true);
 
   const fetchEntries = async (filterParams?: Record<string, string>) => {
     const token = await getToken();
@@ -981,6 +989,14 @@ export default function BusinessEntryManager({
     fetchEntries();
   };
 
+  const handleOpenExportDialog = () => {
+    setShowExportDialog(true);
+  };
+
+  const handleCloseExportDialog = () => {
+    setShowExportDialog(false);
+  };
+
   const handleExport = async () => {
     const token = await getToken();
     if (!token) {
@@ -998,8 +1014,34 @@ export default function BusinessEntryManager({
         if (value) activeFilters[key] = value;
       });
 
-      // Call export API
-      const blob = await exportBusinessEntries(token, activeFilters);
+      // Build sheets parameter
+      let sheetsParam: string;
+      if (exportSheets.businessReport && exportSheets.payoutSummary) {
+        sheetsParam = 'Business Report,Payout Summary';
+      } else if (exportSheets.businessReport) {
+        sheetsParam = 'Business Report';
+      } else if (exportSheets.payoutSummary) {
+        sheetsParam = 'Payout Summary';
+      } else if (exportSheets.brokerSheets) {
+        sheetsParam = ''; // Empty means only broker sheets
+      } else {
+        sheetsParam = 'all'; // Default to all
+      }
+
+      // Build brokerIds parameter
+      let brokerIdsParam: string;
+      if (exportAllBrokers) {
+        brokerIdsParam = 'all';
+      } else {
+        brokerIdsParam = exportBrokerIds.join(',');
+      }
+
+      // Call export API with options
+      const blob = await exportBusinessEntries(token, {
+        sheets: sheetsParam,
+        brokerIds: brokerIdsParam,
+        filters: activeFilters,
+      });
       
       // Create download link
       const url = URL.createObjectURL(blob);
@@ -1013,11 +1055,36 @@ export default function BusinessEntryManager({
 
       setSuccessMessage('Business entries exported successfully');
       setTimeout(() => setSuccessMessage(null), 3000);
+      
+      // Close dialog
+      handleCloseExportDialog();
     } catch (error) {
       console.error('Export failed:', error);
-      setErrorMessage('Failed to export business entries. Please try again.');
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage('Failed to export business entries. Please try again.');
+      }
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleToggleBroker = (brokerId: string) => {
+    setExportBrokerIds(prev => {
+      if (prev.includes(brokerId)) {
+        return prev.filter(id => id !== brokerId);
+      } else {
+        return [...prev, brokerId];
+      }
+    });
+  };
+
+  const handleSelectAllBrokers = () => {
+    if (exportBrokerIds.length === brokerOptions.length) {
+      setExportBrokerIds([]);
+    } else {
+      setExportBrokerIds(brokerOptions.map(b => b._id));
     }
   };
 
@@ -1339,11 +1406,11 @@ export default function BusinessEntryManager({
             </div>
             <button
               type="button"
-              onClick={handleExport}
+              onClick={handleOpenExportDialog}
               disabled={isExporting}
               className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-2 text-sm font-semibold text-blue-600 shadow-sm transition hover:bg-blue-100 disabled:opacity-50"
             >
-              {isExporting ? 'Exporting...' : '📊 Export to Excel'}
+              📊 Export to Excel
             </button>
             {userRole !== 'rm' && userRole !== 'associate' && (
               <button
@@ -2061,6 +2128,154 @@ export default function BusinessEntryManager({
                   {isDeletingEntry ? 'Deleting...' : 'Delete Entry'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export Dialog */}
+      {showExportDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-2xl max-h-[90vh] rounded-3xl bg-white shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 shrink-0">
+              <h2 className="text-xl font-semibold text-slate-900">Export Business Entries</h2>
+              <button
+                onClick={handleCloseExportDialog}
+                disabled={isExporting}
+                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-6 flex-1 space-y-6">
+              {/* Sheet Selection */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-slate-900">Select Sheets to Export</h3>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={exportSheets.businessReport}
+                      onChange={(e) => setExportSheets(prev => ({ ...prev, businessReport: e.target.checked }))}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-slate-700">Business Report (Complete entries with all details)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={exportSheets.payoutSummary}
+                      onChange={(e) => setExportSheets(prev => ({ ...prev, payoutSummary: e.target.checked }))}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-slate-700">Payout Summary (Aggregated pending payouts by associate)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={exportSheets.brokerSheets}
+                      onChange={(e) => setExportSheets(prev => ({ ...prev, brokerSheets: e.target.checked }))}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-slate-700">Broker Sheets (Individual sheets per broker with pending payouts)</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Broker Selection */}
+              {exportSheets.brokerSheets && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-900">Select Brokers</h3>
+                    <button
+                      type="button"
+                      onClick={() => setExportAllBrokers(!exportAllBrokers)}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      {exportAllBrokers ? 'Select Specific' : 'Select All'}
+                    </button>
+                  </div>
+                  
+                  {!exportAllBrokers && (
+                    <div className="space-y-2 max-h-64 overflow-y-auto border border-slate-200 rounded-lg p-3">
+                      <button
+                        type="button"
+                        onClick={handleSelectAllBrokers}
+                        className="w-full text-left text-sm text-blue-600 hover:text-blue-700 font-medium mb-2"
+                      >
+                        {exportBrokerIds.length === brokerOptions.length ? 'Deselect All' : 'Select All'}
+                      </button>
+                      {brokerOptions.map((broker) => (
+                        <label key={broker._id} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={exportBrokerIds.includes(broker._id)}
+                            onChange={() => handleToggleBroker(broker._id)}
+                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-slate-700">{broker.brokername}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {exportAllBrokers && (
+                    <p className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-lg p-3">
+                      All brokers will be included in the export. Each broker will have their own sheet.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Active Filters Info */}
+              {Object.values(filters).some(v => v) && (
+                <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+                  <h3 className="text-sm font-semibold text-blue-900 mb-2">Active Data Filters</h3>
+                  <p className="text-xs text-blue-700">
+                    The export will include your currently active filters. Clear filters if you want to export all data.
+                  </p>
+                </div>
+              )}
+
+              {/* Export Info */}
+              <div className="rounded-lg bg-slate-50 border border-slate-200 p-4 space-y-2">
+                <h3 className="text-sm font-semibold text-slate-900">Export Details</h3>
+                <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside">
+                  <li>Business Report includes all business entries with complete details</li>
+                  <li>Payout Summary shows aggregated pending payouts by associate</li>
+                  <li>Broker sheets show pending payouts per broker with associate details</li>
+                  <li>Data is fetched fresh from the database at export time</li>
+                  <li>Role-based visibility applies to all exported data</li>
+                </ul>
+              </div>
+
+              {errorMessage && (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
+                  {errorMessage}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4 shrink-0">
+              <button
+                type="button"
+                onClick={handleCloseExportDialog}
+                disabled={isExporting}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={isExporting || (!exportSheets.businessReport && !exportSheets.payoutSummary && !exportSheets.brokerSheets)}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isExporting ? 'Exporting...' : '📊 Export to Excel'}
+              </button>
             </div>
           </div>
         </div>

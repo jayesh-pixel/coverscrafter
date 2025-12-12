@@ -211,21 +211,40 @@ export async function bulkUpdateBusinessEntries(
   });
 }
 
+export interface ExportOptions {
+  sheets?: string; // Comma-separated list of sheets or "all"
+  brokerIds?: string; // Comma-separated list of broker IDs or "all"
+  filters?: Record<string, string>; // Data filters
+}
+
 export async function exportBusinessEntries(
   authToken: string,
-  filters?: Record<string, string>
+  options?: ExportOptions
 ): Promise<Blob> {
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://instapolicy.coverscrafter.com";
   let url = `${API_BASE_URL}/v1/businessentry/export`;
   
-  if (filters) {
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
+  const params = new URLSearchParams();
+  
+  // Add sheet selection
+  if (options?.sheets !== undefined) {
+    params.append('sheets', options.sheets);
+  }
+  
+  // Add broker filtering
+  if (options?.brokerIds !== undefined) {
+    params.append('brokerIds', options.brokerIds);
+  }
+  
+  // Add data filters
+  if (options?.filters) {
+    Object.entries(options.filters).forEach(([key, value]) => {
       if (value) params.append(key, value);
     });
-    const queryString = params.toString();
-    if (queryString) url += `?${queryString}`;
   }
+  
+  const queryString = params.toString();
+  if (queryString) url += `?${queryString}`;
 
   const response = await fetch(url, {
     method: 'GET',
@@ -235,7 +254,15 @@ export async function exportBusinessEntries(
   });
 
   if (!response.ok) {
-    throw new Error('Failed to export business entries');
+    const errorText = await response.text();
+    let errorMessage = 'Failed to export business entries';
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorMessage = errorJson.message || errorMessage;
+    } catch {
+      // Use default error message
+    }
+    throw new Error(errorMessage);
   }
 
   return response.blob();
