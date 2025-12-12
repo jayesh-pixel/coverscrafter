@@ -1008,40 +1008,80 @@ export default function BusinessEntryManager({
     setErrorMessage(null);
 
     try {
+      // Validate that at least one sheet option is selected
+      if (!exportSheets.businessReport && !exportSheets.payoutSummary && !exportSheets.brokerSheets) {
+        setErrorMessage('Please select at least one sheet to export (Business Report, Payout Summary, or Broker Sheets)');
+        setIsExporting(false);
+        return;
+      }
+
+      // If broker sheets are selected but no brokers, show error
+      if (exportSheets.brokerSheets && !exportAllBrokers && exportBrokerIds.length === 0) {
+        setErrorMessage('Please select at least one broker or choose "Select All Brokers"');
+        setIsExporting(false);
+        return;
+      }
+
       // Build active filters
       const activeFilters: Record<string, string> = {};
       Object.entries(filters).forEach(([key, value]) => {
         if (value) activeFilters[key] = value;
       });
 
-      // Build sheets parameter
+      // Build sheets parameter based on selected checkboxes
+      const selectedSheets: string[] = [];
+      if (exportSheets.businessReport) selectedSheets.push('Business Report');
+      if (exportSheets.payoutSummary) selectedSheets.push('Payout Summary');
+      
+      // Determine sheets parameter:
+      // - If nothing selected: use 'all' (includes Business Report + Payout Summary + all brokers)
+      // - If both reports selected: use 'Business Report,Payout Summary'
+      // - If only one report selected: use that one only
+      // - If no reports selected but brokers selected: use 'none' (only broker sheets)
       let sheetsParam: string;
-      if (exportSheets.businessReport && exportSheets.payoutSummary) {
+      if (selectedSheets.length === 2) {
         sheetsParam = 'Business Report,Payout Summary';
-      } else if (exportSheets.businessReport) {
-        sheetsParam = 'Business Report';
-      } else if (exportSheets.payoutSummary) {
-        sheetsParam = 'Payout Summary';
-      } else if (exportSheets.brokerSheets) {
-        sheetsParam = ''; // Empty means only broker sheets
+      } else if (selectedSheets.length === 1) {
+        sheetsParam = selectedSheets[0];
+      } else if (exportSheets.brokerSheets && !exportAllBrokers && exportBrokerIds.length > 0) {
+        sheetsParam = 'none'; // Only broker sheets
+      } else if (!exportSheets.businessReport && !exportSheets.payoutSummary && !exportSheets.brokerSheets) {
+        sheetsParam = 'all'; // Default when nothing selected
       } else {
-        sheetsParam = 'all'; // Default to all
+        sheetsParam = 'none';
       }
 
-      // Build brokerIds parameter
-      let brokerIdsParam: string;
-      if (exportAllBrokers) {
-        brokerIdsParam = 'all';
-      } else {
-        brokerIdsParam = exportBrokerIds.join(',');
+      // Build brokerIds parameter:
+      // - If "Select All" is checked: use 'all'
+      // - If specific brokers selected: use comma-separated IDs
+      // - If no brokers selected but sheets are selected: don't include brokerIds (API defaults to none)
+      // - If brokerSheets checkbox is NOT checked: send 'none' if sheets are specified
+      let brokerIdsParam: string | undefined;
+      if (exportSheets.brokerSheets) {
+        if (exportAllBrokers) {
+          brokerIdsParam = 'all';
+        } else if (exportBrokerIds.length > 0) {
+          brokerIdsParam = exportBrokerIds.join(',');
+        }
+      } else if (selectedSheets.length > 0) {
+        // If reports are selected but brokerSheets is not, explicitly set brokerIds to none
+        brokerIdsParam = 'none';
       }
 
-      // Call export API with options
-      const blob = await exportBusinessEntries(token, {
+      // Call export API with proper options
+      const exportOptions: any = {
         sheets: sheetsParam,
-        brokerIds: brokerIdsParam,
-        filters: activeFilters,
-      });
+      };
+      
+      if (brokerIdsParam !== undefined) {
+        exportOptions.brokerIds = brokerIdsParam;
+      }
+      
+      if (Object.keys(activeFilters).length > 0) {
+        exportOptions.filters = activeFilters;
+      }
+
+      const blob = await exportBusinessEntries(token, exportOptions);
       
       // Create download link
       const url = URL.createObjectURL(blob);
@@ -1060,7 +1100,11 @@ export default function BusinessEntryManager({
       handleCloseExportDialog();
     } catch (error) {
       console.error('Export failed:', error);
-      if (error instanceof Error) {
+      if (error instanceof ApiError) {
+        // Display serverMsg if available, otherwise fall back to message
+        const displayMessage = error.serverMsg || error.message || 'Failed to export business entries';
+        setErrorMessage(displayMessage);
+      } else if (error instanceof Error) {
         setErrorMessage(error.message);
       } else {
         setErrorMessage('Failed to export business entries. Please try again.');
@@ -1071,6 +1115,7 @@ export default function BusinessEntryManager({
   };
 
   const handleToggleBroker = (brokerId: string) => {
+    setErrorMessage(null);
     setExportBrokerIds(prev => {
       if (prev.includes(brokerId)) {
         return prev.filter(id => id !== brokerId);
@@ -1081,6 +1126,7 @@ export default function BusinessEntryManager({
   };
 
   const handleSelectAllBrokers = () => {
+    setErrorMessage(null);
     if (exportBrokerIds.length === brokerOptions.length) {
       setExportBrokerIds([]);
     } else {
@@ -2159,7 +2205,10 @@ export default function BusinessEntryManager({
                     <input
                       type="checkbox"
                       checked={exportSheets.businessReport}
-                      onChange={(e) => setExportSheets(prev => ({ ...prev, businessReport: e.target.checked }))}
+                      onChange={(e) => {
+                        setExportSheets(prev => ({ ...prev, businessReport: e.target.checked }));
+                        setErrorMessage(null);
+                      }}
                       className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="text-sm text-slate-700">Business Report (Complete entries with all details)</span>
@@ -2168,7 +2217,10 @@ export default function BusinessEntryManager({
                     <input
                       type="checkbox"
                       checked={exportSheets.payoutSummary}
-                      onChange={(e) => setExportSheets(prev => ({ ...prev, payoutSummary: e.target.checked }))}
+                      onChange={(e) => {
+                        setExportSheets(prev => ({ ...prev, payoutSummary: e.target.checked }));
+                        setErrorMessage(null);
+                      }}
                       className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="text-sm text-slate-700">Payout Summary (Aggregated pending payouts by associate)</span>
@@ -2177,7 +2229,10 @@ export default function BusinessEntryManager({
                     <input
                       type="checkbox"
                       checked={exportSheets.brokerSheets}
-                      onChange={(e) => setExportSheets(prev => ({ ...prev, brokerSheets: e.target.checked }))}
+                      onChange={(e) => {
+                        setExportSheets(prev => ({ ...prev, brokerSheets: e.target.checked }));
+                        setErrorMessage(null);
+                      }}
                       className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="text-sm text-slate-700">Broker Sheets (Individual sheets per broker with pending payouts)</span>
@@ -2253,8 +2308,9 @@ export default function BusinessEntryManager({
               </div>
 
               {errorMessage && (
-                <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
-                  {errorMessage}
+                <div className="rounded-lg bg-red-50 border border-red-200 p-4 space-y-2">
+                  <h3 className="text-sm font-semibold text-red-900">Export Error</h3>
+                  <p className="text-sm text-red-700 break-words">{errorMessage}</p>
                 </div>
               )}
             </div>

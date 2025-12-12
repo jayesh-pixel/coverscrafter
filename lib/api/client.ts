@@ -53,7 +53,7 @@ export async function apiRequest<TResponse, TBody = unknown>({
       ? (payload.message || payload.error)
       : response.statusText || "Request failed";
     
-    const serverMsg = isJson && payload?.serverMsg ? payload.serverMsg : '';
+    const serverMsg = (isJson && payload?.serverMsg) ? payload.serverMsg : '';
     
     // Check if token is invalid or expired - only try refresh if this is not already a retry
     if (!_isRetry && 
