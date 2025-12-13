@@ -543,7 +543,7 @@ export default function ConsolidationListPage() {
         </div>
         <div className="flex flex-wrap gap-3">
           <Link
-            href="/dashboard/rm-management"
+            href="/dashboard/rm-management/create"
             className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-semibold text-blue-600 transition hover:bg-blue-100"
           >
             Create RM / Associate

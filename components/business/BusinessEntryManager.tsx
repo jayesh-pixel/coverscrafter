@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState, useRef } from "react";
 import { FileUploadField, SelectField, TextField } from "@/components/ui/forms";
 import { createBusinessEntry, getBusinessEntries, bulkUpdateBusinessEntries, exportBusinessEntries, updateBusinessEntry, deleteBusinessEntry, type BusinessEntry, type BulkUpdatePayload } from "@/lib/api/businessentry";
 import { getBrokerNames, type BrokerName } from "@/lib/api/brokername";
@@ -335,6 +335,7 @@ export default function BusinessEntryManager({
   const [payoutMode, setPayoutMode] = useState<"cut&pay" | "fullpay">("fullpay");
   const [showForm, setShowForm] = useState(initialShowForm);
   const [businessEntries, setBusinessEntries] = useState<BusinessEntry[]>([]);
+  const [filteredEntries, setFilteredEntries] = useState<BusinessEntry[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -409,6 +410,7 @@ export default function BusinessEntryManager({
   });
   const [exportBrokerIds, setExportBrokerIds] = useState<string[]>([]);
   const [exportAllBrokers, setExportAllBrokers] = useState(true);
+  const searchDebounceRef = useRef<number | null>(null);
 
   const fetchEntries = async (filterParams?: Record<string, string>) => {
     const token = await getToken();
@@ -438,6 +440,8 @@ export default function BusinessEntryManager({
       if (!response.ok) throw new Error('Failed to fetch entries');
       const entries = await response.json();
       setBusinessEntries(entries);
+      // initialize filtered entries to fetched list
+      setFilteredEntries(entries);
     } catch (error) {
       console.error("Failed to fetch business entries", error);
     } finally {
@@ -616,6 +620,95 @@ export default function BusinessEntryManager({
 
     return () => clearInterval(intervalId);
   }, [autoRefresh, refreshInterval, isEditModalOpen, isDeleteModalOpen, showBulkUpdateModal, isFileDialogOpen]);
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Re-apply local filters whenever the loaded entries or filter state changes
+  useEffect(() => {
+    // If there is any typed search (policyNumber/clientName) we debounce to avoid jank
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    searchDebounceRef.current = window.setTimeout(() => {
+      const results = businessEntries.filter((entry) => matchesFilters(entry, filters));
+      setFilteredEntries(results);
+      searchDebounceRef.current = null;
+    }, 200) as unknown as number;
+
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
+      }
+    };
+  }, [businessEntries, filters]);
+
+  // Helper: check if an entry matches the provided filters (local filtering)
+  const matchesFilters = (entry: BusinessEntry, f: Record<string, string>) => {
+    for (const [key, value] of Object.entries(f)) {
+      if (!value) continue;
+      const v = value.toString().toLowerCase();
+
+      // Text fields - do a contains match
+      if (['policyNumber', 'clientName', 'contactNumber', 'emailId', 'registrationNumber'].includes(key)) {
+        // For the main search box (policyNumber) allow searching across both
+        // policy number and client name (OR match). For explicit clientName
+        // filter, match clientName only.
+        if (key === 'policyNumber') {
+          const policyField = (entry as any)['policyNumber'] || '';
+          const clientField = (entry as any)['clientName'] || '';
+          if (!policyField.toString().toLowerCase().includes(v) && !clientField.toString().toLowerCase().includes(v)) return false;
+        } else {
+          const field = (entry as any)[key] || '';
+          if (!field.toString().toLowerCase().includes(v)) return false;
+        }
+        continue;
+      }
+
+      // Exact match fields
+      if (['state', 'rmId', 'associateId', 'brokerid', 'lineOfBusiness', 'product'].includes(key)) {
+        const field = (entry as any)[key] || '';
+        if (field.toString().toLowerCase() !== v) return false;
+        continue;
+      }
+
+      // Date range filtering
+      if (key === 'startDate' || key === 'endDate') {
+        // handled below once both are present along with dateField
+        continue;
+      }
+
+      // dateField is handled together with startDate/endDate
+      if (key === 'dateField') {
+        const dateField = value as string;
+        const start = f.startDate;
+        const end = f.endDate;
+        if (dateField && (start || end)) {
+          const entryDateRaw = (entry as any)[dateField];
+          if (!entryDateRaw) return false;
+          const entryDate = new Date(entryDateRaw);
+          if (start) {
+            const s = new Date(start);
+            if (entryDate < s) return false;
+          }
+          if (end) {
+            const e = new Date(end);
+            if (entryDate > e) return false;
+          }
+        }
+        continue;
+      }
+    }
+    return true;
+  };
 
   const handleManualRefresh = async () => {
     await fetchEntries();
@@ -959,7 +1052,33 @@ export default function BusinessEntryManager({
   };
 
   const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    // For the main search box (policyNumber) we debounce the fetch to avoid
+    // firing a request on every keystroke. Other filters update immediately.
+    setFilters((prev) => {
+      const newFilters = { ...prev, [key]: value };
+
+      const applyLocal = (filtersToApply: Record<string, string>) => {
+        const results = businessEntries.filter((entry) => matchesFilters(entry, filtersToApply));
+        setFilteredEntries(results);
+      };
+
+      if (key === 'policyNumber' || key === 'clientName') {
+        // clear previous timer
+        if (searchDebounceRef.current) {
+          clearTimeout(searchDebounceRef.current);
+        }
+
+        // debounce local filtering by 500ms
+        searchDebounceRef.current = window.setTimeout(() => {
+          applyLocal(newFilters);
+        }, 500) as unknown as number;
+      } else {
+        // For other filters apply immediately on the already-loaded entries
+        applyLocal(newFilters);
+      }
+
+      return newFilters;
+    });
   };
 
   const handleApplyFilters = () => {
@@ -986,7 +1105,8 @@ export default function BusinessEntryManager({
       startDate: "",
       endDate: "",
     });
-    fetchEntries();
+    // Reset local filtered view to the full loaded list
+    setFilteredEntries(businessEntries);
   };
 
   const handleOpenExportDialog = () => {
@@ -1702,7 +1822,7 @@ export default function BusinessEntryManager({
             <div className="flex items-center justify-center py-12">
               <p className="text-sm text-slate-500">Loading business entries...</p>
             </div>
-          ) : businessEntries.length === 0 ? (
+          ) : filteredEntries.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <p className="text-sm text-slate-500">No business entries found. Create your first entry above.</p>
             </div>
@@ -1763,7 +1883,7 @@ export default function BusinessEntryManager({
                 </tr>
               </thead>
               <tbody>
-                {businessEntries.map((entry) => {
+                {filteredEntries.map((entry) => {
                   const broker = brokerOptions.find(b => b._id === entry.brokerid);
                   const rmName = entry.rmData 
                     ? `${entry.rmData.firstName || ''} ${entry.rmData.middleName || ''} ${entry.rmData.lastName || ''}`.trim()

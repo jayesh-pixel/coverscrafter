@@ -418,7 +418,11 @@ export default function BusinessEntryForm({
       setNetPremium(editEntry.netPremium?.toString() || "");
       setGrossPremium(editEntry.grossPremium?.toString() || "");
       setIsNewVehicle(editEntry.isNewVehicle || false);
-      setPolicyEndDate(editEntry.policyEndDate || "");
+      setPolicyEndDate(
+        editEntry.policyEndDate
+          ? new Date(editEntry.policyEndDate).toISOString().split('T')[0]
+          : ""
+      );
 
       // Fetch RMs for the state
       if (editEntry.state) {
