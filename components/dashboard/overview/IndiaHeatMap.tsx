@@ -106,6 +106,8 @@ export function IndiaHeatMap({ data, metric, valueFormatter }: IndiaHeatMapProps
     return [...data].sort((a, b) => b.value - a.value).slice(0, 10);
   }, [data]);
 
+  const valueLabel = metric === "count" ? "Count" : "Net Premium";
+
   return (
     <div className="space-y-4">
       <div className="relative w-full bg-white rounded-lg p-4 border border-slate-200">
@@ -129,9 +131,9 @@ export function IndiaHeatMap({ data, metric, valueFormatter }: IndiaHeatMapProps
                 >
                   <title>
                     {stateName}
-                    {stateData 
-                      ? `\nPolicies: ${stateData.count}\nValue: ${valueFormatter(stateData.value)}` 
-                      : '\nNo data'}
+                      {stateData 
+                        ? `\nPolicies: ${stateData.count}\n${valueLabel}: ${valueFormatter(stateData.value)}` 
+                        : '\nNo data'}
                   </title>
                 </path>
               </g>
@@ -145,13 +147,13 @@ export function IndiaHeatMap({ data, metric, valueFormatter }: IndiaHeatMapProps
             <p className="font-semibold text-slate-900 mb-1">
               {India.locations.find((l: any) => l.id === hoveredState)?.name}
             </p>
-            {(() => {
+                  {(() => {
               const locationName = India.locations.find((l: any) => l.id === hoveredState)?.name;
               const stateData = locationName ? getStateData(locationName) : null;
               return stateData ? (
-                <div className="space-y-0.5 text-xs text-slate-600">
+                  <div className="space-y-0.5 text-xs text-slate-600">
                   <p>Policies: <span className="font-semibold text-slate-900">{stateData.count}</span></p>
-                  <p>Value: <span className="font-semibold text-slate-900">{valueFormatter(stateData.value)}</span></p>
+                  <p>{valueLabel}: <span className="font-semibold text-slate-900">{valueFormatter(stateData.value)}</span></p>
                   <p>Share: <span className="font-semibold text-slate-900">
                     {((stateData.value / data.reduce((sum, d) => sum + d.value, 0)) * 100).toFixed(1)}%
                   </span></p>

@@ -124,10 +124,12 @@ export function Legend({
   items,
   valueFormatter = (value: number) => currencyFormatter.format(value),
   showDetails = false,
+  valueLabel = "Value",
 }: {
   items: Array<{ label: string; value: number; color: string; count?: number }>;
   valueFormatter?: (value: number) => string;
   showDetails?: boolean;
+  valueLabel?: string;
 }) {
   const total = items.reduce((sum, item) => sum + item.value, 0) || 1;
   return (
@@ -158,7 +160,7 @@ export function Legend({
                   <span className="font-semibold text-slate-900">{item.count ?? 0}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-600">Value:</span>
+                  <span className="text-slate-600">{valueLabel}:</span>
                   <span className="font-semibold text-slate-900">{valueFormatter(item.value)}</span>
                 </div>
                 <div className="flex justify-between">

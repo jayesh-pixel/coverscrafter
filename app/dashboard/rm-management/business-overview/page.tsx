@@ -54,11 +54,12 @@ function getEntryDate(entry: BusinessEntry) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function buildDistribution(entries: BusinessEntry[], labelFn: (entry: BusinessEntry) => string): DistributionItem[] {
+function buildDistribution(entries: BusinessEntry[], labelFn: (entry: BusinessEntry) => string, valueFn?: (entry: BusinessEntry) => number): DistributionItem[] {
   const map = new Map<string, DistributionItem>();
+  const getValue = valueFn ?? deriveRevenue;
   for (const entry of entries) {
     const label = labelFn(entry) || "Unmapped";
-    const revenue = deriveRevenue(entry);
+    const revenue = getValue(entry);
     const current = map.get(label) ?? { label, value: 0, count: 0 };
     current.value += revenue;
     current.count += 1;
@@ -241,24 +242,46 @@ export default function BusinessOverviewPage() {
     return result.slice(-30); // Show last 30 periods
   }, [filteredEntries, timeline]);
 
+  // Revenue-based distributions (used in breakdown and some tables)
   const brokerDistribution = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.brokerData?.brokername || entry.brokerid || "Unmapped Broker"), [filteredEntries]);
   const insurerDistribution = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.insuranceCompany || "Unmapped Insurer"), [filteredEntries]);
   const stateDistribution = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.state || "Unknown State"), [filteredEntries]);
 
-  const brokerPie = useMemo(() => toPieData(brokerDistribution), [brokerDistribution]);
-  const insurerPie = useMemo(() => toPieData(insurerDistribution), [insurerDistribution]);
+  // Net premium-based distributions (for charts and top contributor lists)
+  const brokerDistributionPremium = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.brokerData?.brokername || entry.brokerid || "Unmapped Broker", derivePremium), [filteredEntries]);
+  const insurerDistributionPremium = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.insuranceCompany || "Unmapped Insurer", derivePremium), [filteredEntries]);
+  const stateDistributionPremium = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.state || "Unknown State", derivePremium), [filteredEntries]);
 
-  const topBrokers = brokerDistribution.slice(0, 5);
-  const topInsurers = insurerDistribution.slice(0, 5);
+  const brokerPie = useMemo(() => toPieData(brokerDistributionPremium), [brokerDistributionPremium]);
+  const insurerPie = useMemo(() => toPieData(insurerDistributionPremium), [insurerDistributionPremium]);
 
+  const topBrokers = brokerDistributionPremium.slice(0, 5);
+  const topInsurers = insurerDistributionPremium.slice(0, 5);
+
+  // Build a state-level dataset that includes both revenue and net premium values.
+  // For the map, when businessMetric === 'revenue', we want to show Net Premium (derived premium) instead of revenue.
   const stateHeatMapData = useMemo(() => {
-    return stateDistribution.map(item => ({
-      name: item.label,
-      code: item.label.substring(0, 2).toUpperCase(),
-      value: businessMetric === "count" ? item.count : item.value,
+    const map = new Map<string, { name: string; code: string; count: number; revenue: number; netPremium: number }>();
+
+    for (const entry of filteredEntries) {
+      const name = entry.state || "Unknown State";
+      const key = name;
+      const current = map.get(key) ?? { name, code: (name || "").substring(0, 2).toUpperCase(), count: 0, revenue: 0, netPremium: 0 };
+      current.count += 1;
+      current.revenue += deriveRevenue(entry);
+      current.netPremium += derivePremium(entry);
+      map.set(key, current);
+    }
+
+    return Array.from(map.values()).map(item => ({
+      name: item.name,
+      code: item.code,
+      value: businessMetric === "count" ? item.count : item.netPremium,
       count: item.count,
+      revenue: item.revenue,
+      netPremium: item.netPremium,
     }));
-  }, [stateDistribution, businessMetric]);
+  }, [filteredEntries, businessMetric]);
 
   const topRMs = useMemo(() => {
     const rmPerformance = new Map<string, { rm: RMUser; policies: number; revenue: number }>();
@@ -273,7 +296,7 @@ export default function BusinessOverviewPage() {
           revenue: 0 
         };
         current.policies += 1;
-        current.revenue += deriveRevenue(entry);
+        current.revenue += derivePremium(entry);
         rmPerformance.set(entry.rmId, current);
       }
     });
@@ -295,7 +318,7 @@ export default function BusinessOverviewPage() {
           revenue: 0 
         };
         current.policies += 1;
-        current.revenue += deriveRevenue(entry);
+        current.revenue += derivePremium(entry);
         associatePerformance.set(entry.associateId, current);
       }
     });
@@ -571,7 +594,7 @@ export default function BusinessOverviewPage() {
                             <p className="mb-1 text-xs font-semibold text-slate-900">{item.label}</p>
                             <div className="space-y-0.5 text-[11px] text-slate-600">
                               <p>Policies: <span className="font-semibold text-slate-900">{numberFormatter.format(item.count)}</span></p>
-                              <p>Value: <span className="font-semibold text-slate-900">{currencyFormatter.format(item.value)}</span></p>
+                              <p>Net Premium: <span className="font-semibold text-slate-900">{currencyFormatter.format(item.value)}</span></p>
                               <p>Share: <span className="font-semibold text-slate-900">{share}%</span></p>
                             </div>
                           </div>
@@ -615,7 +638,7 @@ export default function BusinessOverviewPage() {
                             <p className="mb-1 text-xs font-semibold text-slate-900">{item.label}</p>
                             <div className="space-y-0.5 text-[11px] text-slate-600">
                               <p>Policies: <span className="font-semibold text-slate-900">{numberFormatter.format(item.count)}</span></p>
-                              <p>Value: <span className="font-semibold text-slate-900">{currencyFormatter.format(item.value)}</span></p>
+                              <p>Net Premium: <span className="font-semibold text-slate-900">{currencyFormatter.format(item.value)}</span></p>
                               <p>Share: <span className="font-semibold text-slate-900">{share}%</span></p>
                             </div>
                           </div>
@@ -635,13 +658,15 @@ export default function BusinessOverviewPage() {
             <IndiaHeatMap
               data={stateHeatMapData}
               metric={businessMetric}
-              valueFormatter={businessMetric === "count" ? (v) => numberFormatter.format(v) : (v) => currencyFormatter.format(v)}
+              valueFormatter={businessMetric === "count"
+                ? (v) => numberFormatter.format(v)
+                : (v) => currencyFormatter.format(v)}
             />
           </div>
         </div>
       </SectionCard>
 
-      <SectionCard title="Top Contributors" description="Highest contribution based on selected metric.">
+      <SectionCard title="Top Contributors" description="Highest contribution based on Net Premium.">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
             <h3 className="text-sm font-semibold text-slate-900">Brokers</h3>
@@ -740,8 +765,8 @@ export default function BusinessOverviewPage() {
                         {breakdownTab === "product" && "Product Type"}
                       </th>
                       <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Policies</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Premium</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Revenue</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Net Premium</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Net Premium</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Share %</th>
                     </tr>
                   </thead>
@@ -770,7 +795,8 @@ export default function BusinessOverviewPage() {
 
                       return distribution.map((item, index) => {
                         const share = totalRevenue > 0 ? ((item.value / totalRevenue) * 100).toFixed(1) : "0.0";
-                        const itemPremium = filteredEntries
+                        // Net Premium calculation for this group
+                        const itemNetPremium = filteredEntries
                           .filter((entry) => {
                             if (breakdownTab === "insurer") return (entry.insuranceCompany || "Unmapped Insurer") === item.label;
                             if (breakdownTab === "broker") return (entry.brokerData?.brokername || entry.brokerid || "Unmapped Broker") === item.label;
@@ -801,7 +827,7 @@ export default function BusinessOverviewPage() {
                               </div>
                             </td>
                             <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">{numberFormatter.format(item.count)}</td>
-                            <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">{currencyFormatter.format(itemPremium)}</td>
+                            <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">{currencyFormatter.format(itemNetPremium)}</td>
                             <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">{currencyFormatter.format(item.value)}</td>
                             <td className="px-4 py-3 text-right text-sm font-semibold text-blue-600">{share}%</td>
                           </tr>
@@ -827,13 +853,13 @@ export default function BusinessOverviewPage() {
                     <tr className="border-b border-slate-200">
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">State</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Policies</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Revenue</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Net Premium</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Share %</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {stateDistribution.slice(0, 10).map((state, index) => {
-                      const totalRevenue = stateDistribution.reduce((sum, s) => sum + s.value, 0);
+                    {stateDistributionPremium.slice(0, 10).map((state, index) => {
+                      const totalRevenue = stateDistributionPremium.reduce((sum, s) => sum + s.value, 0);
                       const share = totalRevenue > 0 ? ((state.value / totalRevenue) * 100).toFixed(1) : "0.0";
                       return (
                         <tr key={state.label} className="transition-colors hover:bg-white">
@@ -874,7 +900,7 @@ export default function BusinessOverviewPage() {
                         <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">RM Name</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">State</th>
                         <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Policies</th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Revenue</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Net Premium</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -921,7 +947,7 @@ export default function BusinessOverviewPage() {
                         <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Associate Name</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Code</th>
                         <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Policies</th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Revenue</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-700">Net Premium</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
