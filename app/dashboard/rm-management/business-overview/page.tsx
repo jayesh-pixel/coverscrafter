@@ -242,21 +242,16 @@ export default function BusinessOverviewPage() {
     return result.slice(-30); // Show last 30 periods
   }, [filteredEntries, timeline]);
 
-  // Revenue-based distributions (used in breakdown and some tables)
-  const brokerDistribution = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.brokerData?.brokername || entry.brokerid || "Unmapped Broker"), [filteredEntries]);
-  const insurerDistribution = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.insuranceCompany || "Unmapped Insurer"), [filteredEntries]);
-  const stateDistribution = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.state || "Unknown State"), [filteredEntries]);
+  // All distributions now use Net Premium (derivePremium) instead of Revenue
+  const brokerDistribution = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.brokerData?.brokername || entry.brokerid || "Unmapped Broker", derivePremium), [filteredEntries]);
+  const insurerDistribution = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.insuranceCompany || "Unmapped Insurer", derivePremium), [filteredEntries]);
+  const stateDistribution = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.state || "Unknown State", derivePremium), [filteredEntries]);
 
-  // Net premium-based distributions (for charts and top contributor lists)
-  const brokerDistributionPremium = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.brokerData?.brokername || entry.brokerid || "Unmapped Broker", derivePremium), [filteredEntries]);
-  const insurerDistributionPremium = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.insuranceCompany || "Unmapped Insurer", derivePremium), [filteredEntries]);
-  const stateDistributionPremium = useMemo(() => buildDistribution(filteredEntries, (entry) => entry.state || "Unknown State", derivePremium), [filteredEntries]);
+  const brokerPie = useMemo(() => toPieData(brokerDistribution), [brokerDistribution]);
+  const insurerPie = useMemo(() => toPieData(insurerDistribution), [insurerDistribution]);
 
-  const brokerPie = useMemo(() => toPieData(brokerDistributionPremium), [brokerDistributionPremium]);
-  const insurerPie = useMemo(() => toPieData(insurerDistributionPremium), [insurerDistributionPremium]);
-
-  const topBrokers = brokerDistributionPremium.slice(0, 5);
-  const topInsurers = insurerDistributionPremium.slice(0, 5);
+  const topBrokers = brokerDistribution.slice(0, 5);
+  const topInsurers = insurerDistribution.slice(0, 5);
 
   // Build a state-level dataset that includes both revenue and net premium values.
   // For the map, when businessMetric === 'revenue', we want to show Net Premium (derived premium) instead of revenue.
@@ -485,70 +480,80 @@ export default function BusinessOverviewPage() {
 
       <SectionCard title="Overview" description="Activity metrics and business distribution.">
         <div className="space-y-6">
-          {/* Combined Grouped Bar Chart - Policies and Premium */}
-          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-            <h3 className="text-sm font-semibold text-slate-900">Policies & Net Premium</h3>
-            <p className="mb-4 text-xs text-slate-500">Based on selected timeline and filters</p>
-            <div className="overflow-x-auto">
-              <div className="min-w-full" style={{ height: "400px", display: "flex", alignItems: "flex-end", justifyContent: "space-around", gap: "12px", paddingBottom: "40px", borderBottom: "1px solid #e2e8f0" }}>
-                {timelineStats.length === 0 ? (
-                  <div className="flex w-full items-center justify-center text-slate-500">
-                    <p>No data available for the selected period</p>
-                  </div>
-                ) : (
-                  timelineStats.map((item, index) => (
-                    <div key={index} className="flex flex-col items-center gap-2" style={{ flex: 1 }}>
-                      {/* Grouped Bars Container */}
-                      <div className="flex items-end gap-1.5" style={{ height: "300px", alignItems: "flex-end" }}>
-                        {/* Policies Bar - Blue */}
+          {/* Separate Charts Grid */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Policies Chart */}
+            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <h3 className="text-sm font-semibold text-slate-900">Number of Policies</h3>
+              <p className="mb-4 text-xs text-slate-500">Based on selected timeline and filters</p>
+              <div className="overflow-x-auto">
+                <div className="min-w-full" style={{ height: "300px", display: "flex", alignItems: "flex-end", justifyContent: "space-around", gap: "8px", paddingBottom: "30px", borderBottom: "1px solid #e2e8f0" }}>
+                  {timelineStats.length === 0 ? (
+                    <div className="flex w-full items-center justify-center text-slate-500">
+                      <p className="text-xs">No data available</p>
+                    </div>
+                  ) : (
+                    timelineStats.map((item, index) => (
+                      <div key={index} className="flex flex-col items-center gap-2" style={{ flex: 1 }}>
                         <div
                           className="rounded-t bg-blue-500 transition-all hover:bg-blue-600"
                           style={{
-                            width: "20px",
-                            height: `${Math.max(10, (item.count / Math.max(...timelineStats.map(s => s.count))) * 280)}px`,
+                            width: "24px",
+                            height: `${Math.max(10, (item.count / Math.max(...timelineStats.map(s => s.count))) * 240)}px`,
                             position: "relative",
                           }}
-                          title={`Policies: ${numberFormatter.format(item.count)}`}
+                          title={`${item.label}: ${numberFormatter.format(item.count)} policies`}
                         >
                           <span className="text-[9px] font-semibold text-slate-900 absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap">
                             {numberFormatter.format(item.count)}
                           </span>
                         </div>
+                        <div className="text-center">
+                          <p className="text-[10px] font-medium text-slate-700 mt-1 max-w-[60px] truncate" title={item.label}>
+                            {item.label.split(',')[0]}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
 
-                        {/* Premium Bar - Amber */}
+            {/* Net Premium Chart */}
+            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <h3 className="text-sm font-semibold text-slate-900">Net Premium</h3>
+              <p className="mb-4 text-xs text-slate-500">Based on selected timeline and filters</p>
+              <div className="overflow-x-auto">
+                <div className="min-w-full" style={{ height: "300px", display: "flex", alignItems: "flex-end", justifyContent: "space-around", gap: "8px", paddingBottom: "30px", borderBottom: "1px solid #e2e8f0" }}>
+                  {timelineStats.length === 0 ? (
+                    <div className="flex w-full items-center justify-center text-slate-500">
+                      <p className="text-xs">No data available</p>
+                    </div>
+                  ) : (
+                    timelineStats.map((item, index) => (
+                      <div key={index} className="flex flex-col items-center gap-2" style={{ flex: 1 }}>
                         <div
                           className="rounded-t bg-amber-500 transition-all hover:bg-amber-600"
                           style={{
-                            width: "20px",
-                            height: `${Math.max(10, (item.premium / Math.max(...timelineStats.map(s => s.premium))) * 280)}px`,
+                            width: "24px",
+                            height: `${Math.max(10, (item.premium / Math.max(...timelineStats.map(s => s.premium))) * 240)}px`,
                             position: "relative",
                           }}
-                          title={`Premium: ${currencyFormatter.format(item.premium)}`}
+                          title={`${item.label}: ${currencyFormatter.format(item.premium)}`}
                         >
                           <span className="text-[9px] font-semibold text-slate-900 absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap">
                             {currencyFormatter.format(item.premium)}
                           </span>
                         </div>
+                        <div className="text-center">
+                          <p className="text-[10px] font-medium text-slate-700 mt-1 max-w-[60px] truncate" title={item.label}>
+                            {item.label.split(',')[0]}
+                          </p>
+                        </div>
                       </div>
-
-                      {/* X-axis Label */}
-                      <div className="text-center">
-                        <p className="text-[11px] font-medium text-slate-700 mt-2">{item.label}</p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Legend */}
-              <div className="mt-6 flex items-center justify-center gap-6">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded bg-blue-500"></div>
-                  <span className="text-xs font-medium text-slate-600">Number of Policies</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded bg-amber-500"></div>
-                  <span className="text-xs font-medium text-slate-600">Net Premium</span>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -780,14 +785,14 @@ export default function BusinessOverviewPage() {
                         distribution = buildDistribution(filteredEntries, (entry) => {
                           const rmData = entry.rmData as any;
                           return rmData?.firstName ? `${rmData.firstName} ${rmData.lastName || ""}`.trim() : entry.rmId || "Unmapped RM";
-                        });
+                        }, derivePremium);
                       } else if (breakdownTab === "associate") {
                         distribution = buildDistribution(filteredEntries, (entry) => {
                           const associateData = entry.associateData as any;
                           return associateData?.contactPerson || entry.associateId || "Unmapped Associate";
-                        });
+                        }, derivePremium);
                       } else if (breakdownTab === "product") {
-                        distribution = buildDistribution(filteredEntries, (entry) => entry.product || "Unmapped Product");
+                        distribution = buildDistribution(filteredEntries, (entry) => entry.product || "Unmapped Product", derivePremium);
                       }
 
                       const totalRevenue = distribution.reduce((sum, item) => sum + item.value, 0);
@@ -858,9 +863,9 @@ export default function BusinessOverviewPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {stateDistributionPremium.slice(0, 10).map((state, index) => {
-                      const totalRevenue = stateDistributionPremium.reduce((sum, s) => sum + s.value, 0);
-                      const share = totalRevenue > 0 ? ((state.value / totalRevenue) * 100).toFixed(1) : "0.0";
+                    {stateDistribution.slice(0, 10).map((state, index) => {
+                      const totalPremium = stateDistribution.reduce((sum, s) => sum + s.value, 0);
+                      const share = totalPremium > 0 ? ((state.value / totalPremium) * 100).toFixed(1) : "0.0";
                       return (
                         <tr key={state.label} className="transition-colors hover:bg-white">
                           <td className="px-4 py-3">
@@ -918,7 +923,7 @@ export default function BusinessOverviewPage() {
                           <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">
                             {numberFormatter.format(item.policies)}
                           </td>
-                          <td className="px-4 py-3 text-right text-sm font-semibold text-emerald-600">
+                          <td className="px-4 py-3 text-right text-sm font-semibold text-blue-600">
                             {currencyFormatter.format(item.revenue)}
                           </td>
                         </tr>
@@ -965,7 +970,7 @@ export default function BusinessOverviewPage() {
                           <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">
                             {numberFormatter.format(item.policies)}
                           </td>
-                          <td className="px-4 py-3 text-right text-sm font-semibold text-emerald-600">
+                          <td className="px-4 py-3 text-right text-sm font-semibold text-blue-600">
                             {currencyFormatter.format(item.revenue)}
                           </td>
                         </tr>
