@@ -29,6 +29,7 @@ const insuranceCompanies = [
   "Future Generali India Insurance Co. Ltd.",
   "Go Digit General Insurance Limited",
   "HDFC ERGO General Insurance Co. Ltd.",
+  " Zuno General Insurance Limited ",
   "HDFC Life Insurance Company Limited",
   "ICICI Lombard General Insurance Co. Ltd.",
   "ICICI Prudential Life Insurance Co. Ltd.",
