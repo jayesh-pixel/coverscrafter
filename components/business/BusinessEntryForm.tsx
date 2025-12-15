@@ -1085,6 +1085,7 @@ export default function BusinessEntryForm({
               defaultValue={editEntry?.status?.toLowerCase()}
               options={[
                 { label: "Pending", value: "pending" },
+                { label: "Sent", value: "sent" },
                 { label: "Paid", value: "paid" }
               ]}
             />
